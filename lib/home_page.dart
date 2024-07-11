@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
 
 static List<Widget> _screens = <Widget>[
   TitleBanner(),
-  Container(color: Colors.blue,),
+  Container(color: Colors.yellow,),
   Container(color: Colors.red,),
   Container(color: Colors.purple,),
 ];
