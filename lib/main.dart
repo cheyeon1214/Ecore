@@ -1,4 +1,4 @@
-import 'package:ecore/home_page.dart';
+import 'package:ecore/home_page_menu.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp (MyApp());
