@@ -1,4 +1,4 @@
-import 'package:ecore/feed_list.dart';
+import 'package:ecore/HomePage/feed_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

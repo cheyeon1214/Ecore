@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:ecore/category_button.dart';
+import 'package:ecore/HomePage/category_button.dart';
 
 import 'carousel_slider.dart';
 

@@ -1,6 +1,7 @@
-import 'package:ecore/feed_list.dart';
-import 'package:ecore/title_banner.dart';
+import 'package:ecore/HomePage/home_page_banner.dart';
 import 'package:flutter/material.dart';
+
+import '../DonationPage/donation_page_banner.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +20,7 @@ class _HomePageState extends State<HomePage> {
 
 static List<Widget> _screens = <Widget>[
   TitleBanner(),
-  Container(color: Colors.blue,),
+  DonationBanner(),
   Container(color: Colors.red,),
   Container(color: Colors.purple,),
 ];
