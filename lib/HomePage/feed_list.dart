@@ -4,11 +4,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecore/HomePage/category_button.dart';
 
 import 'carousel_slider.dart';
+import 'feed_detail.dart';
 
-class Feed extends StatelessWidget {
+class Feed extends StatefulWidget {
   final int idx;
   const Feed(this.idx, {super.key});
 
+  @override
+  State<Feed> createState() => _FeedState();
+}
+
+class _FeedState extends State<Feed> {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -26,34 +32,62 @@ class Feed extends StatelessWidget {
     );
   }
 
-  Widget _postHeader(int idx){
-    return Row(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
+  Widget _postHeader(int idx) {
+    return OutlinedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NextScreen(), // NextScreen()을 FeedDetail()로 변경
+          ),
+        );
+      },
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
               imageUrl: 'https://picsum.photos/id/$idx/200',
               width: 100,
               height: 100,
             ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Text('업사이클링'),
-              Text('가격')
-            ],
           ),
-        ),
-        IconButton(
-            onPressed: null,
-            icon: Icon(
-              Icons.more_horiz,
-              color: Colors.black87,
-            )
-        ),
-      ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // Align text to the start (left)
+              children: [
+                Text('업사이클링', style: TextStyle(color: Colors.black87)),
+                Text('가격'),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (String value) {
+              // Handle the actions for the selected menu item
+              if (value == 'report') {
+                // Handle report action
+              } else if (value == 'hide') {
+                // Handle hide action
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(
+                  value: 'report',
+                  child: Text('신고'),
+                ),
+                PopupMenuItem(
+                  value: 'hide',
+                  child: Text('숨기기'),
+                ),
+              ];
+            },
+          ),
+        ],
+      ),
     );
   }
 }
-
