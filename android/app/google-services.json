@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "638352085442",
+    "project_id": "ecore-8835d",
+    "storage_bucket": "ecore-8835d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638352085442:android:04933c1c4530486eec065b",
+        "android_client_info": {
+          "package_name": "com.example.ecore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB6RLJuf8tEa-Jh7VWILuAztIlZS_faPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
