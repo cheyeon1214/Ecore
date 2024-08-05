@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../HomePage/category_button.dart';
 import '../HomePage/feed_detail.dart';
 import '../models/firestore/dona_post_model.dart';
+import 'dona_detail.dart';
 
 class DonationList extends StatefulWidget {
   const DonationList( {super.key});
@@ -71,7 +72,7 @@ class _DonationListState extends State<DonationList> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => NextScreen(),
+            builder: (context) => DonaDetail(),
           ),
         );
       },
@@ -90,21 +91,19 @@ class _DonationListState extends State<DonationList> {
               errorWidget: (context, url, error) => Icon(Icons.error),
             ),
           ),
+          SizedBox(width: 10.0),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(donaPost.title, style: TextStyle(color: Colors.black87)),
+                Text(donaPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
               ],
             ),
           ),
           PopupMenuButton<String>(
             onSelected: (String value) {
-              // Handle the actions for the selected menu item
               if (value == 'report') {
-                // Handle report action
               } else if (value == 'hide') {
-                // Handle hide action
               }
             },
             itemBuilder: (BuildContext context) {

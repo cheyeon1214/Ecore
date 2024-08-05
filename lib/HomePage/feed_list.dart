@@ -71,7 +71,7 @@ class _FeedState extends State<Feed> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => NextScreen(),
+            builder: (context) => FeedDetail(sellPost: sellPost,),
           ),
         );
       },
@@ -90,22 +90,20 @@ class _FeedState extends State<Feed> {
               errorWidget: (context, url, error) => Icon(Icons.error),
             ),
           ),
+          SizedBox(width: 10.0),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(sellPost.title, style: TextStyle(color: Colors.black87)),
-                Text('${sellPost.price}원'),
+                Text(sellPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
+                Text('${sellPost.price}원', style: TextStyle(fontSize: 20)),
               ],
             ),
           ),
           PopupMenuButton<String>(
             onSelected: (String value) {
-              // Handle the actions for the selected menu item
               if (value == 'report') {
-                // Handle report action
               } else if (value == 'hide') {
-                // Handle hide action
               }
             },
             itemBuilder: (BuildContext context) {
