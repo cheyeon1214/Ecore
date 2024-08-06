@@ -1,7 +1,7 @@
 // Collection names
 const COLLECTION_USERS = 'Users';
-const COLLECTION_SELL_PRODUCTS = 'SellProducts';
-const COLLECTION_DONA_PRODUCTS = 'DonaProducts';
+const COLLECTION_SELL_PRODUCTS = 'SellPosts';
+const COLLECTION_DONA_PRODUCTS = 'DonaPosts';
 const COLLECTION_MARKETS = 'Markets';
 
 // Keys for USERS collection
@@ -32,3 +32,7 @@ const KEY_DONABODY = 'body';
 
 // Keys for MARKETS collection
 const KEY_MARKETID = 'market_id';
+const KEY_MARKET_USERKEY = 'user_key';
+const KEY_MARKET_NAME = 'name';
+const KEY_MARKET_PROFILEIMG = 'profile_img';
+const KEY_MYSELLPOST = 'my_sell_post';

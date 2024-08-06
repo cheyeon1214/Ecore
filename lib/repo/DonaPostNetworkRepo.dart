@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class SellPostNetworkRepo {
+class DonaPostNetworkRepo {
 
   void getData(String select){
     FirebaseFirestore.instance
-        .collection('SellPosts')
+        .collection('DonaPosts')
         .where('category', isEqualTo: select)
         .get()
         .then((querySnapshot) {
@@ -15,4 +15,4 @@ class SellPostNetworkRepo {
   }
 }
 
-SellPostNetworkRepo sellPostNetworkRepo = SellPostNetworkRepo();
+DonaPostNetworkRepo donaPostNetworkRepo = DonaPostNetworkRepo();

@@ -1,8 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-
-import 'donation_button.dart';
 import 'donation_list.dart';
 
 class DonationBanner extends StatelessWidget {
@@ -11,45 +8,33 @@ class DonationBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 30, left: 20),
-                  child: Text('기부', style: TextStyle(fontSize: 30)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 30, left: 20),
-                  child: Text('판매', style: TextStyle(fontSize: 30)),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 20),
-                  child: _buildDropDown(),
-                ),
-                Expanded(child: Container()),
-                IconButton(
-                    onPressed: null,
-                    icon: Icon(
-                      CupertinoIcons.search,
-                      color: Colors.blueGrey,
-                    )),
-              ],
-            ),
-          ],
+      appBar: AppBar(
+        title: Text(
+          '기부',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
-      ),
-      body: ListView.builder(
-              itemBuilder: DonationListBuilder,
-              itemCount: 30,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: _buildDropDown(),
+          ),
+          IconButton(
+            onPressed: () {
+              // 검색 버튼 동작 추가
+            },
+            icon: Icon(
+              CupertinoIcons.search,
+              color: Colors.blueGrey,
             ),
+          ),
+        ],
+        backgroundColor: Colors.white, // 앱바 배경색
+        elevation: 0, // 앱바 그림자 제거
+      ),
+      body: DonationList(),
     );
   }
 
@@ -58,26 +43,20 @@ class DonationBanner extends StatelessWidget {
     List<String> dropDownList = ['1', '2', '3'];
     List<String> sortStr = ['최신순', '오래된순', '조회순'];
 
-    if (dropDownValue == "") {
-      dropDownValue = dropDownList.first;
-    }
-
-    return DropdownButton(
+    return DropdownButton<String>(
       value: dropDownValue,
       items: dropDownList.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(sortStr[int.parse(value) - 1].toString()),
+          child: Text(sortStr[int.parse(value) - 1]),
         );
       }).toList(),
       onChanged: (String? value) {
-        dropDownValue = value!;
-        print(dropDownValue);
+        if (value != null) {
+          dropDownValue = value;
+          print(dropDownValue);
+        }
       },
     );
-  }
-
-  Widget DonationListBuilder(BuildContext ctx, int idx) {
-    return DonationList(idx);
   }
 }

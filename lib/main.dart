@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  WidgetsFlutterBinding.ensureInitialized(); // Firebase 초기화 전에 Flutter 엔진을 초기화
+  await Firebase.initializeApp(); // Firebase 초기화
   runApp(MyApp());
 }
 

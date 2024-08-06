@@ -49,6 +49,16 @@ static List<Widget> _screens = <Widget>[
   void _onBtmItemClick(int idx) {
     setState(() {
       _selctedIndex = idx;
+      _refreshFeed(idx);
+    });
+  }
+
+  void _refreshFeed(int idx) { //리셋
+    setState(() {
+      switch(idx){
+        case 0: _screens[0] = TitleBanner(key: UniqueKey());
+        case 1: _screens[1] = DonationBanner(key: UniqueKey());
+      }
     });
   }
 }
