@@ -22,7 +22,7 @@ class TitleBanner extends StatelessWidget {
         ),
       ),
       body: ListView.builder(
-        itemBuilder: FeedListBuilder, itemCount: 30,
+        itemBuilder: FeedListBuilder, itemCount: 1,
       ),
     );
   }

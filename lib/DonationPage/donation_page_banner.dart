@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
+import 'donation_button.dart';
 import 'donation_list.dart';
 
 class DonationBanner extends StatelessWidget {
@@ -12,39 +14,42 @@ class DonationBanner extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(100),
         child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 30, left: 20),
-                      child: Text('기부', style: TextStyle(fontSize: 30)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 30, left: 20),
-                      child: Text('판매', style: TextStyle(fontSize: 30)),
-                    ),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 30, left: 20),
+                  child: Text('기부', style: TextStyle(fontSize: 30)),
                 ),
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: _buildDropDown(),
-                    ),
-                    Expanded(child: Container()),
-                    IconButton(
-                        onPressed: null,
-                        icon: Icon(
-                          CupertinoIcons.search,
-                          color: Colors.blueGrey,
-                        )),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 30, left: 20),
+                  child: Text('판매', style: TextStyle(fontSize: 30)),
                 ),
               ],
             ),
-          ),
-      body: ListView.builder(itemBuilder: DonationListBuilder, itemCount: 30),
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: _buildDropDown(),
+                ),
+                Expanded(child: Container()),
+                IconButton(
+                    onPressed: null,
+                    icon: Icon(
+                      CupertinoIcons.search,
+                      color: Colors.blueGrey,
+                    )),
+              ],
+            ),
+          ],
+        ),
+      ),
+      body: ListView.builder(
+              itemBuilder: DonationListBuilder,
+              itemCount: 30,
+            ),
     );
   }
 

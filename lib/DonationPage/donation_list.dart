@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 
-class DonationList extends StatelessWidget {
+class DonationList extends StatefulWidget {
   final int idx;
   const DonationList(this.idx, {super.key});
 
+  @override
+  State<DonationList> createState() => _DonationListState();
+}
+
+class _DonationListState extends State<DonationList> {
   @override
   Widget build(BuildContext context) {
     return Column(
