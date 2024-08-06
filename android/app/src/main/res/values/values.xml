@@ -1,0 +1,11 @@
+<resources>
+    <!-- Add your Firebase project details here -->
+    <string name="default_web_client_id" translatable="false">YOUR_WEB_CLIENT_ID</string> <!-- Leave this empty or provide your web client ID -->
+    <string name="firebase_database_url" translatable="false">https://ecore-8835d.firebaseio.com</string> <!-- Update if you have a database URL -->
+    <string name="gcm_defaultSenderId" translatable="false">638352085442</string>
+    <string name="google_api_key" translatable="false">AIzaSyCB6RLJuf8tEa-Jh7VWILuAztIlZS_faPs</string>
+    <string name="google_app_id" translatable="false">1:638352085442:android:04933c1c4530486eec065b</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCB6RLJuf8tEa-Jh7VWILuAztIlZS_faPs</string>
+    <string name="google_storage_bucket" translatable="false">ecore-8835d.appspot.com</string>
+    <string name="project_id" translatable="false">ecore-8835d</string>
+</resources>
