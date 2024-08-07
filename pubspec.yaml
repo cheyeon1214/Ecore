@@ -54,6 +54,8 @@ dev_dependencies:
   firebase_auth: ^5.1.2
   firebase_storage: ^12.1.2
   image_picker: ^1.1.2
+  provider: ^6.1.2
+
 
 
 
@@ -76,6 +78,7 @@ flutter:
     - assets/images/jean.png
     - assets/images/bag.png
     - assets/images/shoes.png
+    - assets/images/ecore_logo.png
   #   - images/a_dot_ham.jpeg
   # To add assets to your application, add an assets section, like this:
     - assets/images/리유니클로.jpg
