@@ -1,3 +1,4 @@
+import 'package:ecore/CartPage/cart_list.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/firestore/sell_post_model.dart';
@@ -86,7 +87,7 @@ class FeedDetail extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Add to cart button functionality here
+
                 },
                 icon: Icon(Icons.shopping_cart, color: Colors.black54),
                 label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),

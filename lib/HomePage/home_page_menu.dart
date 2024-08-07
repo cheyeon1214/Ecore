@@ -1,4 +1,6 @@
+import 'package:ecore/CartPage/cart_page_banner.dart';
 import 'package:ecore/HomePage/home_page_banner.dart';
+import 'package:ecore/MyPage/my_page_banner.dart';
 import 'package:flutter/material.dart';
 
 import '../DonationPage/donation_page_banner.dart';
@@ -21,8 +23,8 @@ class _HomePageState extends State<HomePage> {
 static List<Widget> _screens = <Widget>[
   TitleBanner(),
   DonationBanner(),
-  Container(color: Colors.red,),
-  Container(color: Colors.purple,),
+  CartBanner(),
+  MyPageBanner(),
 ];
 
   int _selctedIndex = 0;

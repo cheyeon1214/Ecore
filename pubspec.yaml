@@ -73,6 +73,10 @@ flutter:
     - assets/images/jean.png
     - assets/images/bag.png
     - assets/images/shoes.png
+    - assets/images/market.png
+    - assets/images/cart.png
+    - assets/images/review.png
+    - assets/images/setting.png
   #   - images/a_dot_ham.jpeg
   # To add assets to your application, add an assets section, like this:
     - assets/images/리유니클로.jpg
