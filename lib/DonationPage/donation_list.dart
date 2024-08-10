@@ -73,7 +73,7 @@ class _DonationListState extends State<DonationList> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DonaDetail(),
+            builder: (context) => DonaDetail(donaPost: donaPost,),
           ),
         );
       },

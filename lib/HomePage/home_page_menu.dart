@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     TitleBanner(),
     DonationBanner(),
     sellAndGive(),
-    CartBanner(),
+    //CartBanner(),
     MyPageBanner(),
   ];
 
