@@ -12,7 +12,7 @@ class FeedDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userModel = Provider.of<UserModel>(context, listen: false);
+    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
       appBar: AppBar(
       ),
@@ -90,7 +90,6 @@ class FeedDetail extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  final updatedCart = List.from(userModel.cart);
                   userModel.cart.add({
                     'marketID': sellPost.marketID,
                     'title': sellPost.title,
@@ -100,8 +99,7 @@ class FeedDetail extends StatelessWidget {
                     'body': sellPost.body,
                     'reference': sellPost.reference,
                   });
-                  userModel.cart = updatedCart;
-                  userModel.notifyListeners();
+                  userModel.updateCart(userModel.cart);
                 },
                 icon: Icon(Icons.shopping_cart, color: Colors.black54),
                 label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),

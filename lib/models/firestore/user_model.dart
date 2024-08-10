@@ -3,29 +3,29 @@ import 'package:ecore/cosntants/firestore_key.dart';
 import 'package:flutter/cupertino.dart';
 class UserModel extends ChangeNotifier{
 
-  final String userKey;
-  final String profileImg;
-  final String email;
-  final List<dynamic> myPosts;
-  final int followers;
-  final List<dynamic> likedPosts;
-  final String username;
-  final List<dynamic> followings;
-  List<dynamic> cart;
-  final DocumentReference? reference;
+  late final String userKey;
+  late final String profileImg;
+  late final String email;
+  late final List<dynamic> myPosts;
+  late final int followers;
+  late final List<dynamic> likedPosts;
+  late final String username;
+  late final List<dynamic> followings;
+  List<dynamic> cart = [];
+  late final DocumentReference? reference;
 
-  // UserModel({
-  //   this.userKey = '',
-  //   this.profileImg = '',
-  //   this.email = '',
-  //   this.myPosts = const [],
-  //   this.followers = 0,
-  //   this.likedPosts = const [],
-  //   this.username = '',
-  //   this.followings = const [],
-  //   List<dynamic>? cart,
-  //   this.reference,
-  // }) : cart = cart ?? [];
+  UserModel({
+    this.userKey = '',
+    this.profileImg = '',
+    this.email = '',
+    this.myPosts = const [],
+    this.followers = 0,
+    this.likedPosts = const [],
+    this.username = '',
+    this.followings = const [],
+    List<dynamic>? cart,
+    this.reference,
+  }) : cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME],
@@ -39,9 +39,9 @@ class UserModel extends ChangeNotifier{
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
-    snapshot.data() as Map<String, dynamic>,
-    snapshot.id,
-    reference: snapshot.reference,
+      snapshot.data() != null ? snapshot.data() as Map<String, dynamic> : {},
+  snapshot.id,
+  reference: snapshot.reference,
   );
 
   static Map<String, dynamic> getMapForCreateUser(String email) {
@@ -54,6 +54,30 @@ class UserModel extends ChangeNotifier{
     map[KEY_FOLLOWINGS] = [];
     map[KEY_MYPOSTS] = [];
     map[KEY_CART] = [];
-    return map; // 반환값 추가
+    return map;
+  }
+
+  Future<void> fetchUserData(String uid) async {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      this.userKey = doc.id;
+      this.username = data[KEY_USERNAME] ?? '';
+      this.profileImg = data[KEY_PROFILEIMG] ?? '';
+      this.email = data[KEY_EMAIL] ?? '';
+      this.followers = data[KEY_FOLLOWERS] ?? 0;
+      this.likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
+      this.followings = List.from(data[KEY_FOLLOWINGS] ?? []);
+      this.myPosts = List.from(data[KEY_MYPOSTS] ?? []);
+      this.cart = List.from(data[KEY_CART] ?? []);
+      this.reference = doc.reference;
+
+      notifyListeners();
+    }
+  }
+
+  void updateCart(List<dynamic> updatedCart) {
+    cart = updatedCart;
+    notifyListeners();
   }
 }

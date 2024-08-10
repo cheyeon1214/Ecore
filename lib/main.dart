@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+import 'models/firebase_auth_state.dart';
 import 'models/firestore/user_model.dart';
 
 void main() async {
@@ -17,8 +18,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<UserModel>(
-          create: (_) => UserModel(),
+        ChangeNotifierProvider<FirebaseAuthState>(
+          create: (_) => FirebaseAuthState(),
+        ),
+        ChangeNotifierProxyProvider<FirebaseAuthState, UserModel>(
+          create: (context) => UserModel(),
+          update: (context, authState, userModel) {
+            if (authState.user != null) {
+              userModel?.fetchUserData(authState.user!.uid);
+            }
+            return userModel!;
+          },
         ),
       ],
       child: MaterialApp(
@@ -31,9 +41,7 @@ class MyApp extends StatelessWidget {
 
 
 
-//
-// import 'package:ecore/HomePage/home_page_menu.dart';
-// import 'package:ecore/auth_screen.dart';
+
 // import 'package:ecore/repo/user_network_repository.dart';
 // import 'package:ecore/signInUpPage/sign_in_form.dart';
 // import 'package:ecore/signInUpPage/sign_up_form.dart';
@@ -95,7 +103,7 @@ class MyApp extends StatelessWidget {
 //             );
 //           },
 //         ),
-//         theme: ThemeData(primarySwatch: white), // Define the primary color theme
+//         theme: ThemeData(primaryColor: white), // Define the primary color theme
 //       ),
 //     );
 //   }
