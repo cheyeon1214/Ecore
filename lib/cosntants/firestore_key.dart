@@ -14,8 +14,8 @@ const KEY_MYDONAPOST = 'my_dona_post';
 const KEY_CART = 'cart'; // 장바구니 배열 값
 
 // Keys for SELL_PRODUCTS collection
-const KEY_SELL_MARKETID = 'market_id'; // 외래키
-const KEY_SELLID = 'sell_id';
+const KEY_SELL_MARKETID = 'marketId'; // 외래키
+const KEY_SELLID = 'sellId';
 const KEY_SELLTITLE = 'title';
 const KEY_SELLIMG = 'img';
 const KEY_SELLPRICE = 'price';
@@ -32,11 +32,11 @@ const KEY_DONACATEGORY = 'category';
 const KEY_DONABODY = 'body';
 
 // Keys for MARKETS collection
-const KEY_MARKETID = 'market_id';
-const KEY_MARKET_USERKEY = 'user_key';
+const KEY_MARKETID = 'marketId';
+const KEY_MARKET_USERKEY = 'userId';
 const KEY_MARKET_NAME = 'name';
-const KEY_MARKET_PROFILEIMG = 'profile_img';
-const KEY_MYSELLPOST = 'my_sell_post';
+const KEY_MARKET_PROFILEIMG = 'img';
+const KEY_MYSELLPOST = 'sellPosts';
 
 
 
