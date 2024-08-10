@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../models/firestore/user_model.dart';
+import 'package:provider/provider.dart';
 
 class FeedDetail extends StatelessWidget {
   final SellPostModel sellPost;
 
-  const FeedDetail({Key? key, required this.sellPost}) : super(key: key);
+  const FeedDetail({Key? key, required this.sellPost,}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
       appBar: AppBar(
       ),
@@ -90,7 +93,16 @@ class FeedDetail extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Add functionality to add to cart
+                  userModel.cart.add({
+                    'marketID': sellPost.marketID,
+                    'title': sellPost.title,
+                    'img': sellPost.img,
+                    'price': sellPost.price,
+                    'category': sellPost.category,
+                    'body': sellPost.body,
+                    'reference': sellPost.reference,
+                  });
+                  userModel.updateCart(userModel.cart);
                 },
                 icon: Icon(Icons.shopping_cart, color: Colors.black54),
                 label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),

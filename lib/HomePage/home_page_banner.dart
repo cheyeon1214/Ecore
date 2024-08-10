@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:ecore/HomePage/feed_list.dart';
 import '../search/search_screen.dart';
 
+import '../models/firestore/user_model.dart';
+
 class TitleBanner extends StatefulWidget {
-  const TitleBanner({super.key});
+  const TitleBanner({super.key,});
 
   @override
   State<TitleBanner> createState() => _TitleBannerState();
