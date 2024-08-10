@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../models/firestore/user_model.dart';
+import 'package:provider/provider.dart';
 
 class FeedDetail extends StatelessWidget {
   final SellPostModel sellPost;
@@ -10,8 +12,10 @@ class FeedDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -20,7 +24,7 @@ class FeedDetail extends StatelessWidget {
             children: [
               Center(
                 child: CachedNetworkImage(
-                  imageUrl: _getValidImageUrl(sellPost.img),
+                  imageUrl: sellPost.img,
                   width: 300,
                   height: 300,
                   fit: BoxFit.cover,
@@ -39,11 +43,11 @@ class FeedDetail extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomNaviBar(),
+      bottomNavigationBar: _bottomNaviBar(userModel),
     );
   }
 
-  BottomAppBar _bottomNaviBar() {
+  BottomAppBar _bottomNaviBar(UserModel userModel) {
     return BottomAppBar(
       color: Colors.white,
       child: Padding(
@@ -68,7 +72,16 @@ class FeedDetail extends StatelessWidget {
             ),
             ElevatedButton.icon(
               onPressed: () {
-                // Add functionality to add to cart
+                userModel.cart.add({
+                  'marketID': sellPost.marketId,
+                  'title': sellPost.title,
+                  'img': sellPost.img,
+                  'price': sellPost.price,
+                  'category': sellPost.category,
+                  'body': sellPost.body,
+                  'reference': sellPost.reference.path, // Store the reference path as a string
+                });
+                userModel.updateCart(userModel.cart);
               },
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
               label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
@@ -92,7 +105,9 @@ class FeedDetail extends StatelessWidget {
           .doc(sellPost.marketId)
           .get(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
           print('Error fetching market data: ${snapshot.error}');
           return Text('Failed to load market info');
         } else if (!snapshot.hasData || !snapshot.data!.exists) {
@@ -115,39 +130,32 @@ class FeedDetail extends StatelessWidget {
 
   Row _marketView(String marketImage, String marketName) {
     return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundImage: CachedNetworkImageProvider(marketImage),
-            radius: 30,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundImage: CachedNetworkImageProvider(marketImage),
+          radius: 30,
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sellPost.title,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 8),
+              Text(
+                marketName,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sellPost.title,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  marketName,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
-  // Helper method to ensure a valid image URL is used
-  String _getValidImageUrl(String imageUrl) {
-    if (imageUrl.isEmpty || !Uri.tryParse(imageUrl)!.hasAbsolutePath ?? false) {
-      return 'https://via.placeholder.com/300'; // Default image URL
-    }
-    return imageUrl;
-  }
 }
