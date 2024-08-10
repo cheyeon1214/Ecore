@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecore/cosntants/firestore_key.dart';
-class UserModel {
+import 'package:flutter/cupertino.dart';
+class UserModel extends ChangeNotifier{
+
   final String userKey;
   final String profileImg;
   final String email;
@@ -9,7 +11,21 @@ class UserModel {
   final List<dynamic> likedPosts;
   final String username;
   final List<dynamic> followings;
+  List<dynamic> cart;
   final DocumentReference? reference;
+
+  UserModel({
+    this.userKey = '',
+    this.profileImg = '',
+    this.email = '',
+    this.myPosts = const [],
+    this.followers = 0,
+    this.likedPosts = const [],
+    this.username = '',
+    this.followings = const [],
+    List<dynamic>? cart,
+    this.reference,
+  }) : cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME],
@@ -18,7 +34,8 @@ class UserModel {
         followers = map[KEY_FOLLOWERS],
         likedPosts = map[KEY_LIKEDPOSTS],
         followings = map[KEY_FOLLOWINGS],
-        myPosts = map[KEY_MYPOSTS];
+        myPosts = map[KEY_MYPOSTS],
+        cart = List.from(map[KEY_CART]);
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
@@ -36,7 +53,7 @@ class UserModel {
     map[KEY_FOLLOWERS] = 0;
     map[KEY_FOLLOWINGS] = [];
     map[KEY_MYPOSTS] = [];
+    map[KEY_CART] = [];
     return map; // 반환값 추가
   }
 }
-//

@@ -11,7 +11,7 @@ class CartBanner extends StatelessWidget {
           title: Row(
             children: [
               Expanded(
-                  child: Text('ecore')
+                  child: Text('장바구니')
               ),
             ],
           ),

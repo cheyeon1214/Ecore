@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../models/firestore/user_model.dart';
 import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
 class Feed extends StatefulWidget {
-  const Feed({super.key});
+  const Feed({super.key,});
 
   @override
   State<Feed> createState() => _FeedState();
@@ -73,7 +74,7 @@ class _FeedState extends State<Feed> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => FeedDetail(sellPost: sellPost,),
+            builder: (context) => FeedDetail(sellPost: sellPost),
           ),
         );
       },

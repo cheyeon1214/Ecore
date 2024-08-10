@@ -12,10 +12,10 @@ class SellPostModel {
 
   SellPostModel.fromMap(Map<String, dynamic> map, this.marketID, {required this.reference})
   : title = map[KEY_SELLTITLE],
-  img = map[KEY_SELLIMG],
-  price = map[KEY_SELLPRICE],
-  category = map[KEY_SELLCATEGORY],
-  body = map[KEY_SELLBODY];
+        img = map[KEY_SELLIMG],
+        price = (map[KEY_SELLPRICE] as num).toInt(),
+        category = map[KEY_SELLCATEGORY],
+        body = map[KEY_SELLBODY];
 
   SellPostModel.fromSnapshot(DocumentSnapshot snapshot)
   : this.fromMap(
