@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../search/search_screen.dart';
 import 'donation_list.dart';
 
 class DonationBanner extends StatelessWidget {
@@ -23,7 +24,12 @@ class DonationBanner extends StatelessWidget {
           ),
           IconButton(
             onPressed: () {
-              // 검색 버튼 동작 추가
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchScreen(isDonationSearch: true),
+                ),
+              );
             },
             icon: Icon(
               CupertinoIcons.search,
