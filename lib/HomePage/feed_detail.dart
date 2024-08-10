@@ -94,7 +94,7 @@ class FeedDetail extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () {
                   userModel.cart.add({
-                    'marketID': sellPost.marketID,
+                    'marketID': sellPost.marketId,
                     'title': sellPost.title,
                     'img': sellPost.img,
                     'price': sellPost.price,
