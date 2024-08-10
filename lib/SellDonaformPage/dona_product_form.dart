@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-class SellProductForm extends StatefulWidget {
+class DonaProductForm extends StatefulWidget {
   @override
-  State<SellProductForm> createState() => _SellProductFormState();
+  State<DonaProductForm> createState() => _DonaProductFormState();
 }
 
-class _SellProductFormState extends State<SellProductForm> {
+class _DonaProductFormState extends State<DonaProductForm> {
   final _formKey = GlobalKey<FormState>();
   XFile? _image;
   final picker = ImagePicker();
@@ -56,7 +56,7 @@ class _SellProductFormState extends State<SellProductForm> {
           imageUrl = await uploadImage(imageFile);
         }
 
-        await _firestore.collection('SellPosts').add({
+        await _firestore.collection('DonaPosts').add({
           'title': title,
           'price': price,
           'category': category,
@@ -68,7 +68,7 @@ class _SellProductFormState extends State<SellProductForm> {
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('판매 상품이 등록되었습니다.')),
+          SnackBar(content: Text('기부 상품이 등록되었습니다.')),
         );
 
         Navigator.pop(context);
@@ -115,7 +115,7 @@ class _SellProductFormState extends State<SellProductForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('판매하기'),
+        title: Text('기부하기'),
         leading: IconButton(
           icon: Icon(Icons.close),
           onPressed: () {
@@ -146,9 +146,9 @@ class _SellProductFormState extends State<SellProductForm> {
                         borderRadius: BorderRadius.circular(10),
                         child: Image.file(
                           File(_image!.path),
-                          fit: BoxFit.cover,  // 이미지를 컨테이너 크기에 맞게 조정
-                          height: 100,  // 컨테이너와 같은 높이로 설정
-                          width: 100,   // 컨테이너와 같은 너비로 설정
+                          fit: BoxFit.cover,
+                          height: 100,
+                          width: 100,
                         ),
                       ),
                     ),
@@ -231,7 +231,7 @@ class _SellProductFormState extends State<SellProductForm> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: Text('판매하기'),
+                child: Text('기부하기'),
               ),
             ],
           ),
