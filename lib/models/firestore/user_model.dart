@@ -14,19 +14,6 @@ class UserModel extends ChangeNotifier{
   List<dynamic> cart;
   final DocumentReference? reference;
 
-  UserModel({
-    this.userKey = '',
-    this.profileImg = '',
-    this.email = '',
-    this.myPosts = const [],
-    this.followers = 0,
-    this.likedPosts = const [],
-    this.username = '',
-    this.followings = const [],
-    List<dynamic>? cart,
-    this.reference,
-  }) : cart = cart ?? [];
-
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME],
         profileImg = map[KEY_PROFILEIMG],
