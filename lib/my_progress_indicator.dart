@@ -19,7 +19,7 @@ class MyProgressIndicator extends StatelessWidget {
         child: SizedBox(
           height: progressSize,
           width: progressSize, // containerSize를 progressSize로 수정
-          child: Image.asset('assets/images/loading_img.gif'),
+          child: Image.asset('assets/images/loading.gif'),
         ),
       ),
     );

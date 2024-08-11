@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 class FeedDetail extends StatelessWidget {
   final SellPostModel sellPost;
 
-  const FeedDetail({Key? key, required this.sellPost}) : super(key: key);
+  const FeedDetail({Key? key, required this.sellPost,}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -157,5 +157,4 @@ class FeedDetail extends StatelessWidget {
       ],
     );
   }
-
 }
