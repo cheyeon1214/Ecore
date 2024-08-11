@@ -64,7 +64,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'img': imageUrl,
         });
 
-        // 작업 완료 후 로딩 다이얼로그 닫기
+        // 작업완료 후 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(

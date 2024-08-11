@@ -73,7 +73,7 @@ class _SellProductFormState extends State<SellProductForm> {
 
         Navigator.pop(context);
       } catch (e) {
-        // 작업 실패 시 로딩 다이얼로그 닫기
+        // 작업 실패시 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
 
         print('Error adding document: $e');
