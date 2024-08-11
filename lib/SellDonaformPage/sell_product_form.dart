@@ -33,7 +33,7 @@ class _SellProductFormState extends State<SellProductForm> {
       final snapshot = await uploadTask.whenComplete(() {});
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
-    } catch (e) {
+    } catch (e)  {
       print('Failed to upload image: $e');
       throw e;
     }
