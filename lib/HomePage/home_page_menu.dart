@@ -1,11 +1,15 @@
+
 import 'package:ecore/HomePage/home_page_banner.dart';
 import 'package:flutter/material.dart';
 
+import '../CartPage/cart_page_banner.dart';
 import '../DonationPage/donation_page_banner.dart';
+import '../MyPage/my_page_banner.dart';
 import '../SellDonaformPage/sellDonaselect.dart';
+import '../models/firestore/user_model.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key,});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -20,13 +24,13 @@ class _HomePageState extends State<HomePage> {
     BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: ''),
   ];
 
-static List<Widget> _screens = <Widget>[
-  TitleBanner(),
-  DonationBanner(),
-  sellAndGive(),
-  Container(color: Colors.red,),
-  Container(color: Colors.purple,),
-];
+  static List<Widget> _screens = <Widget>[
+    TitleBanner(),
+    DonationBanner(),
+    sellAndGive(),
+    CartBanner(),
+    MyPageBanner(),
+  ];
 
   int _selctedIndex = 0;
 
