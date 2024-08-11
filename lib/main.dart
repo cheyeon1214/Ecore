@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-
 import 'models/firebase_auth_state.dart';
 import 'models/firestore/user_model.dart';
 import 'package:ecore/HomePage/home_page_menu.dart';
