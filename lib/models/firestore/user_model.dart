@@ -34,15 +34,14 @@ class UserModel extends ChangeNotifier{
         followers = map[KEY_FOLLOWERS],
         likedPosts = map[KEY_LIKEDPOSTS],
         followings = map[KEY_FOLLOWINGS],
-        myPosts = map[KEY_MYPOSTS]
-        // cart = List.from(map[KEY_CART])
-  ;
+        myPosts = map[KEY_MYPOSTS],
+        cart = List.from(map[KEY_CART]);
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
-      snapshot.data() != null ? snapshot.data() as Map<String, dynamic> : {},
-  snapshot.id,
-  reference: snapshot.reference,
+    snapshot.data() != null ? snapshot.data() as Map<String, dynamic> : {},
+    snapshot.id,
+    reference: snapshot.reference,
   );
 
   static Map<String, dynamic> getMapForCreateUser(String email) {
@@ -54,7 +53,7 @@ class UserModel extends ChangeNotifier{
     map[KEY_FOLLOWERS] = 0;
     map[KEY_FOLLOWINGS] = [];
     map[KEY_MYPOSTS] = [];
-    // map[KEY_CART] = [];
+    map[KEY_CART] = [];
     return map;
   }
 
@@ -70,7 +69,7 @@ class UserModel extends ChangeNotifier{
       this.likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
       this.followings = List.from(data[KEY_FOLLOWINGS] ?? []);
       this.myPosts = List.from(data[KEY_MYPOSTS] ?? []);
-      // this.cart = List.from(data[KEY_CART] ?? []);
+      this.cart = List.from(data[KEY_CART] ?? []);
       this.reference = doc.reference;
 
       notifyListeners();
