@@ -39,9 +39,9 @@ class UserModel extends ChangeNotifier{
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
-      snapshot.data() != null ? snapshot.data() as Map<String, dynamic> : {},
-  snapshot.id,
-  reference: snapshot.reference,
+    snapshot.data() != null ? snapshot.data() as Map<String, dynamic> : {},
+    snapshot.id,
+    reference: snapshot.reference,
   );
 
   static Map<String, dynamic> getMapForCreateUser(String email) {

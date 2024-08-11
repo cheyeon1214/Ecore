@@ -48,13 +48,14 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   cupertino_icons: ^1.0.6
   cached_network_image: ^3.3.1
-  carousel_slider: ^4.2.1
+  carousel_slider: ^5.0.0
   cloud_firestore: ^5.1.0
-  firebase_core: ^3.2.0
-  firebase_auth: ^5.1.2
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.4
   firebase_storage: ^12.1.2
   image_picker: ^1.1.2
   provider: ^6.1.2
+
 
 
 
@@ -86,6 +87,11 @@ flutter:
   #   - images/a_dot_ham.jpeg
   # To add assets to your application, add an assets section, like this:
     - assets/images/리유니클로.jpg
+    - assets/images/loading.gif
+    - assets/images/setting.png
+    - assets/images/review.png
+    - assets/images/cart.png
+    - assets/images/market.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
