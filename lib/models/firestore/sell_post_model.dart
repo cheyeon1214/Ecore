@@ -22,3 +22,4 @@ class SellPostModel {
   SellPostModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id, reference: snapshot.reference);
 }
+

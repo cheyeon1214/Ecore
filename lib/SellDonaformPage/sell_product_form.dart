@@ -1,42 +1,39 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart'; // 숫자 필터링을 위해 추가
 import 'dart:io';
 
-class DonaProductForm extends StatefulWidget {
+class sellproductform extends StatefulWidget {
   @override
-  State<DonaProductForm> createState() => _DonaProductFormState();
+  State<sellproductform> createState() => _SellProductFormState();
 }
 
-class _DonaProductFormState extends State<DonaProductForm> {
+class _SellProductFormState extends State<sellproductform> {
+  @override
+  Widget build(BuildContext context) {
+    return SalesForm();
+  }
+}
+
+class SalesForm extends StatefulWidget {
+  @override
+  _SalesFormState createState() => _SalesFormState();
+}
+
+class _SalesFormState extends State<SalesForm> {
   final _formKey = GlobalKey<FormState>();
   XFile? _image;
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<void> getImage() async {
+  Future getImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
     setState(() {
       _image = pickedFile;
     });
-  }
-
-  Future<String> uploadImage(File imageFile) async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = _storage.ref().child('images/$fileName');
-      final uploadTask = ref.putFile(imageFile);
-
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      print('Failed to upload image: $e');
-      throw e;
-    }
   }
 
   Future<void> _submitForm() async {
@@ -45,18 +42,11 @@ class _DonaProductFormState extends State<DonaProductForm> {
       final price = double.parse(_priceController.text);
       final category = _categoryValue;
       final body = _bodyController.text;
+      final imageUrl = _image?.path;
 
-      // 로딩 다이얼로그 표시
-      _showLoadingDialog();
-
+      // Firestore에 데이터 저장
       try {
-        String? imageUrl;
-        if (_image != null) {
-          final imageFile = File(_image!.path);
-          imageUrl = await uploadImage(imageFile);
-        }
-
-        await _firestore.collection('DonaPosts').add({
+        await _firestore.collection('SellPosts').add({
           'title': title,
           'price': price,
           'category': category,
@@ -64,18 +54,12 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'img': imageUrl,
         });
 
-        // 작업 완료 후 로딩 다이얼로그 닫기
-        Navigator.of(context).pop();
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('기부 상품이 등록되었습니다.')),
+          SnackBar(content: Text('판매 상품이 등록되었습니다.')),
         );
 
-        Navigator.pop(context);
+        Navigator.pop(context); // 이전 페이지로 돌아가기
       } catch (e) {
-        // 작업 실패 시 로딩 다이얼로그 닫기
-        Navigator.of(context).pop();
-
         print('Error adding document: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('문서 추가 실패: $e')),
@@ -89,37 +73,15 @@ class _DonaProductFormState extends State<DonaProductForm> {
   final TextEditingController _bodyController = TextEditingController();
   String? _categoryValue;
 
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // 다이얼로그 외부를 클릭해도 닫히지 않도록 설정
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Container(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text("상품등록 중..."),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('기부하기'),
+        title: Text('판매하기'),
         leading: IconButton(
           icon: Icon(Icons.close),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pop(context); // 이전 페이지로 돌아가기
           },
         ),
       ),
@@ -142,18 +104,10 @@ class _DonaProductFormState extends State<DonaProductForm> {
                       ),
                       child: _image == null
                           ? Icon(Icons.camera_alt, size: 50)
-                          : ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(_image!.path),
-                          fit: BoxFit.cover,
-                          height: 100,
-                          width: 100,
-                        ),
-                      ),
+                          : Image.file(File(_image!.path)),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  SizedBox(width: 16), // 이미지와 텍스트 폼 사이 간격
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,7 +185,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: Text('기부하기'),
+                child: Text('판매하기'),
               ),
             ],
           ),
