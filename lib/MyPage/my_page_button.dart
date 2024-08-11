@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../models/firebase_auth_state.dart'; // Provider 패키지 임포트
 
 class MyPageBtn extends StatefulWidget {
@@ -126,6 +125,28 @@ class _MyPageBtnState extends State<MyPageBtn> {
                         ),
                       ],
                     ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50], // 배경색 설정
+                    borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                  ),
+                  height: 70,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/setting.png',
+                        height: 40,
+                        width: 35,
+                      ),
+                      Text(
+                        '설정',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -153,7 +174,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
           SizedBox(height: 5),
           TextButton(
             onPressed: () {
-              // 배너 클릭 처리
+              // 포인트 내역 확인
             },
             style: TextButton.styleFrom(
               shape: RoundedRectangleBorder(

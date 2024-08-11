@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
           create: (_) => FirebaseAuthState(),
         ),
         ChangeNotifierProxyProvider<FirebaseAuthState, UserModel>(
-          create: (_) => UserModel(),
+          create: (context) => UserModel(),
           update: (context, authState, userModel) {
             if (authState.user != null) {
               userModel?.fetchUserData(authState.user!.uid);

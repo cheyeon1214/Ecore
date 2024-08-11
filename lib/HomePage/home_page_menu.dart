@@ -1,5 +1,5 @@
-
 import 'package:ecore/HomePage/home_page_banner.dart';
+import 'package:ecore/MyPage/my_page_banner.dart';
 import 'package:flutter/material.dart';
 
 import '../CartPage/cart_page_banner.dart';

@@ -79,6 +79,10 @@ flutter:
     - assets/images/jean.png
     - assets/images/bag.png
     - assets/images/shoes.png
+    - assets/images/market.png
+    - assets/images/cart.png
+    - assets/images/review.png
+    - assets/images/setting.png
     - assets/images/ecore_logo.png
   #   - images/a_dot_ham.jpeg
   # To add assets to your application, add an assets section, like this:
