@@ -37,7 +37,7 @@ class SellAndGive extends StatelessWidget {
               width: 200, // 버튼의 너비를 설정
               child: ElevatedButton(
                 onPressed: () {
-                  // 기부하 버튼을 눌렀을 때
+                  // 기부하기 버튼을 눌렀을 때
                   Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => DonaProductForm()));
                 },
