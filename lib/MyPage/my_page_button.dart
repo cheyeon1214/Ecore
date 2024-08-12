@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../models/firebase_auth_state.dart'; // Provider 패키지 임포트
 
 class MyPageBtn extends StatefulWidget {
   const MyPageBtn({super.key});
@@ -98,10 +96,6 @@ class _MyPageBtnState extends State<MyPageBtn> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Provider.of<FirebaseAuthState>(context, listen: false).signOut();
-                  },
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.blue[50], // 배경색 설정
@@ -126,7 +120,6 @@ class _MyPageBtnState extends State<MyPageBtn> {
                       ],
                     ),
                     ),
-                ),
               ),
             ],
           ),
