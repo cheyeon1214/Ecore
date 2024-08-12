@@ -25,7 +25,7 @@ class _CategoryBtnState extends State<CategoryBtn> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: categories.map((category) {
         return Padding(
-            padding: EdgeInsets.only(right: 2, left: 2),
+            padding: EdgeInsets.only(right: 4, left: 4),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.blue[50], // 배경색 설정
