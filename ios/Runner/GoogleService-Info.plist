@@ -3,28 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBM8XKPez1kDXnsYjDoIxYOAT-YzR7hr9o</string>
+	<string>AIzaSyAdU_3p8BrSQfU7_OEz7SfxFbAu7ZGjQo4</string>
 	<key>GCM_SENDER_ID</key>
-	<string>139423131262</string>
+	<string>795075128601</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.sellproductform</string>
+	<string>com.example.ecore</string>
 	<key>PROJECT_ID</key>
-	<string>projectsangsang-9289e</string>
+	<string>ecore-850e9</string>
 	<key>STORAGE_BUCKET</key>
-	<string>projectsangsang-9289e.appspot.com</string>
+	<string>ecore-850e9.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_GCM_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:139423131262:ios:eb7f6193158b05a5379a2f</string>
+	<string>1:795075128601:ios:7068bc6b1a28eec725e988</string>
 </dict>
 </plist>
