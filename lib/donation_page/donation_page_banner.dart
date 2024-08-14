@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../HomePage/feed_list.dart';
+import '../home_page/feed_list.dart';
 import '../search/search_screen.dart';
 import 'donation_list.dart';
 

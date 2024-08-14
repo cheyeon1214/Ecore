@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../HomePage/category_button.dart';
+import '../home_page/category_button.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../widgets/view_counter.dart';
 import 'dona_detail.dart';

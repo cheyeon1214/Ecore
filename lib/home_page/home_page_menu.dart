@@ -1,12 +1,10 @@
-import 'package:ecore/HomePage/home_page_banner.dart';
-import 'package:ecore/MyPage/my_page_banner.dart';
+import 'package:ecore/home_page/home_page_banner.dart';
+import 'package:ecore/my_page/my_page_banner.dart';
 import 'package:flutter/material.dart';
 
-import '../CartPage/cart_page_banner.dart';
-import '../DonationPage/donation_page_banner.dart';
-import '../MyPage/my_page_banner.dart';
-import '../SellDonaformPage/sellDonaselect.dart';
-import '../models/firestore/user_model.dart';
+import '../cart_page/cart_page_banner.dart';
+import '../donation_page/donation_page_banner.dart';
+import '../sell_donation_page/sellDonaselect.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key,});

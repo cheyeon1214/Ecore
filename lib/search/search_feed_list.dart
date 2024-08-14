@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../DonationPage/dona_detail.dart';
-import '../HomePage/feed_detail.dart';
+import '../donation_page/dona_detail.dart';
+import '../home_page/feed_detail.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../widgets/view_counter.dart';

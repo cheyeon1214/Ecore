@@ -95,13 +95,13 @@ class _FeedDetailState extends State<FeedDetail> {
             ElevatedButton.icon(
               onPressed: () {
                 userModel.cart.add({
-                  'marketID': widget.sellPost.marketId,
+                  'sellId': widget.sellPost.sellId,
                   'title': widget.sellPost.title,
                   'img': widget.sellPost.img,
                   'price': widget.sellPost.price,
                   'category': widget.sellPost.category,
                   'body': widget.sellPost.body,
-                  'reference': widget.sellPost.reference.path, // Store the reference path as a string
+                  'reference': widget.sellPost.reference.path,
                 });
                 userModel.updateCart(userModel.cart);
               },

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../cart_page/order_list.dart';
+
 class MyPageBtn extends StatefulWidget {
   const MyPageBtn({super.key});
 
@@ -44,27 +46,38 @@ class _MyPageBtnState extends State<MyPageBtn> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50], // 배경색 설정
-                    borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                child: ElevatedButton(
+                  onPressed: (){
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const OrderList()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                    ),
+                    padding: EdgeInsets.zero, // 기본 패딩 제거
                   ),
-                  height: 70,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/cart.png',
-                        height: 40,
-                      ),
-                      Text(
-                        '주문-배송',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                  child: Container(
+                    height: 70,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/cart.png',
+                          height: 40,
                         ),
-                      ),
-                    ],
+                        Text(
+                          '주문-배송',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -96,30 +109,30 @@ class _MyPageBtnState extends State<MyPageBtn> {
               ),
               SizedBox(width: 10),
               Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50], // 배경색 설정
-                      borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
-                    ),
-                    height: 70,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/setting.png',
-                          height: 40,
-                          width: 35,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50], // 배경색 설정
+                    borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                  ),
+                  height: 70,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/setting.png',
+                        height: 40,
+                        width: 35,
+                      ),
+                      Text(
+                        '설정',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          '설정',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

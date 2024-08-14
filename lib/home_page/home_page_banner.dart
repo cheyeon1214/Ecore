@@ -1,9 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:ecore/HomePage/feed_list.dart';
+import 'package:ecore/home_page/feed_list.dart';
 import '../search/search_screen.dart';
-
-import '../models/firestore/user_model.dart';
 
 class TitleBanner extends StatefulWidget {
   const TitleBanner({super.key,});

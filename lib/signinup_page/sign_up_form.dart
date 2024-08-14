@@ -1,4 +1,4 @@
-import 'package:ecore/signInUpPage/sign_in_form.dart';
+import 'package:ecore/signinup_page/sign_in_form.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../cosntants/common_size.dart';
