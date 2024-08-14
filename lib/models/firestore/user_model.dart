@@ -1,41 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecore/cosntants/firestore_key.dart';
 import 'package:flutter/cupertino.dart';
-class UserModel extends ChangeNotifier{
+import 'package:firebase_auth/firebase_auth.dart';
 
-  late final String userKey;
-  late final String profileImg;
-  late final String email;
-  late final List<dynamic> myPosts;
-  late final int followers;
-  late final List<dynamic> likedPosts;
-  late final String username;
-  late final List<dynamic> followings;
+class UserModel extends ChangeNotifier {
+  String userKey = '';
+  String profileImg = '';
+  String email = '';
+  List<dynamic> myPosts = [];
+  int followers = 0;
+  List<dynamic> likedPosts = [];
+  String username = '';
+  List<dynamic> followings = [];
   List<dynamic> cart = [];
-  late final DocumentReference? reference;
+  DocumentReference? reference;
 
-  UserModel({
-    this.userKey = '',
-    this.profileImg = '',
-    this.email = '',
-    this.myPosts = const [],
-    this.followers = 0,
-    this.likedPosts = const [],
-    this.username = '',
-    this.followings = const [],
-    List<dynamic>? cart,
-    this.reference,
-  }) : cart = cart ?? [];
+  UserModel();
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
-      : username = map[KEY_USERNAME],
-        profileImg = map[KEY_PROFILEIMG],
-        email = map[KEY_EMAIL],
-        followers = map[KEY_FOLLOWERS],
-        likedPosts = map[KEY_LIKEDPOSTS],
-        followings = map[KEY_FOLLOWINGS],
-        myPosts = map[KEY_MYPOSTS],
-        cart = List.from(map[KEY_CART]);
+      : username = map[KEY_USERNAME] ?? '',
+        profileImg = map[KEY_PROFILEIMG] ?? '',
+        email = map[KEY_EMAIL] ?? '',
+        followers = map[KEY_FOLLOWERS] ?? 0,
+        likedPosts = List.from(map[KEY_LIKEDPOSTS] ?? []),
+        followings = List.from(map[KEY_FOLLOWINGS] ?? []),
+        myPosts = List.from(map[KEY_MYPOSTS] ?? []),
+        cart = List.from(map[KEY_CART] ?? []);
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
@@ -45,20 +35,30 @@ class UserModel extends ChangeNotifier{
   );
 
   static Map<String, dynamic> getMapForCreateUser(String email) {
-    Map<String, dynamic> map = {};
-    map[KEY_PROFILEIMG] = "";
-    map[KEY_USERNAME] = email.split("@")[0];
-    map[KEY_EMAIL] = email;
-    map[KEY_LIKEDPOSTS] = [];
-    map[KEY_FOLLOWERS] = 0;
-    map[KEY_FOLLOWINGS] = [];
-    map[KEY_MYPOSTS] = [];
-    map[KEY_CART] = [];
-    return map;
+    return {
+      KEY_PROFILEIMG: "",
+      KEY_USERNAME: email.split("@")[0],
+      KEY_EMAIL: email,
+      KEY_LIKEDPOSTS: [],
+      KEY_FOLLOWERS: 0,
+      KEY_FOLLOWINGS: [],
+      KEY_MYPOSTS: [],
+      KEY_CART: [],
+    };
   }
 
   Future<void> fetchUserData(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print("No user is currently signed in.");
+      return;
+    }
+
+    final String uid = user.uid;
+    final userRef = FirebaseFirestore.instance.collection('Users').doc(uid);
+    final doc = await userRef.get();
+
     if (doc.exists) {
       final data = doc.data() as Map<String, dynamic>;
       this.userKey = doc.id;
@@ -73,11 +73,26 @@ class UserModel extends ChangeNotifier{
       this.reference = doc.reference;
 
       notifyListeners();
+    } else {
+      print("User document does not exist");
     }
   }
 
-  void updateCart(List<dynamic> updatedCart) {
+  void updateCart(List<dynamic> updatedCart) async {
     cart = updatedCart;
+
+    if (reference != null) {
+      try {
+        await reference!.update({
+          KEY_CART: cart,
+        });
+      } catch (e) {
+        print("Failed to update cart: $e");
+      }
+    } else {
+      print("Error: reference is null");
+    }
+
     notifyListeners();
   }
 }
