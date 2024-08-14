@@ -2,14 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../widgets/view_counter.dart';
 
-class DonaDetail extends StatelessWidget {
+class DonaDetail extends StatefulWidget {
   final DonaPostModel donaPost;
 
   const DonaDetail({Key? key, required this.donaPost}) : super(key: key);
 
   @override
+  State<DonaDetail> createState() => _DonaDetailState();
+}
+
+class _DonaDetailState extends State<DonaDetail> {
+
+  @override
+  void initState() {
+    super.initState();
+    _incrementViewCount();
+  }
+
+  Future<void> _incrementViewCount() async {
+    try {
+      // Firestore에서 현재 문서의 reference를 사용하여 조회수 증가
+      await incrementViewCount(widget.donaPost.reference);
+    } catch (e) {
+      print('Error incrementing view count: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
       ),
@@ -21,7 +44,7 @@ class DonaDetail extends StatelessWidget {
             children: [
               Center(
                 child: CachedNetworkImage(
-                  imageUrl: _getValidImageUrl(donaPost.img),
+                  imageUrl: _getValidImageUrl(widget.donaPost.img),
                   width: 300,
                   height: 300,
                   fit: BoxFit.cover,
@@ -44,7 +67,7 @@ class DonaDetail extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          donaPost.title,
+                          widget.donaPost.title,
                           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -61,7 +84,7 @@ class DonaDetail extends StatelessWidget {
               SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text(donaPost.body, style: TextStyle(fontSize: 16)),
+                child: Text(widget.donaPost.body, style: TextStyle(fontSize: 16)),
               ),
             ],
           ),

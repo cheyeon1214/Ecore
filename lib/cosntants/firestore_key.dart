@@ -21,6 +21,8 @@ const KEY_SELLIMG = 'img';
 const KEY_SELLPRICE = 'price';
 const KEY_SELLCATEGORY = 'category';
 const KEY_SELLBODY = 'body';
+const KEY_SELL_CREATED_AT = 'createdAt';
+const KEY_SELL_VIEW_COUNT = 'viewCount';
 
 // Keys for DONA_PRODUCTS collection
 const KEY_DONA_USERKEY = 'user_key'; // 외래키
@@ -30,6 +32,8 @@ const KEY_DONAIMG = 'img';
 const KEY_DONAPRICE = 'price';
 const KEY_DONACATEGORY = 'category';
 const KEY_DONABODY = 'body';
+const KEY_DONA_CREATED_AT = 'createdAt';
+const KEY_DONA_VIEW_COUNT = 'viewCount';
 
 // Keys for MARKETS collection
 const KEY_MARKETID = 'marketId';

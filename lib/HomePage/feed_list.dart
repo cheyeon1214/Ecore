@@ -2,29 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
-import '../models/firestore/user_model.dart';
-import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
-class Feed extends StatefulWidget {
-  const Feed({super.key,});
+class SellList extends StatefulWidget {
+  final String selectedSort;
+  const SellList({Key? key, required this.selectedSort,}) : super(key:key);
 
   @override
-  State<Feed> createState() => _FeedState();
+  State<SellList> createState() => _FeedState();
 }
 
-class _FeedState extends State<Feed> {
+class _FeedState extends State<SellList> {
   String _selectedCategory = ''; // 기본값
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 20),
-          child: Center(child: CareouselSlider()),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.only(top: 10, bottom: 20),
+        //   child: Center(child: CareouselSlider()),
+        // ),
         Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: CategoryBtn(
@@ -37,12 +36,7 @@ class _FeedState extends State<Feed> {
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: _selectedCategory.isEmpty
-                ? FirebaseFirestore.instance.collection('SellPosts').snapshots()
-                : FirebaseFirestore.instance
-                .collection('SellPosts')
-                .where('category', isEqualTo: _selectedCategory)
-                .snapshots(),
+            stream: _getQueryStream(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Center(child: Text('Something went wrong'));
@@ -51,14 +45,18 @@ class _FeedState extends State<Feed> {
                 return Center(child: CircularProgressIndicator());
               }
 
-              final data = snapshot.data;
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(child: Text('No posts found'));
+              }
+
+              final data = snapshot.data!;
 
               return ListView.builder(
                 shrinkWrap: true,
-                itemCount: data?.size ?? 0,
+                itemCount: data.size,
                 itemBuilder: (context, index) {
-                  final sellPost = SellPostModel.fromSnapshot(data!.docs[index]);
-                  return _postHeader(sellPost);
+                  final donaPost = SellPostModel.fromSnapshot(data.docs[index]);
+                  return _postHeader(donaPost);
                 },
               );
             },
@@ -66,6 +64,30 @@ class _FeedState extends State<Feed> {
         ),
       ],
     );
+  }
+
+  Stream<QuerySnapshot> _getQueryStream() {
+    CollectionReference collection = FirebaseFirestore.instance.collection('SellPosts');
+
+    Query query = collection;
+
+    // 정렬 기준에 따라 쿼리 수정
+    if (widget.selectedSort == '3') {
+      query = query.orderBy('viewCount', descending: true); // 조회순
+    } else if (widget.selectedSort == '1') {
+      query = query.orderBy('createdAt', descending: true); // 최신순
+    } else if (widget.selectedSort == '2') {
+      query = query.orderBy('createdAt', descending: false); // 오래된순
+    } else {
+      query = query.orderBy('createdAt', descending: true); // 기본값: 최신순
+    }
+
+    // 카테고리 필터 적용
+    if (_selectedCategory.isNotEmpty) {
+      query = query.where('category', isEqualTo: _selectedCategory);
+    }
+
+    return query.snapshots();
   }
 
   Widget _postHeader(SellPostModel sellPost) {
