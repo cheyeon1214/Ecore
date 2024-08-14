@@ -1,20 +1,19 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/firestore/sell_post_model.dart';
-import '../models/firestore/user_model.dart';
-import 'carousel_slider.dart';
-import 'category_button.dart';
-import 'feed_detail.dart';
+import '../home_page/category_button.dart';
+import '../models/firestore/dona_post_model.dart';
+import 'dona_detail.dart';
 
-class Feed extends StatefulWidget {
-  const Feed({super.key,});
+class DonationList extends StatefulWidget {
+  const DonationList( {super.key});
 
   @override
-  State<Feed> createState() => _FeedState();
+  State<DonationList> createState() => _DonationListState();
 }
 
-class _FeedState extends State<Feed> {
+class _DonationListState extends State<DonationList> {
   String _selectedCategory = ''; // 기본값
 
   @override
@@ -22,11 +21,7 @@ class _FeedState extends State<Feed> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 20),
-          child: Center(child: CareouselSlider()),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 10),
           child: CategoryBtn(
             onCategorySelected: (category) {
               setState(() {
@@ -38,9 +33,9 @@ class _FeedState extends State<Feed> {
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: _selectedCategory.isEmpty
-                ? FirebaseFirestore.instance.collection('SellPosts').snapshots()
+                ? FirebaseFirestore.instance.collection('DonaPosts').snapshots()
                 : FirebaseFirestore.instance
-                .collection('SellPosts')
+                .collection('DonaPosts')
                 .where('category', isEqualTo: _selectedCategory)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -51,14 +46,18 @@ class _FeedState extends State<Feed> {
                 return Center(child: CircularProgressIndicator());
               }
 
-              final data = snapshot.data;
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(child: Text('No posts found'));
+              }
+
+              final data = snapshot.data!;
 
               return ListView.builder(
                 shrinkWrap: true,
-                itemCount: data?.size ?? 0,
+                itemCount: data.size,
                 itemBuilder: (context, index) {
-                  final sellPost = SellPostModel.fromSnapshot(data!.docs[index]);
-                  return _postHeader(sellPost);
+                  final donaPost = DonaPostModel.fromSnapshot(data.docs[index]);
+                  return _postHeader(donaPost);
                 },
               );
             },
@@ -68,13 +67,13 @@ class _FeedState extends State<Feed> {
     );
   }
 
-  Widget _postHeader(SellPostModel sellPost) {
+  Widget _postHeader(DonaPostModel donaPost) {
     return TextButton(
       onPressed: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => FeedDetail(sellPost: sellPost),
+            builder: (context) => DonaDetail(donaPost: donaPost,),
           ),
         );
       },
@@ -87,7 +86,7 @@ class _FeedState extends State<Feed> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
-              imageUrl: sellPost.img.isNotEmpty ? sellPost.img : 'https://via.placeholder.com/100',
+              imageUrl: donaPost.img.isNotEmpty ? donaPost.img : 'https://via.placeholder.com/100',
               width: 100,
               height: 100,
               errorWidget: (context, url, error) => Icon(Icons.error),
@@ -98,8 +97,7 @@ class _FeedState extends State<Feed> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(sellPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
-                Text('${sellPost.price}원', style: TextStyle(fontSize: 20)),
+                Text(donaPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
               ],
             ),
           ),

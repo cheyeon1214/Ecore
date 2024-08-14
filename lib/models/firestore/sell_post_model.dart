@@ -11,6 +11,16 @@ class SellPostModel {
   final String body;
   final DocumentReference reference;
 
+  SellPostModel(this.reference, {
+    required this.sellId,
+    required this.price,
+    required this.title,
+    required this.img,
+    required this.category,
+    required this.body,
+    required this.marketId,
+  });
+
   SellPostModel.fromMap(Map<String, dynamic> map, this.sellId, {required this.reference})
       : title = map[KEY_SELLTITLE] ?? '',
         marketId = map[KEY_SELL_MARKETID] ?? '', // KEY_SELL_MARKETID 사용

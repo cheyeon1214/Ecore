@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/firestore/dona_post_model.dart';
-import '../models/firestore/sell_post_model.dart';
 
 class DonaDetail extends StatelessWidget {
   final DonaPostModel donaPost;

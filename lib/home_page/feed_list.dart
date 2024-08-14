@@ -1,19 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../HomePage/category_button.dart';
-import '../models/firestore/dona_post_model.dart';
-import 'dona_detail.dart';
+import '../models/firestore/sell_post_model.dart';
+import 'carousel_slider.dart';
+import 'category_button.dart';
+import 'feed_detail.dart';
 
-class DonationList extends StatefulWidget {
-  const DonationList( {super.key});
+class Feed extends StatefulWidget {
+  const Feed({super.key,});
 
   @override
-  State<DonationList> createState() => _DonationListState();
+  State<Feed> createState() => _FeedState();
 }
 
-class _DonationListState extends State<DonationList> {
+class _FeedState extends State<Feed> {
   String _selectedCategory = ''; // 기본값
 
   @override
@@ -21,7 +21,11 @@ class _DonationListState extends State<DonationList> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(top: 10, bottom: 20),
+          child: Center(child: CareouselSlider()),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20),
           child: CategoryBtn(
             onCategorySelected: (category) {
               setState(() {
@@ -33,9 +37,9 @@ class _DonationListState extends State<DonationList> {
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: _selectedCategory.isEmpty
-                ? FirebaseFirestore.instance.collection('DonaPosts').snapshots()
+                ? FirebaseFirestore.instance.collection('SellPosts').snapshots()
                 : FirebaseFirestore.instance
-                .collection('DonaPosts')
+                .collection('SellPosts')
                 .where('category', isEqualTo: _selectedCategory)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -46,18 +50,14 @@ class _DonationListState extends State<DonationList> {
                 return Center(child: CircularProgressIndicator());
               }
 
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(child: Text('No posts found'));
-              }
-
-              final data = snapshot.data!;
+              final data = snapshot.data;
 
               return ListView.builder(
                 shrinkWrap: true,
-                itemCount: data.size,
+                itemCount: data?.size ?? 0,
                 itemBuilder: (context, index) {
-                  final donaPost = DonaPostModel.fromSnapshot(data.docs[index]);
-                  return _postHeader(donaPost);
+                  final sellPost = SellPostModel.fromSnapshot(data!.docs[index]);
+                  return _postHeader(sellPost);
                 },
               );
             },
@@ -67,13 +67,13 @@ class _DonationListState extends State<DonationList> {
     );
   }
 
-  Widget _postHeader(DonaPostModel donaPost) {
+  Widget _postHeader(SellPostModel sellPost) {
     return TextButton(
       onPressed: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DonaDetail(donaPost: donaPost,),
+            builder: (context) => FeedDetail(sellPost: sellPost),
           ),
         );
       },
@@ -86,7 +86,7 @@ class _DonationListState extends State<DonationList> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
-              imageUrl: donaPost.img.isNotEmpty ? donaPost.img : 'https://via.placeholder.com/100',
+              imageUrl: sellPost.img.isNotEmpty ? sellPost.img : 'https://via.placeholder.com/100',
               width: 100,
               height: 100,
               errorWidget: (context, url, error) => Icon(Icons.error),
@@ -97,7 +97,8 @@ class _DonationListState extends State<DonationList> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(donaPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
+                Text(sellPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
+                Text('${sellPost.price}원', style: TextStyle(fontSize: 20)),
               ],
             ),
           ),

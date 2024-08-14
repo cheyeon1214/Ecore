@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../repo/user_network_repository.dart';
-import '../signInUpPage/sign_in_form.dart';
+import '../signinup_page/sign_in_form.dart';
 
 class FirebaseAuthState extends ChangeNotifier {
   FirebaseAuthStatus _firebaseAuthStatus = FirebaseAuthStatus.signout;
