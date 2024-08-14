@@ -15,7 +15,7 @@ class SellPostModel {
 
   SellPostModel.fromMap(Map<String, dynamic> map, this.sellId, {required this.reference})
       : title = map[KEY_SELLTITLE] ?? '',
-        marketId = map[KEY_SELL_MARKETID] ?? '', // KEY_SELL_MARKETID 사용
+        marketId = map[KEY_SELL_MARKETID] ?? '',
         img = map[KEY_SELLIMG] ?? 'https://via.placeholder.com/150',
         price = (map[KEY_SELLPRICE] as num).toInt() ?? 0,
         category = map[KEY_SELLCATEGORY] ?? '기타',

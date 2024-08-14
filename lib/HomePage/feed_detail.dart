@@ -20,6 +20,7 @@ class _FeedDetailState extends State<FeedDetail> {
   @override
   void initState() {
     super.initState();
+    print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
   }
 
@@ -120,6 +121,7 @@ class _FeedDetailState extends State<FeedDetail> {
     if (widget.sellPost.marketId.isEmpty) {
       return Text('마켓 정보가 없어요~!');
     }
+
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('Markets')
@@ -148,6 +150,7 @@ class _FeedDetailState extends State<FeedDetail> {
       },
     );
   }
+
 
   Row _marketView(String marketImage, String marketName) {
     return Row(

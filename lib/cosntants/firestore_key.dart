@@ -25,7 +25,7 @@ const KEY_SELL_CREATED_AT = 'createdAt';
 const KEY_SELL_VIEW_COUNT = 'viewCount';
 
 // Keys for DONA_PRODUCTS collection
-const KEY_DONA_USERKEY = 'user_key'; // 외래키
+const KEY_DONA_USERKEY = 'userId'; // 외래키
 const KEY_DONAID = 'dona_id';
 const KEY_DONATITLE = 'title';
 const KEY_DONAIMG = 'img';
