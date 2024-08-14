@@ -159,7 +159,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          '브랜드 이름이나 로고, 해짐 상태 등이 잘 보이도록 찍어주세요!',
+                          '수평에 맞춰서 A4용지와 함께 찍어야 면적 측정이 가능하여 포인트가 지급됩니다.',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
@@ -179,23 +179,10 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 },
               ),
               SizedBox(height: 16),
-              TextFormField(
-                controller: _priceController,
-                decoration: InputDecoration(labelText: '가격'),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '가격을 입력해주세요';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(labelText: '카테고리'),
                 value: _categoryValue,
-                items: ['상의', '하의', '가방', '신발'].map((String category) {
+                items: ['상의', '하의', '가방', '신발', '기타'].map((String category) {
                   return DropdownMenuItem<String>(
                     value: category,
                     child: Text(category),
