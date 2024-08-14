@@ -37,7 +37,7 @@ class _TitleBannerState extends State<TitleBanner> {
           ],
         ),
       ),
-      body: Feed(),
+      //body: Feed(),
     );
   }
 }

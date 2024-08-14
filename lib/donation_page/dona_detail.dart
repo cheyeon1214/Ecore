@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/dona_post_model.dart';
+import '../widgets/view_counter.dart';
 
-class DonaDetail extends StatelessWidget {
+class DonaDetail extends StatefulWidget {
   final DonaPostModel donaPost;
 
   const DonaDetail({Key? key, required this.donaPost}) : super(key: key);
 
   @override
+  State<DonaDetail> createState() => _DonaDetailState();
+}
+
+class _DonaDetailState extends State<DonaDetail> {
+  @override
+  void initState() {
+    super.initState();
+    _incrementViewCount();
+  }
+
+  Future<void> _incrementViewCount() async {
+    try {
+      // Firestore에서 현재 문서의 reference를 사용하여 조회수 증가
+      await incrementViewCount(widget.donaPost.reference);
+    } catch (e) {
+      print('Error incrementing view count: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-      ),
-      body: SingleChildScrollView(  // Wrap Column with SingleChildScrollView
+      appBar: AppBar(),
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -20,7 +41,7 @@ class DonaDetail extends StatelessWidget {
             children: [
               Center(
                 child: CachedNetworkImage(
-                  imageUrl: _getValidImageUrl(donaPost.img),
+                  imageUrl: _getValidImageUrl(widget.donaPost.img),
                   width: 300,
                   height: 300,
                   fit: BoxFit.cover,
@@ -29,38 +50,11 @@ class DonaDetail extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16),
-              // Title and Profile Section
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/리유니클로.jpg'),
-                    radius: 30,
-                  ),
-                  SizedBox(width: 16), // Space between profile and title
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          donaPost.title,
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'User Name', // Placeholder name
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              _userInfoBuild(context), // 사용자 정보 표시
               SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text(donaPost.body, style: TextStyle(fontSize: 16)),
+                child: Text(widget.donaPost.body, style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
@@ -107,5 +101,64 @@ class DonaDetail extends StatelessWidget {
       return 'https://via.placeholder.com/300'; // Default image URL
     }
     return imageUrl;
+  }
+
+  Widget _userInfoBuild(BuildContext context) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('Users') // 사용자 정보를 저장하는 컬렉션 이름
+          .doc(widget.donaPost.userId) // 사용자 ID로 문서 조회
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          print('Error fetching user data: ${snapshot.error}');
+          return Text('Failed to load user info');
+        } else if (!snapshot.hasData || !snapshot.data!.exists) {
+          return Text('User not found');
+        }
+
+        var userData = snapshot.data!.data() as Map<String, dynamic>?;
+
+        if (userData == null) {
+          return Text('User data is not available');
+        }
+
+        String userName = userData['username'] ?? 'Unknown User';
+        String userImage = _getValidImageUrl(userData['profile_img']);
+        return _userView(userImage, userName);
+      },
+    );
+  }
+
+  Row _userView(String userImage, String userName) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundImage: CachedNetworkImageProvider(userImage),
+          radius: 30,
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.donaPost.title,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 8),
+              Text(
+                userName,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
