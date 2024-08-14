@@ -97,7 +97,7 @@ class FeedDetail extends StatelessWidget {
 
   Widget _marketInfoBuild(BuildContext context) {
     if (sellPost.marketId.isEmpty) {
-      return Text('Invalid Market ID');
+      return Text('마켓 정보가 없어요~!');
     }
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
