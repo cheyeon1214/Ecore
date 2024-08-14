@@ -1,41 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecore/cosntants/firestore_key.dart';
-import 'package:flutter/cupertino.dart';
-class UserModel extends ChangeNotifier{
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-  late final String userKey;
-  late final String profileImg;
-  late final String email;
-  late final List<dynamic> myPosts;
-  late final int followers;
-  late final List<dynamic> likedPosts;
-  late final String username;
-  late final List<dynamic> followings;
+class UserModel extends ChangeNotifier {
+  String userKey = '';
+  String profileImg = '';
+  String email = '';
+  List<dynamic> myPosts = [];
+  int followers = 0;
+  List<dynamic> likedPosts = [];
+  String username = '';
+  List<dynamic> followings = [];
   List<dynamic> cart = [];
-  late final DocumentReference? reference;
+  DocumentReference? reference;
 
   UserModel({
     this.userKey = '',
     this.profileImg = '',
     this.email = '',
-    this.myPosts = const [],
+    List<dynamic>? myPosts,
     this.followers = 0,
-    this.likedPosts = const [],
+    List<dynamic>? likedPosts,
     this.username = '',
-    this.followings = const [],
+    List<dynamic>? followings,
     List<dynamic>? cart,
     this.reference,
-  }) : cart = cart ?? [];
+  })  : myPosts = myPosts ?? [],
+        likedPosts = likedPosts ?? [],
+        followings = followings ?? [],
+        cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
-      : username = map[KEY_USERNAME],
-        profileImg = map[KEY_PROFILEIMG],
-        email = map[KEY_EMAIL],
-        followers = map[KEY_FOLLOWERS],
-        likedPosts = map[KEY_LIKEDPOSTS],
-        followings = map[KEY_FOLLOWINGS],
-        myPosts = map[KEY_MYPOSTS],
-        cart = List.from(map[KEY_CART]);
+      : username = map[KEY_USERNAME] ?? '',
+        profileImg = map[KEY_PROFILEIMG] ?? '',
+        email = map[KEY_EMAIL] ?? '',
+        followers = map[KEY_FOLLOWERS] ?? 0,
+        likedPosts = List.from(map[KEY_LIKEDPOSTS] ?? []),
+        followings = List.from(map[KEY_FOLLOWINGS] ?? []),
+        myPosts = List.from(map[KEY_MYPOSTS] ?? []),
+        cart = List.from(map[KEY_CART] ?? []);
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
@@ -45,39 +49,131 @@ class UserModel extends ChangeNotifier{
   );
 
   static Map<String, dynamic> getMapForCreateUser(String email) {
-    Map<String, dynamic> map = {};
-    map[KEY_PROFILEIMG] = "";
-    map[KEY_USERNAME] = email.split("@")[0];
-    map[KEY_EMAIL] = email;
-    map[KEY_LIKEDPOSTS] = [];
-    map[KEY_FOLLOWERS] = 0;
-    map[KEY_FOLLOWINGS] = [];
-    map[KEY_MYPOSTS] = [];
-    map[KEY_CART] = [];
-    return map;
+    return {
+      KEY_PROFILEIMG: "",
+      KEY_USERNAME: email.split("@")[0],
+      KEY_EMAIL: email,
+      KEY_LIKEDPOSTS: [],
+      KEY_FOLLOWERS: 0,
+      KEY_FOLLOWINGS: [],
+      KEY_MYPOSTS: [],
+      KEY_CART: [],
+    };
   }
 
-  Future<void> fetchUserData(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      this.userKey = doc.id;
-      this.username = data[KEY_USERNAME] ?? '';
-      this.profileImg = data[KEY_PROFILEIMG] ?? '';
-      this.email = data[KEY_EMAIL] ?? '';
-      this.followers = data[KEY_FOLLOWERS] ?? 0;
-      this.likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
-      this.followings = List.from(data[KEY_FOLLOWINGS] ?? []);
-      this.myPosts = List.from(data[KEY_MYPOSTS] ?? []);
-      this.cart = List.from(data[KEY_CART] ?? []);
-      this.reference = doc.reference;
+  Future<void> createOrder(List<dynamic> items) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
+      final orderData = {
+        'orderId': orderId,
+        'items': items,
+        'totalPrice': items.fold(0, (sum, item) {
+          final price = item['price'] as int?;
+          final quantity = item['quantity'] as int? ?? 1;
+          return sum + (price ?? 0) * quantity;
+        }),
+        'date': FieldValue.serverTimestamp(),
+      };
+
+      // Create order in orders collection
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
+
+      // Optionally clear cart
+      cart.clear();
+      await updateCart(cart);
 
       notifyListeners();
+    } catch (e) {
+      print('Error creating order: $e');
     }
   }
 
-  void updateCart(List<dynamic> updatedCart) {
-    cart = updatedCart;
-    notifyListeners();
+  Future<void> fetchUserData(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        userKey = doc.id;
+        username = data[KEY_USERNAME] ?? '';
+        profileImg = data[KEY_PROFILEIMG] ?? '';
+        email = data[KEY_EMAIL] ?? '';
+        followers = data[KEY_FOLLOWERS] ?? 0;
+        likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
+        followings = List.from(data[KEY_FOLLOWINGS] ?? []);
+        myPosts = List.from(data[KEY_MYPOSTS] ?? []);
+        cart = List.from(data[KEY_CART] ?? []);
+        reference = doc.reference;
+
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
   }
+
+  Stream<List<Map<String, dynamic>>> get cartStream {
+    if (userKey.isEmpty) {
+      return Stream.value([]); // Return an empty list if userKey is empty
+    }
+
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userKey)
+        .collection('cart') // Ensure this path is correct
+        .snapshots()
+        .map((snapshot) {
+      final cartItems = snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+      print('Cart items: $cartItems'); // Add this line
+      return cartItems;
+    });
+  }
+
+  Future<void> removeCartItem(String itemId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userKey)
+          .collection('cart')
+          .doc(itemId)
+          .delete();
+      // Refresh cart after deletion
+      final updatedCart = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userKey)
+          .collection('cart')
+          .get()
+          .then((snapshot) => snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList());
+      cart = updatedCart;
+      notifyListeners();
+    } catch (e) {
+      print('Error removing cart item: $e');
+    }
+  }
+
+  Future<void> updateCart(List<dynamic> updatedCart) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).update({'cart': updatedCart});
+      cart = updatedCart;
+      notifyListeners();
+    } catch (e) {
+      print('Error updating cart: $e');
+    }
+  }
+
 }

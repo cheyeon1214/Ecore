@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../cosntants/firestore_key.dart';
-import '../models/firestore/sell_post_model.dart';
-import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../models/firestore/user_model.dart';
 import '../repo/order_network_repo.dart';
+import '../models/firestore/sell_post_model.dart';
 import 'order_list.dart';
 
 class CartBtn extends StatefulWidget {
@@ -16,14 +14,17 @@ class CartBtn extends StatefulWidget {
 }
 
 class _CartBtnState extends State<CartBtn> {
-  final OrderNetworkRepository _orderRepository = OrderNetworkRepository();
-
   @override
   Widget build(BuildContext context) {
     final userModel = Provider.of<UserModel>(context);
+
+    // Calculate total price and handle potential null values
     int totalPrice = userModel.cart.fold(0, (sum, item) {
-      return sum + (item['price'] as int);
+      final price = item['price'] as int?;
+      final quantity = item['quantity'] as int? ?? 1; // Default to 1 if quantity is null
+      return sum + (price ?? 0) * quantity;
     });
+
     final isCartEmpty = userModel.cart.isEmpty;
 
     return Align(
@@ -33,28 +34,8 @@ class _CartBtnState extends State<CartBtn> {
         child: FloatingActionButton.extended(
           onPressed: isCartEmpty ? null : () async {
             try {
-              final sellPosts = await Future.wait(
-                  userModel.cart.map((item) async {
-                    final sellPostRef = FirebaseFirestore.instance.collection(
-                        COLLECTION_SELL_PRODUCTS).doc(item['sellId']);
-                    final snapshot = await sellPostRef.get();
-
-                    if (snapshot.exists) {
-                      final data = snapshot.data() as Map<String, dynamic>?;
-
-                      if (data != null) {
-                        return SellPostModel.fromMap(
-                            data, item['sellId'], reference: snapshot
-                            .reference);
-                      }
-                    }
-                    throw Exception('Sell post not found');
-                  }));
-
-              await _orderRepository.createOrder(sellPosts, userModel.userKey);
-
-              userModel.cart.clear();
-              userModel.updateCart(userModel.cart);
+              // Save the order to user's orders collection
+              await userModel.createOrder(userModel.cart);
 
               Navigator.push(
                 context,
@@ -67,7 +48,7 @@ class _CartBtnState extends State<CartBtn> {
             }
           },
           label: Text(
-              '총 금액 : ${totalPrice}      주문하기', style: TextStyle(fontSize: 15)),
+              '총 금액 : ${totalPrice}원  주문하기', style: TextStyle(fontSize: 15)),
           backgroundColor: Colors.blue[50],
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
