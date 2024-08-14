@@ -62,6 +62,8 @@ class _SellProductFormState extends State<SellProductForm> {
           'category': category,
           'body': body,
           'img': imageUrl,
+          'viewCount': 0, // 초기 조회수 0
+          'createdAt': FieldValue.serverTimestamp(), // 생성 시간
         });
 
         // 작업 완료 후 로딩 다이얼로그 닫기

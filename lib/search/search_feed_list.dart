@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../DonationPage/dona_detail.dart';
-import '../HomePage/feed_detail.dart';
+import '../donation_page/dona_detail.dart';
+import '../home_page/feed_detail.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../widgets/view_counter.dart';
 
 Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, BuildContext context) {
   final imageUrl = result['img']?.toString() ?? 'https://via.placeholder.com/100';
@@ -13,15 +13,25 @@ Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, Build
   return InkWell(
     onTap: () {
       if (_isDonationSearch) {
-        final donaPost = DonaPostModel.fromMap(result, '', reference: FirebaseFirestore.instance.collection('DonaPosts').doc());
+        final docId = result['id'];
+        if (docId == null || docId.isEmpty) {
+          print('Document ID is null or empty');
+          return; // Handle the error or return to avoid processing
+        }
+        final donaPostReference = FirebaseFirestore.instance.collection('DonaPosts').doc(docId);
+        final donaPost = DonaPostModel.fromMap(result, '', reference: donaPostReference);
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DonaDetail(donaPost: donaPost,),
+            builder: (context) => DonaDetail(donaPost: donaPost),
           ),
         );
       } else {
-        final sellPost = SellPostModel.fromMap(result, '', reference: FirebaseFirestore.instance.collection('SellPosts').doc());
+        final docId = result['id']; // Ensure 'id' exists in 'result'
+        final sellPostReference = FirebaseFirestore.instance.collection('SellPosts').doc(docId);
+        final sellPost = SellPostModel.fromMap(result, '', reference: sellPostReference);
+
         Navigator.push(
           context,
           MaterialPageRoute(

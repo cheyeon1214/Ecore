@@ -2,6 +2,8 @@ import 'package:ecore/models/firestore/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'cart_button.dart';
+
 class CartList extends StatelessWidget {
   const CartList({super.key});
 
@@ -35,6 +37,7 @@ class CartList extends StatelessWidget {
           );
         },
       ),
+      floatingActionButton: CartBtn(),
     );
   }
 }

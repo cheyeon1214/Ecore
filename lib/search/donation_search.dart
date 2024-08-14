@@ -15,7 +15,13 @@ class DonationSearch {
           .get();
 
       final List<Map<String, dynamic>> results = result.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
+          .map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,  // Include document ID in the result
+          ...data,
+        };
+      })
           .where((data) => _matchesQuery(data['title'], query))
           .toList();
 
@@ -27,7 +33,7 @@ class DonationSearch {
   }
 
   bool _matchesQuery(String title, String query) {
-    if (title.contains(query)) {
+    if (title.toLowerCase().contains(query.toLowerCase())) {
       return true;
     }
     return false;

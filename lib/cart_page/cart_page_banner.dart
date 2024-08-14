@@ -1,4 +1,4 @@
-import 'package:ecore/CartPage/cart_list.dart';
+import 'package:ecore/cart_page/cart_list.dart';
 import 'package:flutter/material.dart';
 
 class CartBanner extends StatelessWidget {

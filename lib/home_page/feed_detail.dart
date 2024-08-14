@@ -5,11 +5,33 @@ import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 
-class FeedDetail extends StatelessWidget {
+import '../widgets/view_counter.dart';
+
+class FeedDetail extends StatefulWidget {
   final SellPostModel sellPost;
 
   const FeedDetail({Key? key, required this.sellPost,}) : super(key: key);
 
+  @override
+  State<FeedDetail> createState() => _FeedDetailState();
+}
+
+class _FeedDetailState extends State<FeedDetail> {
+  @override
+  void initState() {
+    super.initState();
+    print('Market ID in initState: ${widget.sellPost.marketId}');
+    _incrementViewCount();
+  }
+
+  Future<void> _incrementViewCount() async {
+    try {
+      // Firestore에서 현재 문서의 reference를 사용하여 조회수 증가
+      await incrementViewCount(widget.sellPost.reference);
+    } catch (e) {
+      print('Error incrementing view count: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final userModel = Provider.of<UserModel>(context, listen: true);
@@ -24,7 +46,7 @@ class FeedDetail extends StatelessWidget {
             children: [
               Center(
                 child: CachedNetworkImage(
-                  imageUrl: sellPost.img,
+                  imageUrl: widget.sellPost.img,
                   width: 300,
                   height: 300,
                   fit: BoxFit.cover,
@@ -37,7 +59,7 @@ class FeedDetail extends StatelessWidget {
               SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text(sellPost.body, style: TextStyle(fontSize: 16)),
+                child: Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
@@ -65,7 +87,7 @@ class FeedDetail extends StatelessWidget {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  '${sellPost.price}원',
+                  '${widget.sellPost.price}원',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -73,13 +95,13 @@ class FeedDetail extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () {
                 userModel.cart.add({
-                  'marketID': sellPost.marketId,
-                  'title': sellPost.title,
-                  'img': sellPost.img,
-                  'price': sellPost.price,
-                  'category': sellPost.category,
-                  'body': sellPost.body,
-                  'reference': sellPost.reference.path, // Store the reference path as a string
+                  'sellId': widget.sellPost.sellId,
+                  'title': widget.sellPost.title,
+                  'img': widget.sellPost.img,
+                  'price': widget.sellPost.price,
+                  'category': widget.sellPost.category,
+                  'body': widget.sellPost.body,
+                  'reference': widget.sellPost.reference.path,
                 });
                 userModel.updateCart(userModel.cart);
               },
@@ -96,13 +118,14 @@ class FeedDetail extends StatelessWidget {
   }
 
   Widget _marketInfoBuild(BuildContext context) {
-    if (sellPost.marketId.isEmpty) {
-      return Text('Invalid Market ID');
+    if (widget.sellPost.marketId.isEmpty) {
+      return Text('마켓 정보가 없어요~!');
     }
+
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('Markets')
-          .doc(sellPost.marketId)
+          .doc(widget.sellPost.marketId)
           .get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -128,6 +151,7 @@ class FeedDetail extends StatelessWidget {
     );
   }
 
+
   Row _marketView(String marketImage, String marketName) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +166,7 @@ class FeedDetail extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                sellPost.title,
+                widget.sellPost.title,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),

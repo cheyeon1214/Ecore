@@ -3,8 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'models/firebase_auth_state.dart';
 import 'models/firestore/user_model.dart';
-import 'package:ecore/HomePage/home_page_menu.dart';
-import 'package:ecore/signInUpPage/sign_in_form.dart';
+import 'package:ecore/home_page/home_page_menu.dart';
+import 'package:ecore/signinup_page/sign_in_form.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -21,15 +21,19 @@ const KEY_SELLIMG = 'img';
 const KEY_SELLPRICE = 'price';
 const KEY_SELLCATEGORY = 'category';
 const KEY_SELLBODY = 'body';
+const KEY_SELL_CREATED_AT = 'createdAt';
+const KEY_SELL_VIEW_COUNT = 'viewCount';
 
 // Keys for DONA_PRODUCTS collection
-const KEY_DONA_USERKEY = 'user_key'; // 외래키
+const KEY_DONA_USERKEY = 'userId'; // 외래키
 const KEY_DONAID = 'dona_id';
 const KEY_DONATITLE = 'title';
 const KEY_DONAIMG = 'img';
 const KEY_DONAPRICE = 'price';
 const KEY_DONACATEGORY = 'category';
 const KEY_DONABODY = 'body';
+const KEY_DONA_CREATED_AT = 'createdAt';
+const KEY_DONA_VIEW_COUNT = 'viewCount';
 
 // Keys for MARKETS collection
 const KEY_MARKETID = 'marketId';
@@ -37,7 +41,6 @@ const KEY_MARKET_USERKEY = 'userId';
 const KEY_MARKET_NAME = 'name';
 const KEY_MARKET_PROFILEIMG = 'img';
 const KEY_MYSELLPOST = 'sellPosts';
-
 
 
 //////////////////
@@ -53,12 +56,17 @@ const KEY_USERNAME = 'username';
 const KEY_COMMENT = 'comment';
 const KEY_COMMENTTIME = ' commenttime';
 
-const KEY_POSTIMG = 'postimg';
-const KEY_POSTURI = 'posturi';
-const KEY_CAPTION = 'caption';
-const KEY_LASTCOMMENT = 'last_comment';
-const KEY_LASTCOMMENTOR = 'last_commentor';
-const KEY_LASTCOMMENTTIME = 'last_+commenttime';
-const KEY_NUMOFLIKES = 'num_of_likes';
-const KEY_NUMOFCOMMENTS = 'num_of_comments';
-const KEY_POSTTIME = 'post_time';
+//////////////////
+const COLLECTION_ORDERS = 'Orders';
+
+const KEY_ORDERID = 'orderId';
+const KEY_ORDERDATE = 'date';
+const KEY_ORDERSTATUS = 'status';
+const KEY_TOTALPRICE = 'totalPrice';
+const KEY_ITEMS = 'items'; //주문 목록
+
+const KEY_ITEMID = 'itemId';
+const KEY_ORDERTITLE = 'title';
+const KEY_ORDERIMG = 'img';
+const KEY_ORDERPRICE = 'price';
+const KEY_ITEMQUANTITY = 'quantity';
