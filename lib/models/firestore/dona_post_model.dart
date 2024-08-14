@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../cosntants/firestore_key.dart';
 
 class DonaPostModel {
+  final String donaId;
   final String userId;
   final String title;
   final String img;
@@ -13,10 +14,10 @@ class DonaPostModel {
   final DocumentReference reference;
 
   // Named constructor for creating an instance from a map
-  DonaPostModel.fromMap(Map<String, dynamic> map, this.userId,
+  DonaPostModel.fromMap(Map<String, dynamic> map, this.donaId,
       {required this.reference})
       : title = map[KEY_DONATITLE] ?? '',
-        // 기본값 설정
+        userId = map[KEY_DONA_USERKEY] ?? '',
         img = map[KEY_DONAIMG] ?? '',
         category = map[KEY_DONACATEGORY] ?? '',
         body = map[KEY_DONABODY] ?? '',
