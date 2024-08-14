@@ -96,30 +96,30 @@ class _MyPageBtnState extends State<MyPageBtn> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50], // 배경색 설정
-                    borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
-                  ),
-                  height: 70,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/setting.png',
-                        height: 40,
-                        width: 35,
-                      ),
-                      Text(
-                        '설정',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50], // 배경색 설정
+                      borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                    ),
+                    height: 70,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/setting.png',
+                          height: 40,
+                          width: 35,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        Text(
+                          '설정',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ),
               ),
             ],
           ),

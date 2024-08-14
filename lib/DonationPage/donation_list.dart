@@ -21,7 +21,7 @@ class _DonationListState extends State<DonationList> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: 10),
           child: CategoryBtn(
             onCategorySelected: (category) {
               setState(() {

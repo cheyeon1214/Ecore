@@ -26,9 +26,10 @@ class CartList extends StatelessWidget {
             title: Text(cartItem['title'] ?? '제목 없음'),
             subtitle: Text('${cartItem['price']}원'),
             trailing: IconButton(
-              icon: Icon(Icons.remove_shopping_cart),
+              icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300],),
               onPressed: () {
-                // 장바구니에서 항목 제거 로직 구현
+                userModel.cart.removeAt(index);
+                userModel.updateCart(userModel.cart);
               },
             ),
           );

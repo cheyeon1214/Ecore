@@ -1,4 +1,6 @@
+import 'package:ecore/models/firebase_auth_state.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class MyPageList extends StatefulWidget {
   const MyPageList({super.key});
@@ -8,6 +10,10 @@ class MyPageList extends StatefulWidget {
 }
 
 class _MyPageListState extends State<MyPageList> {
+  void _signOut() async {
+    // 로그아웃을 처리하는 메서드
+    await Provider.of<FirebaseAuthState>(context, listen: false).signOut();
+  }
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -40,6 +46,11 @@ class _MyPageListState extends State<MyPageList> {
         SizedBox(height: 40,),
         Divider(thickness: 2),
         Text('서비스 설정'),
+        ListTile(
+          leading: Icon(Icons.logout),
+          title: Text('로그아웃', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          onTap: _signOut,
+        ),
         SizedBox(height: 40,),
         Container(
           color: Colors.blue[50],

@@ -24,21 +24,43 @@ class _CategoryBtnState extends State<CategoryBtn> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: categories.map((category) {
-        return IconButton(
-          onPressed: () {
-            sellPostNetworkRepo.getData(category['category']!);
-            widget.onCategorySelected(category['category']!);
-          },
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.lightBlue[50],
-            fixedSize: Size(90, 90),
-          ),
-          icon: Container(
-            width: 60,
-            height: 60,
-            child: Image.asset(category['image']!, fit: BoxFit.contain),
-          ),
-        );
+        return Padding(
+            padding: EdgeInsets.only(right: 4, left: 4),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue[50], // 배경색 설정
+                borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+              ),
+              child: IconButton(
+                onPressed: () {
+                  sellPostNetworkRepo.getData(category['category']!);
+                  widget.onCategorySelected(category['category']!);
+                },
+                style: IconButton.styleFrom(
+                  fixedSize: Size(85, 85),
+                ),
+                icon: Column(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      child:
+                          Image.asset(category['image']!, fit: BoxFit.contain),
+                    ),
+                    SizedBox(
+                      height: 2,
+                    ),
+                    Text(
+                      category['category']!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ));
       }).toList(),
     );
   }
