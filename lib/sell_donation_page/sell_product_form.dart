@@ -197,7 +197,7 @@ class _SellProductFormState extends State<SellProductForm> {
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(labelText: '카테고리'),
                 value: _categoryValue,
-                items: ['상의', '하의', '가방', '신발'].map((String category) {
+                items: ['상의', '하의', '가방', '신발', '기타'].map((String category) {
                   return DropdownMenuItem<String>(
                     value: category,
                     child: Text(category),
