@@ -2,11 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/firestore/market_model.dart';
 
-class MyMarketBanner extends StatelessWidget {
+class MyMarketBanner extends StatefulWidget {
   final MarketModel market;
 
   MyMarketBanner({required this.market});
 
+  @override
+  _MyMarketBannerState createState() => _MyMarketBannerState();
+}
+
+class _MyMarketBannerState extends State<MyMarketBanner> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -50,8 +55,8 @@ class MyMarketBanner extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundImage: market.img.isNotEmpty
-                        ? NetworkImage(market.img)
+                    backgroundImage: widget.market.img.isNotEmpty
+                        ? NetworkImage(widget.market.img)
                         : AssetImage('assets/profile_image.jpg') as ImageProvider,
                   ),
                   SizedBox(width: 8),
@@ -59,7 +64,7 @@ class MyMarketBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        market.name, // 현재 market 이름을 텍스트로 표시
+                        widget.market.name, // 현재 market 이름을 텍스트로 표시
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -71,7 +76,7 @@ class MyMarketBanner extends StatelessWidget {
                   IconButton(
                     icon: Icon(Icons.settings, color: Colors.black),
                     onPressed: () {
-                      // 메일 버튼 동작
+                      // 설정 버튼 동작
                     },
                   ),
                 ],
@@ -92,44 +97,66 @@ class MyMarketBanner extends StatelessWidget {
               child: TabBarView(
                 children: [
                   // 상품 페이지
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('Markets')
-                        .doc(market.marketId) // marketId는 MarketModel에서 유일한 식별자로 사용
-                        .collection('SellPosts')
-                        .snapshots(),
+                  StreamBuilder<List<dynamic>>(
+                    stream: widget.market.sellPostsStream,
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
 
-                      var Sellposts = snapshot.data!.docs;
+                      if (snapshot.hasError) {
+                        return Center(child: Text('오류 발생: ${snapshot.error}'));
+                      }
 
-                      return GridView.builder(
-                        padding: EdgeInsets.all(8.0),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 4.0,
-                          mainAxisSpacing: 4.0,
-                        ),
-                        itemCount: Sellposts.length,
-                        itemBuilder: (context, index) {
-                          var Sellpost = Sellposts[index];
-                          var imgUrl = Sellpost['img'] ?? ''; // Sellpost의 img 필드 가져오기
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(child: Text('상품이 없습니다.'));
+                      }
 
-                          return Container(
-                            color: Colors.blueGrey,
-                            child: imgUrl.isNotEmpty
-                                ? Image.network(
-                              imgUrl,
-                              fit: BoxFit.cover,
-                            )
-                                : Center(
-                              child: Text(
-                                '상품 ${index + 1}',
-                                style: TextStyle(color: Colors.white),
-                              ),
+                      var sellIds = snapshot.data!;
+
+                      return FutureBuilder<List<String>>(
+                        future: _fetchSellPostImages(sellIds),
+                        builder: (context, imageSnapshot) {
+                          if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+
+                          if (imageSnapshot.hasError) {
+                            return Center(child: Text('오류 발생: ${imageSnapshot.error}'));
+                          }
+
+                          if (!imageSnapshot.hasData || imageSnapshot.data!.isEmpty) {
+                            return Center(child: Text('이미지가 없습니다.'));
+                          }
+
+                          var images = imageSnapshot.data!;
+
+                          return GridView.builder(
+                            padding: EdgeInsets.all(8.0),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 4.0,
+                              mainAxisSpacing: 4.0,
                             ),
+                            itemCount: images.length,
+                            itemBuilder: (context, index) {
+                              String imgUrl = images[index];
+
+                              return Container(
+                                color: Colors.blueGrey,
+                                child: imgUrl.isNotEmpty
+                                    ? Image.network(
+                                  imgUrl,
+                                  fit: BoxFit.cover,
+                                )
+                                    : Center(
+                                  child: Text(
+                                    '이미지 없음',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -146,5 +173,25 @@ class MyMarketBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<List<String>> _fetchSellPostImages(List<dynamic> sellIds) async {
+    List<String> images = [];
+
+    for (var sellId in sellIds) {
+      var document = await FirebaseFirestore.instance
+          .collection('SellPosts')
+          .doc(sellId)
+          .get();
+
+      if (document.exists) {
+        var data = document.data();
+        if (data != null && data.containsKey('img')) {
+          images.add(data['img']);
+        }
+      }
+    }
+
+    return images;
   }
 }
