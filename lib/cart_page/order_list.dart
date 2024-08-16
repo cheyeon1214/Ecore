@@ -71,7 +71,7 @@ class OrderList extends StatelessWidget {
                         fit: BoxFit.cover,
                       ),
                       title: Text(item['title'] ?? '제목 없음'),
-                      subtitle: Text('Price: ${item['price']} x ${item['quantity']}'),
+                      subtitle: Text('Price: ${item['price']}'),
                       contentPadding: EdgeInsets.zero,
                     );
                   }).toList(),
