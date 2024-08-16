@@ -1,14 +1,14 @@
+import 'package:ecore/chat_page/chat_banner.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../donation_page/donation_list.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/view_counter.dart';
-import '../cart_page/cart_list.dart'; // Make sure to import your CartList
 
 class FeedDetail extends StatefulWidget {
   final SellPostModel sellPost;
@@ -44,7 +44,8 @@ class _FeedDetailState extends State<FeedDetail> {
       return;
     }
 
-    final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
+    final userRef =
+    FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final userDoc = await userRef.get();
     if (!userDoc.exists) {
       // User document does not exist
@@ -68,12 +69,10 @@ class _FeedDetailState extends State<FeedDetail> {
 
     // Update the user's cart in Firestore
     await userRef.update({'cart': cart});
-
   }
 
   @override
   Widget build(BuildContext context) {
-    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
@@ -97,7 +96,8 @@ class _FeedDetailState extends State<FeedDetail> {
               SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
+                child:
+                Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
@@ -133,7 +133,9 @@ class _FeedDetailState extends State<FeedDetail> {
             ElevatedButton.icon(
               onPressed: _addToCart, // Updated to call _addToCart method
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
-              label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+              label: Text('장바구니 담기',
+                  style: TextStyle(
+                      color: Colors.black54, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
@@ -171,7 +173,8 @@ class _FeedDetailState extends State<FeedDetail> {
         }
 
         String marketName = marketData['name'] ?? 'Unknown Market';
-        String marketImage = marketData['img'] ?? 'https://via.placeholder.com/150';
+        String marketImage =
+            marketData['img'] ?? 'https://via.placeholder.com/150';
 
         return _marketView(marketImage, marketName);
       },
@@ -187,24 +190,47 @@ class _FeedDetailState extends State<FeedDetail> {
           radius: 30,
         ),
         SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.sellPost.title,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 8),
-              Text(
-                marketName,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.sellPost.title,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 8),
+            Text(
+              marketName,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        Spacer(),
+        IconButton(
+          onPressed: () async {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChatBanner()),
+            );
+          },
+          icon: Icon(Icons.mail, size: 30),
+        ),
+        IconButton(
+          onPressed: () async {
+            bool isMatched = await isUserMarketMatched(widget.sellPost);
+            if (isMatched) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChatBanner()),
+              );
+            } else {
+              print('User is not associated with the market of the sell post.');
+            }
+          },
+          icon: Icon(Icons.mail_lock, size: 30),
         ),
       ],
     );
   }
+
 }
