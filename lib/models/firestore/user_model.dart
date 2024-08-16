@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecore/cosntants/firestore_key.dart';
+import 'package:ecore/models/firestore/sell_post_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../cosntants/firestore_key.dart';
 
 class UserModel extends ChangeNotifier {
   String userKey = '';
@@ -65,6 +66,48 @@ class UserModel extends ChangeNotifier {
       KEY_USER_MARKETID : []
     };
   }
+
+  Future<void> createOrder(List<SellPostModel> sellPosts) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = firestore.collection('Users').doc(user.uid);
+
+      final orderRef = userDoc.collection('Orders').doc();
+      final orderId = orderRef.id;
+
+      final int totalPrice = sellPosts.fold<int>(0, (int sum, SellPostModel post) {
+        return sum + post.price.toInt();
+      });
+
+      final List<Map<String, dynamic>> orderItems = sellPosts.map((post) => {
+        'sellId': post.sellId,
+        'title': post.title,
+        'img': post.img,
+        'price': post.price,
+      }).toList();
+
+      await orderRef.set({
+        'orderId': orderId,
+        'date': Timestamp.now(),
+        'status': '처리 중',
+        'totalPrice': totalPrice,
+        'items': orderItems,
+      });
+
+      await updateCart([]);
+
+      notifyListeners();
+    } catch (e) {
+      print('Error creating order: $e');
+    }
+  }
+
 
   Future<void> fetchUserData(String uid) async {
     try {
