@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
-
-import '../cosntants/firestore_key.dart';
-import '../models/firestore/order_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OrderList extends StatelessWidget {
   const OrderList({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('주문 내역'),
+          leading: BackButton(), // Add a BackButton to the AppBar
+        ),
+        body: Center(child: Text('User not logged in')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('주문 내역'),
+        leading: BackButton(), // Add a BackButton to the AppBar
       ),
+
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection(COLLECTION_ORDERS).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user.uid)
+            .collection('Orders')
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -25,41 +41,42 @@ class OrderList extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data?.docs.isEmpty == true) {
-            return Center(child: Text('No orders found.'));
+            print('No data found: ${snapshot.connectionState}, ${snapshot.data?.docs}');
+            return Center(child: Text('주문 내역이 없습니다.'));
           }
 
           final orders = snapshot.data!.docs.map((doc) {
-            return OrderModel.fromSnapshot(doc);
+            return doc.data() as Map<String, dynamic>;
           }).toList();
 
           return ListView.builder(
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
+
               return ListTile(
                 title: Row(
                   children: [
-                    Text('주문번호 : ${order.orderId}',style: TextStyle(fontSize: 12),),
-                    // Text('date : ${order.date.toDate()}', style: TextStyle(fontSize: 10)),
+                    Text('주문번호 : ${order['orderKey']}', style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: order.items.map((item) {
+                  children: (order['items'] as List).map((item) {
                     return ListTile(
                       leading: Image.network(
-                        item.img,
+                        item['img'] ?? 'https://via.placeholder.com/150',
                         width: 50,
                         height: 50,
                         fit: BoxFit.cover,
                       ),
-                      title: Text(item.title),
-                      subtitle: Text('Price: ${item.price} x ${item.quantity}'),
+                      title: Text(item['title'] ?? '제목 없음'),
+                      subtitle: Text('Price: ${item['price']} x ${item['quantity']}'),
                       contentPadding: EdgeInsets.zero,
                     );
                   }).toList(),
                 ),
-                trailing: Text('Total Price: ${order.totalPrice}'),
+                trailing: Text('Total Price: ${order['totalPrice']}'),
                 onTap: () {
                   // Add any action you want on tap
                 },

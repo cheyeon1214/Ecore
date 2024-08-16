@@ -8,13 +8,7 @@ class CartBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Row(
-            children: [
-              Expanded(
-                  child: Text('장바구니')
-              ),
-            ],
-          ),
+          title: Text('장바구니'),// Add BackButton to the AppBar
         ),
         body: CartList(),
     );

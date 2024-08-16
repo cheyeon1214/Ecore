@@ -66,6 +66,7 @@ const KEY_COMMENTTIME = ' commenttime';
 const COLLECTION_ORDERS = 'Orders';
 
 const KEY_ORDERID = 'orderId';
+const KEY_ORDER_USERID = 'userId';
 const KEY_ORDERDATE = 'date';
 const KEY_ORDERSTATUS = 'status';
 const KEY_TOTALPRICE = 'totalPrice';
