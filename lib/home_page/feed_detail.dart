@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../donation_page/donation_list.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/view_counter.dart';
+import '../cart_page/cart_list.dart'; // Make sure to import your CartList
 
 class FeedDetail extends StatefulWidget {
   final SellPostModel sellPost;
 
-  const FeedDetail({Key? key, required this.sellPost,}) : super(key: key);
+  const FeedDetail({Key? key, required this.sellPost}) : super(key: key);
 
   @override
   State<FeedDetail> createState() => _FeedDetailState();
@@ -32,12 +35,47 @@ class _FeedDetailState extends State<FeedDetail> {
       print('Error incrementing view count: $e');
     }
   }
+
+  Future<void> _addToCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // User not logged in
+      print('User not logged in');
+      return;
+    }
+
+    final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
+    final userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      // User document does not exist
+      print('User document does not exist');
+      return;
+    }
+
+    final cart = userDoc.data()?['cart'] ?? [];
+    final newCartItem = {
+      'sellId': widget.sellPost.sellId,
+      'title': widget.sellPost.title,
+      'img': widget.sellPost.img,
+      'price': widget.sellPost.price,
+      'category': widget.sellPost.category,
+      'body': widget.sellPost.body,
+      'reference': widget.sellPost.reference.path,
+    };
+
+    // Add the new item to the cart
+    cart.add(newCartItem);
+
+    // Update the user's cart in Firestore
+    await userRef.update({'cart': cart});
+
+  }
+
   @override
   Widget build(BuildContext context) {
     final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
-      appBar: AppBar(
-      ),
+      appBar: AppBar(),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -65,11 +103,11 @@ class _FeedDetailState extends State<FeedDetail> {
           ),
         ),
       ),
-      bottomNavigationBar: _bottomNaviBar(userModel),
+      bottomNavigationBar: _bottomNaviBar(),
     );
   }
 
-  BottomAppBar _bottomNaviBar(UserModel userModel) {
+  BottomAppBar _bottomNaviBar() {
     return BottomAppBar(
       color: Colors.white,
       child: Padding(
@@ -93,18 +131,7 @@ class _FeedDetailState extends State<FeedDetail> {
               ],
             ),
             ElevatedButton.icon(
-              onPressed: () {
-                userModel.cart.add({
-                  'sellId': widget.sellPost.sellId,
-                  'title': widget.sellPost.title,
-                  'img': widget.sellPost.img,
-                  'price': widget.sellPost.price,
-                  'category': widget.sellPost.category,
-                  'body': widget.sellPost.body,
-                  'reference': widget.sellPost.reference.path,
-                });
-                userModel.updateCart(userModel.cart);
-              },
+              onPressed: _addToCart, // Updated to call _addToCart method
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
               label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -150,7 +177,6 @@ class _FeedDetailState extends State<FeedDetail> {
       },
     );
   }
-
 
   Row _marketView(String marketImage, String marketName) {
     return Row(

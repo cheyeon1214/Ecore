@@ -12,7 +12,7 @@ class DonationBanner extends StatefulWidget {
 }
 
 class _DonationBannerState extends State<DonationBanner> {
-  String _selectedCategory = 'donation'; // 기본 카테고리는 기부
+  String _selectedCategory = 'nodonation';
   String _selectedSort = '1'; // 기본 정렬 옵션
 
   @override

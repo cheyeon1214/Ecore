@@ -15,7 +15,21 @@ class UserModel extends ChangeNotifier {
   List<dynamic> cart = [];
   DocumentReference? reference;
 
-  UserModel();
+  UserModel({
+    this.userKey = '',
+    this.profileImg = '',
+    this.email = '',
+    List<dynamic>? myPosts,
+    this.followers = 0,
+    List<dynamic>? likedPosts,
+    this.username = '',
+    List<dynamic>? followings,
+    List<dynamic>? cart,
+    this.reference,
+  })  : myPosts = myPosts ?? [],
+        likedPosts = likedPosts ?? [],
+        followings = followings ?? [],
+        cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME] ?? '',
@@ -48,51 +62,96 @@ class UserModel extends ChangeNotifier {
   }
 
   Future<void> fetchUserData(String uid) async {
-    final User? user = FirebaseAuth.instance.currentUser;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        userKey = doc.id;
+        username = data[KEY_USERNAME] ?? '';
+        profileImg = data[KEY_PROFILEIMG] ?? '';
+        email = data[KEY_EMAIL] ?? '';
+        followers = data[KEY_FOLLOWERS] ?? 0;
+        likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
+        followings = List.from(data[KEY_FOLLOWINGS] ?? []);
+        myPosts = List.from(data[KEY_MYPOSTS] ?? []);
+        cart = List.from(data[KEY_CART] ?? []);
+        reference = doc.reference;
 
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> get cartStream {
+    if (userKey.isEmpty) {
+      return Stream.value([]);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userKey)
+        .snapshots()
+        .map((snapshot) {
+      final data = snapshot.data() as Map<String, dynamic>?;
+      final cartItems = data?[KEY_CART] as List<dynamic>? ?? [];
+      return cartItems.map((item) => item as Map<String, dynamic>).toList();
+    });
+  }
+
+
+
+  Future<void> removeCartItem(String itemId) async {
+    try {
+      final userDoc = FirebaseFirestore.instance.collection('Users').doc(userKey);
+
+      final userSnapshot = await userDoc.get();
+      final cartList = List<Map<String, dynamic>>.from(userSnapshot.data()?['cart'] ?? []);
+
+      cartList.removeWhere((item) => item['sellId'] == itemId);
+
+      await userDoc.update({'cart': cartList});
+
+      cart = cartList;
+      notifyListeners();
+    } catch (e) {
+      print('Error removing cart item: $e');
+    }
+  }
+
+
+  Future<void> updateCart(List<dynamic> updatedCart) async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("No user is currently signed in.");
+      print('No user is currently logged in');
       return;
     }
 
-    final String uid = user.uid;
-    final userRef = FirebaseFirestore.instance.collection('Users').doc(uid);
-    final doc = await userRef.get();
-
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      this.userKey = doc.id;
-      this.username = data[KEY_USERNAME] ?? '';
-      this.profileImg = data[KEY_PROFILEIMG] ?? '';
-      this.email = data[KEY_EMAIL] ?? '';
-      this.followers = data[KEY_FOLLOWERS] ?? 0;
-      this.likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
-      this.followings = List.from(data[KEY_FOLLOWINGS] ?? []);
-      this.myPosts = List.from(data[KEY_MYPOSTS] ?? []);
-      this.cart = List.from(data[KEY_CART] ?? []);
-      this.reference = doc.reference;
-
+    try {
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).update({'cart': updatedCart});
+      cart = updatedCart;
       notifyListeners();
-    } else {
-      print("User document does not exist");
+    } catch (e) {
+      print('Error updating cart: $e');
     }
   }
 
-  void updateCart(List<dynamic> updatedCart) async {
-    cart = updatedCart;
-
-    if (reference != null) {
-      try {
-        await reference!.update({
-          KEY_CART: cart,
-        });
-      } catch (e) {
-        print("Failed to update cart: $e");
-      }
-    } else {
-      print("Error: reference is null");
+  Future<void> clearCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
     }
 
-    notifyListeners();
+    try {
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).update({'cart': []});
+      cart.clear();
+      notifyListeners();
+    } catch (e) {
+      print('Error clearing cart: $e');
+    }
   }
+
+
 }
