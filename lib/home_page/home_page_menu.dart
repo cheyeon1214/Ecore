@@ -1,10 +1,9 @@
+import 'package:ecore/chatting_page/chatting_page_banner.dart';
 import 'package:ecore/home_page/home_page_banner.dart';
 import 'package:ecore/my_page/my_page_banner.dart';
 import 'package:flutter/material.dart';
-
 import '../cart_page/cart_page_banner.dart';
 import '../donation_page/donation_page_banner.dart';
-import '../sell_donation_page/sellDonaselect.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key,});
@@ -17,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   List<BottomNavigationBarItem> btmNavItems = [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
     BottomNavigationBarItem(icon: Icon(Icons.menu), label: ''),
-    BottomNavigationBarItem(icon: Icon(Icons.add), label: ''),
+    BottomNavigationBarItem(icon: Icon(Icons.message), label: ''),
     BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: ''),
     BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: ''),
   ];
@@ -25,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   static List<Widget> _screens = <Widget>[
     TitleBanner(),
     DonationBanner(),
-    sellAndGive(),
+    ChattingBanner(),
     CartBanner(),
     MyPageBanner(),
   ];

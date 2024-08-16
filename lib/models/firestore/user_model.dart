@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecore/cosntants/firestore_key.dart';
 import 'package:ecore/models/firestore/sell_post_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../cosntants/firestore_key.dart';
 
 class UserModel extends ChangeNotifier {
   String userKey = '';
   String profileImg = '';
   String email = '';
+  String marketId = '';
   List<dynamic> myPosts = [];
   int followers = 0;
   List<dynamic> likedPosts = [];
@@ -27,6 +29,7 @@ class UserModel extends ChangeNotifier {
     List<dynamic>? followings,
     List<dynamic>? cart,
     this.reference,
+    this.marketId = '',
   })  : myPosts = myPosts ?? [],
         likedPosts = likedPosts ?? [],
         followings = followings ?? [],
@@ -40,7 +43,8 @@ class UserModel extends ChangeNotifier {
         likedPosts = List.from(map[KEY_LIKEDPOSTS] ?? []),
         followings = List.from(map[KEY_FOLLOWINGS] ?? []),
         myPosts = List.from(map[KEY_MYPOSTS] ?? []),
-        cart = List.from(map[KEY_CART] ?? []);
+        cart = List.from(map[KEY_CART] ?? []),
+        marketId = (map['marketId'] ?? '').isNotEmpty ? map['marketId'] : null;
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
@@ -59,6 +63,7 @@ class UserModel extends ChangeNotifier {
       KEY_FOLLOWINGS: [],
       KEY_MYPOSTS: [],
       KEY_CART: [],
+      KEY_USER_MARKETID : []
     };
   }
 
@@ -118,6 +123,7 @@ class UserModel extends ChangeNotifier {
         followings = List.from(data[KEY_FOLLOWINGS] ?? []);
         myPosts = List.from(data[KEY_MYPOSTS] ?? []);
         cart = List.from(data[KEY_CART] ?? []);
+        marketId = data[KEY_USER_MARKETID] ?? '';
         reference = doc.reference;
 
         notifyListeners();
@@ -142,7 +148,6 @@ class UserModel extends ChangeNotifier {
       return cartItems.map((item) => item as Map<String, dynamic>).toList();
     });
   }
-
 
 
   Future<void> removeCartItem(String itemId) async {
@@ -195,6 +200,5 @@ class UserModel extends ChangeNotifier {
       print('Error clearing cart: $e');
     }
   }
-
 
 }
