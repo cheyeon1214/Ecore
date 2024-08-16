@@ -15,7 +15,11 @@ class CartList extends StatelessWidget {
     if (userModel.userKey.isEmpty) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        print('Current User ID: ${user.uid}'); // 현재 로그인한 사용자의 UID를 출력
+        print('Current User Email: ${user.email}'); // 현재 로그인한 사용자의 이메일을 출력
         userModel.fetchUserData(user.uid);
+      } else {
+        print('No user is currently logged in'); // 로그인된 사용자가 없을 경우 출력
       }
     }
 
@@ -54,6 +58,7 @@ class CartList extends StatelessWidget {
                   icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
                   onPressed: () {
                     // Assuming 'id' is a unique identifier for the cart item
+                    print('Removing item with ID: ${cartItem['id']}'); // 아이템 ID를 출력
                     userModel.removeCartItem(cartItem['id']);
                   },
                 ),
