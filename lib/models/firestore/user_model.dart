@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../cosntants/firestore_key.dart';
 
+
 class UserModel extends ChangeNotifier {
   String userKey = '';
   String profileImg = '';
