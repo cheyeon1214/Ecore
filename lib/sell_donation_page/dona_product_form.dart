@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -42,11 +41,12 @@ class _DonaProductFormState extends State<DonaProductForm> {
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final title = _titleController.text;
-      final price = double.parse(_priceController.text);
       final category = _categoryValue;
+      final material = _materialController.text;
+      final color = _colorController.text;
+      final condition = _selectedCondition;
       final body = _bodyController.text;
 
-      // 로딩 다이얼로그 표시
       _showLoadingDialog();
 
       try {
@@ -58,15 +58,16 @@ class _DonaProductFormState extends State<DonaProductForm> {
 
         await _firestore.collection('DonaPosts').add({
           'title': title,
-          'price': price,
           'category': category,
+          'material': material,
+          'color': color,
+          'condition': condition,
           'body': body,
           'img': imageUrl,
-          'viewCount': 0, // 초기 조회수 0
-          'createdAt': FieldValue.serverTimestamp(), // 생성 시간
+          'viewCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
         });
 
-        // 작업 완료 후 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +76,6 @@ class _DonaProductFormState extends State<DonaProductForm> {
 
         Navigator.pop(context);
       } catch (e) {
-        // 작업 실패 시 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
 
         print('Error adding document: $e');
@@ -87,14 +87,16 @@ class _DonaProductFormState extends State<DonaProductForm> {
   }
 
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _bodyController = TextEditingController();
+  final TextEditingController _materialController = TextEditingController();
+  final TextEditingController _colorController = TextEditingController();
   String? _categoryValue;
+  String? _selectedCondition = 'S';
 
   void _showLoadingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // 다이얼로그 외부를 클릭해도 닫히지 않도록 설정
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           child: Container(
@@ -203,11 +205,50 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 },
               ),
               SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    "물품 상태",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 16),
+                  _buildConditionButton('S'),
+                  SizedBox(width: 8),
+                  _buildConditionButton('A'),
+                  SizedBox(width: 8),
+                  _buildConditionButton('B'),
+                  SizedBox(width: 8),
+                  _buildConditionButton('C'),
+                ],
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _materialController,
+                decoration: InputDecoration(labelText: '재질'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '재질을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _colorController,
+                decoration: InputDecoration(labelText: '색'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '색을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _bodyController,
                 decoration: InputDecoration(
                   labelText: '자세한 설명',
-                  hintText: '재질이나 색 등 옷의 상태를 설명해주세요',
+                  hintText: '기부할 상품의 상태를 설명해주세요',
                 ),
                 maxLines: 3,
                 validator: (value) {
@@ -226,6 +267,18 @@ class _DonaProductFormState extends State<DonaProductForm> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildConditionButton(String condition) {
+    return ChoiceChip(
+      label: Text(condition),
+      selected: _selectedCondition == condition,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCondition = condition;
+        });
+      },
     );
   }
 }

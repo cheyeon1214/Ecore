@@ -1,7 +1,9 @@
+import 'package:ecore/sell_donation_page/sell_product_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../home_page/feed_list.dart';
 import '../search/search_screen.dart';
+import '../sell_donation_page/dona_product_form.dart';
 import 'donation_list.dart';
 
 class DonationBanner extends StatefulWidget {
@@ -64,9 +66,34 @@ class _DonationBannerState extends State<DonationBanner> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: _selectedCategory == 'donation'
-          ? DonationList(selectedSort: _selectedSort) // 정렬 옵션 전달
-          : SellList(selectedSort: _selectedSort), // 정렬 옵션 전달
+      body: Stack(
+        children: [
+          _selectedCategory == 'donation'
+              ? DonationList(selectedSort: _selectedSort) // 정렬 옵션 전달
+              : SellList(selectedSort: _selectedSort), // 정렬 옵션 전달
+          if (_selectedCategory == 'donation')
+            Positioned(
+              bottom: 15,
+              left: 135,
+              right: 135,
+              child: ElevatedButton(
+                onPressed: () {
+                  // 기부하기 버튼을 눌렀을 때
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => DonaProductForm()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black, // 버튼 색상
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), // 모서리 둥근 정도 조절
+                  ),
+                ),
+                child: Text('기부하기', style: TextStyle(fontSize: 18, color: Colors.white)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
