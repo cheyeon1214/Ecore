@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecore/cosntants/firestore_key.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserModel extends ChangeNotifier {
@@ -61,39 +61,6 @@ class UserModel extends ChangeNotifier {
     };
   }
 
-  Future<void> createOrder(List<dynamic> items) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print('No user is currently logged in');
-      return;
-    }
-
-    try {
-      final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
-      final orderData = {
-        'orderId': orderId,
-        'items': items,
-        'totalPrice': items.fold(0, (sum, item) {
-          final price = item['price'] as int?;
-          final quantity = item['quantity'] as int? ?? 1;
-          return sum + (price ?? 0) * quantity;
-        }),
-        'date': FieldValue.serverTimestamp(),
-      };
-
-      // Create order in orders collection
-      await FirebaseFirestore.instance.collection('Users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
-
-      // Optionally clear cart
-      cart.clear();
-      await updateCart(cart);
-
-      notifyListeners();
-    } catch (e) {
-      print('Error creating order: $e');
-    }
-  }
-
   Future<void> fetchUserData(String uid) async {
     try {
       final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
@@ -119,46 +86,40 @@ class UserModel extends ChangeNotifier {
 
   Stream<List<Map<String, dynamic>>> get cartStream {
     if (userKey.isEmpty) {
-      return Stream.value([]); // Return an empty list if userKey is empty
+      return Stream.value([]);
     }
 
     return FirebaseFirestore.instance
         .collection('Users')
         .doc(userKey)
-        .collection('cart') // Ensure this path is correct
         .snapshots()
         .map((snapshot) {
-      final cartItems = snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
-      print('Cart items: $cartItems'); // Add this line
-      return cartItems;
+      final data = snapshot.data() as Map<String, dynamic>?;
+      final cartItems = data?[KEY_CART] as List<dynamic>? ?? [];
+      return cartItems.map((item) => item as Map<String, dynamic>).toList();
     });
   }
 
+
+
   Future<void> removeCartItem(String itemId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userKey)
-          .collection('cart')
-          .doc(itemId)
-          .delete();
-      // Refresh cart after deletion
-      final updatedCart = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userKey)
-          .collection('cart')
-          .get()
-          .then((snapshot) => snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList());
-      cart = updatedCart;
+      final userDoc = FirebaseFirestore.instance.collection('Users').doc(userKey);
+
+      final userSnapshot = await userDoc.get();
+      final cartList = List<Map<String, dynamic>>.from(userSnapshot.data()?['cart'] ?? []);
+
+      cartList.removeWhere((item) => item['sellId'] == itemId);
+
+      await userDoc.update({'cart': cartList});
+
+      cart = cartList;
       notifyListeners();
     } catch (e) {
       print('Error removing cart item: $e');
     }
   }
+
 
   Future<void> updateCart(List<dynamic> updatedCart) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -175,5 +136,22 @@ class UserModel extends ChangeNotifier {
       print('Error updating cart: $e');
     }
   }
+
+  Future<void> clearCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).update({'cart': []});
+      cart.clear();
+      notifyListeners();
+    } catch (e) {
+      print('Error clearing cart: $e');
+    }
+  }
+
 
 }

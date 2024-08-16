@@ -1,58 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/user_model.dart';
-import '../repo/order_network_repo.dart';
-import '../models/firestore/sell_post_model.dart';
 import 'order_list.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class CartBtn extends StatefulWidget {
+class CartBtn extends StatelessWidget {
   const CartBtn({super.key});
 
   @override
-  State<CartBtn> createState() => _CartBtnState();
-}
-
-class _CartBtnState extends State<CartBtn> {
-  @override
   Widget build(BuildContext context) {
-    final userModel = Provider.of<UserModel>(context);
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: Provider.of<UserModel>(context).cartStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 40),
+              child: FloatingActionButton.extended(
+                onPressed: null,
+                label: Text(
+                  'Loading...',
+                  style: TextStyle(fontSize: 15),
+                ),
+                backgroundColor: Colors.blue[50],
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          );
+        }
 
-    // Calculate total price and handle potential null values
-    int totalPrice = userModel.cart.fold(0, (sum, item) {
-      final price = item['price'] as int?;
-      final quantity = item['quantity'] as int? ?? 1; // Default to 1 if quantity is null
-      return sum + (price ?? 0) * quantity;
-    });
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
 
-    final isCartEmpty = userModel.cart.isEmpty;
+        final cartItems = snapshot.data ?? [];
+        int totalPrice = cartItems.fold(0, (sum, item) {
+          final price = item['price'] as int? ?? 0;
+          final quantity = item['quantity'] as int? ?? 1;
+          return sum + (price * quantity);
+        });
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 40),
-        child: FloatingActionButton.extended(
-          onPressed: isCartEmpty ? null : () async {
-            try {
-              // Save the order to user's orders collection
-              await userModel.createOrder(userModel.cart);
+        final isCartEmpty = cartItems.isEmpty;
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const OrderList()),
-              );
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: $e')),
-              );
-            }
-          },
-          label: Text(
-              '총 금액 : ${totalPrice}원  주문하기', style: TextStyle(fontSize: 15)),
-          backgroundColor: Colors.blue[50],
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      ),
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: FloatingActionButton.extended(
+              onPressed: isCartEmpty ? null : () async {
+                try {
+
+                  final userModel = Provider.of<UserModel>(context, listen: false);
+                  await userModel.clearCart();
+
+                  // 주문 목록 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OrderList()),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+              label: Text(
+                '총 금액 : ${totalPrice}원  주문하기',
+                style: TextStyle(fontSize: 15),
+              ),
+              backgroundColor: Colors.blue[50],
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        );
+      },
     );
   }
 }

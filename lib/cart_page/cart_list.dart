@@ -57,9 +57,7 @@ class CartList extends StatelessWidget {
                 trailing: IconButton(
                   icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
                   onPressed: () {
-                    // Assuming 'id' is a unique identifier for the cart item
-                    print('Removing item with ID: ${cartItem['id']}'); // 아이템 ID를 출력
-                    userModel.removeCartItem(cartItem['id']);
+                    userModel.removeCartItem(cartItem['sellId']);
                   },
                 ),
               );

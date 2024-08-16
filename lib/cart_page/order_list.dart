@@ -24,11 +24,12 @@ class OrderList extends StatelessWidget {
         title: Text('주문 내역'),
         leading: BackButton(), // Add a BackButton to the AppBar
       ),
+
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('Users')
             .doc(user.uid)
-            .collection('orders')
+            .collection('Orders')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -40,6 +41,7 @@ class OrderList extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data?.docs.isEmpty == true) {
+            print('No data found: ${snapshot.connectionState}, ${snapshot.data?.docs}');
             return Center(child: Text('주문 내역이 없습니다.'));
           }
 
@@ -51,10 +53,11 @@ class OrderList extends StatelessWidget {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
+
               return ListTile(
                 title: Row(
                   children: [
-                    Text('주문번호 : ${order['orderId']}', style: TextStyle(fontSize: 12)),
+                    Text('주문번호 : ${order['orderKey']}', style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 subtitle: Column(
