@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'order_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -51,8 +52,30 @@ class CartBtn extends StatelessWidget {
             child: FloatingActionButton.extended(
               onPressed: isCartEmpty ? null : () async {
                 try {
-
                   final userModel = Provider.of<UserModel>(context, listen: false);
+
+                  final sellPosts = cartItems.map((item) {
+                    final sellPostRef = FirebaseFirestore.instance
+                        .collection('SellPosts')
+                        .doc(item['sellId']); // Generate DocumentReference
+
+                    return SellPostModel(
+                      sellId: item['sellId'] ?? '',
+                      marketId: item['marketId'] ?? '',
+                      title: item['title'] ?? 'Untitled',
+                      img: item['img'] ?? 'https://via.placeholder.com/150',
+                      price: item['price'] ?? 0,
+                      category: item['category'] ?? '기타',
+                      body: item['body'] ?? '내용 없음',
+                      createdAt: (item['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                      viewCount: item['viewCount'] ?? 0,
+                      reference: sellPostRef, // Set DocumentReference
+                    );
+                  }).toList();
+
+                  // Create order
+                  await userModel.createOrder(sellPosts);
+
                   await userModel.clearCart();
 
                   // 주문 목록 화면으로 이동

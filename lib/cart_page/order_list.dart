@@ -57,7 +57,7 @@ class OrderList extends StatelessWidget {
               return ListTile(
                 title: Row(
                   children: [
-                    Text('주문번호 : ${order['orderKey']}', style: TextStyle(fontSize: 12)),
+                    Text('주문번호 : ${order['orderId']}', style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 subtitle: Column(

@@ -13,7 +13,7 @@ class SellPostModel {
   final int viewCount;
   final DocumentReference reference;
 
-  SellPostModel(this.reference, {
+  SellPostModel({
     required this.sellId,
     required this.price,
     required this.title,
@@ -23,6 +23,7 @@ class SellPostModel {
     required this.marketId,
     required this.createdAt,
     required this.viewCount,
+    required this.reference,
   });
 
   SellPostModel.fromMap(Map<String, dynamic> map, this.sellId, {required this.reference})
