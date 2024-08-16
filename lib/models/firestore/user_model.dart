@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecore/cosntants/firestore_key.dart';
 import 'package:ecore/models/firestore/sell_post_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../cosntants/firestore_key.dart';
 
 
 class UserModel extends ChangeNotifier {
