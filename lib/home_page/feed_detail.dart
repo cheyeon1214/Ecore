@@ -20,16 +20,18 @@ class FeedDetail extends StatefulWidget {
 }
 
 class _FeedDetailState extends State<FeedDetail> {
+  bool _isFavorite = false;
+
   @override
   void initState() {
     super.initState();
     print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
+    _checkIfFavorite();
   }
 
   Future<void> _incrementViewCount() async {
     try {
-      // Firestore에서 현재 문서의 reference를 사용하여 조회수 증가
       await incrementViewCount(widget.sellPost.reference);
     } catch (e) {
       print('Error incrementing view count: $e');
@@ -39,7 +41,6 @@ class _FeedDetailState extends State<FeedDetail> {
   Future<void> _addToCart() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // User not logged in
       print('User not logged in');
       return;
     }
@@ -47,7 +48,6 @@ class _FeedDetailState extends State<FeedDetail> {
     final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final userDoc = await userRef.get();
     if (!userDoc.exists) {
-      // User document does not exist
       print('User document does not exist');
       return;
     }
@@ -63,12 +63,52 @@ class _FeedDetailState extends State<FeedDetail> {
       'reference': widget.sellPost.reference.path,
     };
 
-    // Add the new item to the cart
     cart.add(newCartItem);
-
-    // Update the user's cart in Firestore
     await userRef.update({'cart': cart});
+  }
 
+  Future<void> _checkIfFavorite() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final favoriteRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .collection('FavoriteList')
+          .doc(widget.sellPost.sellId);
+
+      final doc = await favoriteRef.get();
+      setState(() {
+        _isFavorite = doc.exists;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final userModel = Provider.of<UserModel>(context, listen: false);
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('User not logged in');
+      return;
+    }
+
+    if (_isFavorite) {
+      // Remove from wishlist
+      final favoriteRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .collection('FavoriteList')
+          .doc(widget.sellPost.sellId);
+
+      await favoriteRef.delete();
+    } else {
+      // Add to wishlist
+      await userModel.addItemToWishlist(widget.sellPost);
+    }
+
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
   }
 
   @override
@@ -118,10 +158,11 @@ class _FeedDetailState extends State<FeedDetail> {
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.favorite_border),
-                  onPressed: () {
-                    // Add favorite button functionality here
-                  },
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : Colors.black54,
+                  ),
+                  onPressed: _toggleFavorite,
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -131,7 +172,7 @@ class _FeedDetailState extends State<FeedDetail> {
               ],
             ),
             ElevatedButton.icon(
-              onPressed: _addToCart, // Updated to call _addToCart method
+              onPressed: _addToCart,
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
               label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(

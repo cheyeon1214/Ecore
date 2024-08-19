@@ -68,6 +68,86 @@ class UserModel extends ChangeNotifier {
     };
   }
 
+  //최근 본 상품 추가
+  Future<void> addRecentlyViewed(SellPostModel sellPost) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = firestore.collection('Users').doc(user.uid);
+
+      final recentlyViewedRef = userDoc.collection('RecentlyViewed').doc(sellPost.sellId);
+      await recentlyViewedRef.set(sellPost.toMap()..['viewedAt'] = Timestamp.now()); // Map으로 변환하여 저장
+
+      notifyListeners();
+    } catch (e) {
+      print('Error adding recently viewed post: $e');
+    }
+  }
+
+  //최근 본 상품 가져오기
+  Stream<List<SellPostModel>> get recentlyViewedStream {
+    if (userKey.isEmpty) {
+      return Stream.value([]);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userKey)
+        .collection('RecentlyViewed')
+        .orderBy('viewedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return SellPostModel.fromSnapshot(doc);
+      }).toList();
+    });
+  }
+  //상품 찜하기
+  Future<void> addItemToWishlist(SellPostModel sellPost) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is currently logged in');
+      return;
+    }
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = firestore.collection('Users').doc(user.uid);
+
+      final recentlyViewedRef = userDoc.collection('FavoriteList').doc(sellPost.sellId);
+      await recentlyViewedRef.set(sellPost.toMap()..['selectedAt'] = Timestamp.now()); // Map으로 변환하여 저장
+
+      notifyListeners();
+    } catch (e) {
+      print('Error adding recently viewed post: $e');
+    }
+  }
+  //찜상품 가져오기
+  Stream<List<SellPostModel>> get favoriteListStream {
+    if (userKey.isEmpty) {
+      return Stream.value([]);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userKey)
+        .collection('FavoriteList')
+        .orderBy('selectedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return SellPostModel.fromSnapshot(doc);
+      }).toList();
+    });
+  }
+
   Future<void> createOrder(List<SellPostModel> sellPosts) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
