@@ -3,8 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/firestore/sell_post_model.dart';
-import 'package:provider/provider.dart';
-
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -64,7 +62,6 @@ class _FeedDetailState extends State<FeedDetail> {
 
     // Update the user's cart in Firestore
     await userRef.update({'cart': cart});
-
   }
 
   @override
@@ -72,23 +69,23 @@ class _FeedDetailState extends State<FeedDetail> {
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: _buildImageCarousel(widget.sellPost.img), // 이미지 리스트 처리
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageCarousel(widget.sellPost.img), // 이미지 리스트 처리
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _marketInfoBuild(context),
+                  SizedBox(height: 16),
+                  Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
+                ],
               ),
-              SizedBox(height: 16),
-              _marketInfoBuild(context),
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _bottomNaviBar(),
@@ -101,18 +98,17 @@ class _FeedDetailState extends State<FeedDetail> {
     }
 
     return SizedBox(
-      height: 300,
+      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: images.length,
         itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          return AspectRatio(
+            aspectRatio: 1.0,  // 1:1 비율로 설정하여 정사각형으로 보이도록 함
             child: CachedNetworkImage(
               imageUrl: images[index],
-              width: 300,
-              height: 300,
-              fit: BoxFit.cover,
+              fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
               errorWidget: (context, url, error) => Icon(Icons.error),
               placeholder: (context, url) => CircularProgressIndicator(),
             ),
