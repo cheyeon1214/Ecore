@@ -15,6 +15,8 @@ class FeedDetail extends StatefulWidget {
 }
 
 class _FeedDetailState extends State<FeedDetail> {
+  int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
+
   @override
   void initState() {
     super.initState();
@@ -100,20 +102,38 @@ class _FeedDetailState extends State<FeedDetail> {
     return SizedBox(
       width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
       height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: images.length,
-        itemBuilder: (context, index) {
-          return AspectRatio(
-            aspectRatio: 1.0,  // 1:1 비율로 설정하여 정사각형으로 보이도록 함
-            child: CachedNetworkImage(
-              imageUrl: images[index],
-              fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
-              errorWidget: (context, url, error) => Icon(Icons.error),
-              placeholder: (context, url) => CircularProgressIndicator(),
+      child: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return CachedNetworkImage(
+                imageUrl: images[index],
+                fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
+                errorWidget: (context, url, error) => Icon(Icons.error),
+                placeholder: (context, url) => CircularProgressIndicator(),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: Colors.black54,
+              child: Text(
+                '${_currentIndex + 1}/${images.length}',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
