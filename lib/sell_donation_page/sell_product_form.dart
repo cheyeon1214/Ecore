@@ -72,25 +72,46 @@ class _SellProductFormState extends State<SellProductForm> {
           imageUrls = await uploadImages(_images!);
         }
 
-        await _firestore.collection('SellPosts').add({
-          'title': title,
-          'price': price,
-          'category': category,
-          'body': body,
-          'img': imageUrls,
-          'name': widget.name,
-          'viewCount': 0, // 초기 조회수 0
-          'createdAt': FieldValue.serverTimestamp(), // 생성 시간
-        });
+        // Markets 컬렉션에서 현재 marketId와 동일한 name 필드를 가진 문서를 검색
+        QuerySnapshot marketQuery = await _firestore
+            .collection('Markets')
+            .where('name', isEqualTo: widget.name)
+            .get();
 
-        // 작업 완료 후 로딩 다이얼로그 닫기
-        Navigator.of(context).pop();
+        if (marketQuery.docs.isNotEmpty) {
+          String marketDocumentId = marketQuery.docs.first.id;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('판매 상품이 등록되었습니다.')),
-        );
+          // 1. SellPosts 컬렉션에 새로운 문서를 추가
+          DocumentReference sellPostRef = await _firestore.collection('SellPosts').add({
+            'title': title,
+            'price': price,
+            'category': category,
+            'body': body,
+            'img': imageUrls,
+            'marketId': marketDocumentId, // marketId 필드에 문서 ID를 저장
+            'viewCount': 0, // 초기 조회수 0
+            'createdAt': FieldValue.serverTimestamp(), // 생성 시간
+          });
 
-        Navigator.pop(context);
+          // 2. 생성된 문서의 ID를 Markets 컬렉션의 sellPosts 배열에 추가
+          String sellPostId = sellPostRef.id;
+          DocumentReference marketRef = _firestore.collection('Markets').doc(marketDocumentId);
+
+          await marketRef.update({
+            'sellPosts': FieldValue.arrayUnion([sellPostId])
+          });
+
+          // 작업 완료 후 로딩 다이얼로그 닫기
+          Navigator.of(context).pop();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('판매 상품이 등록되었습니다.')),
+          );
+
+          Navigator.pop(context);
+        } else {
+          throw '해당 이름의 마켓을 찾을 수 없습니다.';
+        }
       } catch (e) {
         // 작업 실패 시 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
