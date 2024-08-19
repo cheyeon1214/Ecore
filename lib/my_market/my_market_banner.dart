@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/firestore/market_model.dart';
+import '../sell_donation_page/sell_product_form.dart';
 
 class MyMarketBanner extends StatefulWidget {
   final MarketModel market;
@@ -37,16 +38,43 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
         ),
         body: Column(
           children: [
-            // 배너 이미지 영역
-            Container(
-              height: 200,
-              color: Colors.grey,
-              child: Center(
-                child: Text(
-                  '배너',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
+            // 배너 이미지와 글쓰기 버튼 영역
+            Stack(
+              children: [
+                Container(
+                  height: 200,
+                  color: Colors.grey,
+                  child: Center(
+                    child: Text(
+                      '배너',
+                      style: TextStyle(color: Colors.white, fontSize: 24),
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      // 글쓰기 버튼 동작
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => SellProductForm()));
+                    },
+                    icon: Icon(Icons.edit, color: Colors.white),
+                    label: Text(
+                      '글쓰기',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.3), // 반투명 배경
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             // 프로필과 검색창 영역
             Padding(
