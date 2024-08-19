@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../donation_page/donation_list.dart';
 import '../models/firestore/sell_post_model.dart';
-import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/view_counter.dart';
-import '../cart_page/cart_list.dart'; // Make sure to import your CartList
 
 class FeedDetail extends StatefulWidget {
   final SellPostModel sellPost;
@@ -23,7 +20,6 @@ class _FeedDetailState extends State<FeedDetail> {
   @override
   void initState() {
     super.initState();
-    print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
   }
 
@@ -73,7 +69,6 @@ class _FeedDetailState extends State<FeedDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
@@ -83,14 +78,7 @@ class _FeedDetailState extends State<FeedDetail> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: CachedNetworkImage(
-                  imageUrl: widget.sellPost.img,
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => Icon(Icons.error),
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                ),
+                child: _buildImageCarousel(widget.sellPost.img), // 이미지 리스트 처리
               ),
               SizedBox(height: 16),
               _marketInfoBuild(context),
@@ -104,6 +92,33 @@ class _FeedDetailState extends State<FeedDetail> {
         ),
       ),
       bottomNavigationBar: _bottomNaviBar(),
+    );
+  }
+
+  Widget _buildImageCarousel(List<String> images) {
+    if (images.isEmpty) {
+      return Text('이미지가 없습니다.');
+    }
+
+    return SizedBox(
+      height: 300,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: CachedNetworkImage(
+              imageUrl: images[index],
+              width: 300,
+              height: 300,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Icon(Icons.error),
+              placeholder: (context, url) => CircularProgressIndicator(),
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -8,7 +8,7 @@ import 'feed_detail.dart';
 
 class SellList extends StatefulWidget {
   final String selectedSort;
-  const SellList({Key? key, required this.selectedSort,}) : super(key:key);
+  const SellList({Key? key, required this.selectedSort}) : super(key: key);
 
   @override
   State<SellList> createState() => _FeedState();
@@ -56,8 +56,8 @@ class _FeedState extends State<SellList> {
                 shrinkWrap: true,
                 itemCount: data.size,
                 itemBuilder: (context, index) {
-                  final donaPost = SellPostModel.fromSnapshot(data.docs[index]);
-                  return _postHeader(donaPost);
+                  final sellPost = SellPostModel.fromSnapshot(data.docs[index]);
+                  return _postHeader(sellPost);
                 },
               );
             },
@@ -92,6 +92,9 @@ class _FeedState extends State<SellList> {
   }
 
   Widget _postHeader(SellPostModel sellPost) {
+    // 이미지 리스트에서 첫 번째 이미지를 사용
+    final String firstImageUrl = sellPost.img.isNotEmpty ? sellPost.img[0] : 'https://via.placeholder.com/100';
+
     return TextButton(
       onPressed: () {
         Navigator.push(
@@ -110,7 +113,7 @@ class _FeedState extends State<SellList> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
-              imageUrl: sellPost.img.isNotEmpty ? sellPost.img : 'https://via.placeholder.com/100',
+              imageUrl: firstImageUrl,
               width: 100,
               height: 100,
               errorWidget: (context, url, error) => Icon(Icons.error),
@@ -129,7 +132,9 @@ class _FeedState extends State<SellList> {
           PopupMenuButton<String>(
             onSelected: (String value) {
               if (value == 'report') {
+                // 신고 기능 처리
               } else if (value == 'hide') {
+                // 숨기기 기능 처리
               }
             },
             itemBuilder: (BuildContext context) {

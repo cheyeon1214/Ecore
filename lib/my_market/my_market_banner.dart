@@ -59,7 +59,9 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                       // 글쓰기 버튼 동작
                       Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SellProductForm()));
+                          MaterialPageRoute(builder: (context) => SellProductForm(
+                            name: widget.market.name, // marketId 전달
+                          )));
                     },
                     icon: Icon(Icons.edit, color: Colors.white),
                     label: Text(
