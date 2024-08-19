@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../home_page/feed_detail.dart';
 import '../models/firestore/market_model.dart';
+import '../models/firestore/sell_post_model.dart';
 import '../sell_donation_page/sell_product_form.dart';
 
 class MyMarketBanner extends StatefulWidget {
@@ -58,10 +60,13 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                     onPressed: () {
                       // 글쓰기 버튼 동작
                       Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => SellProductForm(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SellProductForm(
                             name: widget.market.name, // marketId 전달
-                          )));
+                          ),
+                        ),
+                      );
                     },
                     icon: Icon(Icons.edit, color: Colors.white),
                     label: Text(
@@ -144,22 +149,22 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
 
                       var sellIds = snapshot.data!;
 
-                      return FutureBuilder<List<String>>(
-                        future: _fetchSellPostImages(sellIds),
-                        builder: (context, imageSnapshot) {
-                          if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                      return FutureBuilder<List<SellPostModel>>(
+                        future: _fetchSellPostDetails(sellIds),
+                        builder: (context, detailsSnapshot) {
+                          if (detailsSnapshot.connectionState == ConnectionState.waiting) {
                             return Center(child: CircularProgressIndicator());
                           }
 
-                          if (imageSnapshot.hasError) {
-                            return Center(child: Text('오류 발생: ${imageSnapshot.error}'));
+                          if (detailsSnapshot.hasError) {
+                            return Center(child: Text('오류 발생: ${detailsSnapshot.error}'));
                           }
 
-                          if (!imageSnapshot.hasData || imageSnapshot.data!.isEmpty) {
-                            return Center(child: Text('이미지가 없습니다.'));
+                          if (!detailsSnapshot.hasData || detailsSnapshot.data!.isEmpty) {
+                            return Center(child: Text('상품이 없습니다.'));
                           }
 
-                          var images = imageSnapshot.data!;
+                          var details = detailsSnapshot.data!;
 
                           return GridView.builder(
                             padding: EdgeInsets.all(8.0),
@@ -168,21 +173,31 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                               crossAxisSpacing: 4.0,
                               mainAxisSpacing: 4.0,
                             ),
-                            itemCount: images.length,
+                            itemCount: details.length,
                             itemBuilder: (context, index) {
-                              String imgUrl = images[index];
+                              var sellPost = details[index];
 
-                              return Container(
-                                color: Colors.blueGrey,
-                                child: imgUrl.isNotEmpty
-                                    ? Image.network(
-                                  imgUrl,
-                                  fit: BoxFit.cover,
-                                )
-                                    : Center(
-                                  child: Text(
-                                    '이미지 없음',
-                                    style: TextStyle(color: Colors.white),
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FeedDetail(sellPost: sellPost),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  color: Colors.blueGrey,
+                                  child: sellPost.img.isNotEmpty
+                                      ? Image.network(
+                                    sellPost.img[0],
+                                    fit: BoxFit.cover,
+                                  )
+                                      : Center(
+                                    child: Text(
+                                      '이미지 없음',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
                               );
@@ -205,8 +220,8 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
     );
   }
 
-  Future<List<String>> _fetchSellPostImages(List<dynamic> sellIds) async {
-    List<String> images = [];
+  Future<List<SellPostModel>> _fetchSellPostDetails(List<dynamic> sellIds) async {
+    List<SellPostModel> details = [];
 
     for (var sellId in sellIds) {
       var document = await FirebaseFirestore.instance
@@ -215,13 +230,11 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
           .get();
 
       if (document.exists) {
-        var data = document.data();
-        if (data != null && data.containsKey('img')) {
-          images.add(data['img']);
-        }
+        var sellPost = SellPostModel.fromSnapshot(document);
+        details.add(sellPost);
       }
     }
 
-    return images;
+    return details;
   }
 }

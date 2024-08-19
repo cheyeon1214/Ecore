@@ -41,9 +41,20 @@ class CartList extends StatelessWidget {
             itemCount: cartItems.length,
             itemBuilder: (context, index) {
               final cartItem = cartItems[index];
+              String imageUrl;
+
+              // img 필드가 리스트인지 확인하고 첫 번째 이미지를 사용
+              if (cartItem['img'] is List<dynamic> && cartItem['img'].isNotEmpty) {
+                imageUrl = cartItem['img'][0]; // 첫 번째 이미지를 가져옴
+              } else if (cartItem['img'] is String) {
+                imageUrl = cartItem['img'];
+              } else {
+                imageUrl = 'https://via.placeholder.com/150'; // 기본 이미지
+              }
+
               return ListTile(
                 leading: Image.network(
-                  cartItem['img'] ?? 'https://via.placeholder.com/150',
+                  imageUrl,
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
