@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecore/my_market/edit_my_market.dart';
 import 'package:ecore/my_market/my_market_feedpage.dart';
 import 'package:flutter/material.dart';
 import '../home_page/feed_detail.dart';
@@ -112,7 +113,10 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                   IconButton(
                     icon: Icon(Icons.settings, color: Colors.black),
                     onPressed: () {
-                      // 설정 버튼 동작
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                      builder: (context) => EditMarketProfilePage()));
                     },
                   ),
                 ],
