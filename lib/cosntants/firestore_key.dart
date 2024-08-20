@@ -43,8 +43,13 @@ const KEY_DONA_VIEW_COUNT = 'viewCount';
 // Keys for MARKETS collection
 const KEY_MARKETID = 'marketId';
 const KEY_MARKET_USERKEY = 'userId';
+const KEY_MARKET_PHONE = 'phone';
+const KEY_MARKET_CSPHONE = 'cs_phone';
+const KEY_MARKET_EMAIL = 'email';
 const KEY_MARKET_NAME = 'name';
+const KEY_BUSINESS_NUMBER = 'business_number';
 const KEY_MARKET_PROFILEIMG = 'img';
+const KEY_MARKET_DESCRIPTION = 'description';
 const KEY_MYSELLPOST = 'sellPosts';
 
 

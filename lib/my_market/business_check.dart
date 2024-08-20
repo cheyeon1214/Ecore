@@ -34,7 +34,7 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
     try {
       // 여기에 서비스 키를 넣어주세요
       String serviceKey =
-          "AC9zdZTlBsdv4Ylv3CdSllj0yXx6N7SjO/ieWH0EiNu8CpZLRkxJ+a9b1IkI3kI1Y40eIIMfJIEndaYW9ma3zg==";
+          "AC9zdZTlBsdv4Ylv3CdSllj0yXx6N7SjO%2FieWH0EiNu8CpZLRkxJ%2Ba9b1IkI3kI1Y40eIIMfJIEndaYW9ma3zg%3D%3D";
 
       var response = await http.post(
         Uri.parse("https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=$serviceKey"),
@@ -59,7 +59,8 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
         }
       } else {
         setState(() {
-          _resultMessage = "서버 에러: ${response.statusCode}";
+          _resultMessage = "서버 에러: ${response.statusCode}\n"
+              "응답 본문: ${response.body}";
         });
       }
     } catch (e) {

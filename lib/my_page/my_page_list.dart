@@ -1,4 +1,5 @@
 import 'package:ecore/models/firebase_auth_state.dart';
+import 'package:ecore/my_market/business_check.dart';
 import 'package:ecore/my_page/favorite_list_page.dart';
 import 'package:ecore/my_page/recently_viewed_page.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +59,14 @@ class _MyPageListState extends State<MyPageList> {
             onPressed: () {},
             child: Text('공지사항', style: TextStyle(fontWeight: FontWeight.bold))),
         TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BusinessCheckPage(),
+                ),
+              );
+            },
             child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold))),
         Divider(thickness: 2),
         Text('커뮤니티'),
