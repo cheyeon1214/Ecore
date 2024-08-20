@@ -14,6 +14,8 @@ class DonaDetail extends StatefulWidget {
 }
 
 class _DonaDetailState extends State<DonaDetail> {
+  int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
+
   @override
   void initState() {
     super.initState();
@@ -34,30 +36,50 @@ class _DonaDetailState extends State<DonaDetail> {
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CachedNetworkImage(
-                  imageUrl: _getValidImageUrl(widget.donaPost.img),
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => Icon(Icons.error),
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageCarousel(widget.donaPost.img), // 이미지 리스트 처리
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _userInfoBuild(context), // 사용자 정보 표시
+                  SizedBox(height: 16),
+                  Divider(thickness: 1, color: Colors.grey), // 사용자 정보와 상품 정보를 나누는 선 추가
+                  SizedBox(height: 16),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(text: '상태: ', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                        TextSpan(text: widget.donaPost.condition, style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(text: '색상: ', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                        TextSpan(text: widget.donaPost.color, style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(text: '재질: ', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                        TextSpan(text: widget.donaPost.material, style: TextStyle(fontSize: 16, color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(widget.donaPost.body, style: TextStyle(fontSize: 16)), // body 부분
+                ],
               ),
-              SizedBox(height: 16),
-              _userInfoBuild(context), // 사용자 정보 표시
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(widget.donaPost.body, style: TextStyle(fontSize: 16)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: BottomAppBar(
@@ -72,7 +94,7 @@ class _DonaDetailState extends State<DonaDetail> {
                   IconButton(
                     icon: Icon(Icons.favorite_border),
                     onPressed: () {
-                      // Add favorite button functionality here
+                      // 좋아요 버튼 기능 추가
                     },
                   ),
                   SizedBox(width: 8),
@@ -80,7 +102,7 @@ class _DonaDetailState extends State<DonaDetail> {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Add functionality to add to cart
+                  // 장바구니 추가 기능
                 },
                 icon: Icon(Icons.shopping_cart, color: Colors.black54),
                 label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
@@ -95,10 +117,54 @@ class _DonaDetailState extends State<DonaDetail> {
     );
   }
 
-  // Helper method to ensure a valid image URL is used
+  Widget _buildImageCarousel(List<String> images) {
+    if (images.isEmpty) {
+      return Text('이미지가 없습니다.');
+    }
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
+      child: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return CachedNetworkImage(
+                imageUrl: images[index],
+                fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
+                errorWidget: (context, url, error) => Icon(Icons.error),
+                placeholder: (context, url) => CircularProgressIndicator(),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: Colors.black54,
+              child: Text(
+                '${_currentIndex + 1}/${images.length}',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 유효한 이미지 URL을 확인하는 헬퍼 메서드
   String _getValidImageUrl(String imageUrl) {
     if (imageUrl.isEmpty || !Uri.tryParse(imageUrl)!.hasAbsolutePath ?? false) {
-      return 'https://via.placeholder.com/300'; // Default image URL
+      return 'https://via.placeholder.com/300'; // 기본 이미지 URL
     }
     return imageUrl;
   }
@@ -114,15 +180,15 @@ class _DonaDetailState extends State<DonaDetail> {
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           print('Error fetching user data: ${snapshot.error}');
-          return Text('Failed to load user info');
+          return Text('사용자 정보를 불러오는 데 실패했습니다.');
         } else if (!snapshot.hasData || !snapshot.data!.exists) {
-          return Text('User not found');
+          return Text('사용자를 찾을 수 없습니다.');
         }
 
         var userData = snapshot.data!.data() as Map<String, dynamic>?;
 
         if (userData == null) {
-          return Text('User data is not available');
+          return Text('사용자 정보가 없습니다.');
         }
 
         String userName = userData['username'] ?? 'Unknown User';

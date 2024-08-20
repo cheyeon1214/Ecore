@@ -59,6 +59,8 @@ class HorizontalListSection extends StatelessWidget {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final post = items[index];
+                    final String firstImageUrl = post.img.isNotEmpty ? post.img[0] : 'https://via.placeholder.com/150';
+
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -77,7 +79,7 @@ class HorizontalListSection extends StatelessWidget {
                             Container(
                               height: 130, // Adjust height for the image
                               child: Image.network(
-                                post.img,
+                                firstImageUrl, // 첫 번째 이미지를 사용하도록 변경
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                               ),

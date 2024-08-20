@@ -6,9 +6,7 @@ import '../donation_page/donation_list.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
-
 import '../widgets/view_counter.dart';
-import '../cart_page/cart_list.dart'; // Make sure to import your CartList
 
 class FeedDetail extends StatefulWidget {
   final SellPostModel sellPost;
@@ -20,6 +18,7 @@ class FeedDetail extends StatefulWidget {
 }
 
 class _FeedDetailState extends State<FeedDetail> {
+  int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
   bool _isFavorite = false;
 
   @override
@@ -27,11 +26,12 @@ class _FeedDetailState extends State<FeedDetail> {
     super.initState();
     print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
-    _checkIfFavorite();
+    _checkIfFavorite(); // 추가: 즐겨찾기 상태를 확인하는 함수 호출
   }
 
   Future<void> _incrementViewCount() async {
     try {
+      // Firestore에서 현재 문서의 reference를 사용하여 조회수 증가
       await incrementViewCount(widget.sellPost.reference);
     } catch (e) {
       print('Error incrementing view count: $e');
@@ -41,6 +41,7 @@ class _FeedDetailState extends State<FeedDetail> {
   Future<void> _addToCart() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
+      // User not logged in
       print('User not logged in');
       return;
     }
@@ -48,6 +49,7 @@ class _FeedDetailState extends State<FeedDetail> {
     final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final userDoc = await userRef.get();
     if (!userDoc.exists) {
+      // User document does not exist
       print('User document does not exist');
       return;
     }
@@ -63,7 +65,10 @@ class _FeedDetailState extends State<FeedDetail> {
       'reference': widget.sellPost.reference.path,
     };
 
+    // Add the new item to the cart
     cart.add(newCartItem);
+
+    // Update the user's cart in Firestore
     await userRef.update({'cart': cart});
   }
 
@@ -113,34 +118,26 @@ class _FeedDetailState extends State<FeedDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final userModel = Provider.of<UserModel>(context, listen: true);
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CachedNetworkImage(
-                  imageUrl: widget.sellPost.img,
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => Icon(Icons.error),
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageCarousel(widget.sellPost.img), // 이미지 리스트 처리
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _marketInfoBuild(context),
+                  SizedBox(height: 16),
+                  Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
+                ],
               ),
-              SizedBox(height: 16),
-              _marketInfoBuild(context),
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _bottomNaviBar(),
@@ -246,6 +243,50 @@ class _FeedDetailState extends State<FeedDetail> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildImageCarousel(List<String> images) {
+    if (images.isEmpty) {
+      return Text('이미지가 없습니다.');
+    }
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
+      child: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return CachedNetworkImage(
+                imageUrl: images[index],
+                fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
+                errorWidget: (context, url, error) => Icon(Icons.error),
+                placeholder: (context, url) => CircularProgressIndicator(),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: Colors.black54,
+              child: Text(
+                '${_currentIndex + 1}/${images.length}',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

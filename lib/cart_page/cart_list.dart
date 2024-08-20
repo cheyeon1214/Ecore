@@ -15,11 +15,7 @@ class CartList extends StatelessWidget {
     if (userModel.userKey.isEmpty) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        print('Current User ID: ${user.uid}'); // 현재 로그인한 사용자의 UID를 출력
-        print('Current User Email: ${user.email}'); // 현재 로그인한 사용자의 이메일을 출력
         userModel.fetchUserData(user.uid);
-      } else {
-        print('No user is currently logged in'); // 로그인된 사용자가 없을 경우 출력
       }
     }
 
@@ -45,9 +41,20 @@ class CartList extends StatelessWidget {
             itemCount: cartItems.length,
             itemBuilder: (context, index) {
               final cartItem = cartItems[index];
+              String imageUrl;
+
+              // img 필드가 리스트인지 확인하고 첫 번째 이미지를 사용
+              if (cartItem['img'] is List<dynamic> && cartItem['img'].isNotEmpty) {
+                imageUrl = cartItem['img'][0]; // 첫 번째 이미지를 가져옴
+              } else if (cartItem['img'] is String) {
+                imageUrl = cartItem['img'];
+              } else {
+                imageUrl = 'https://via.placeholder.com/150'; // 기본 이미지
+              }
+
               return ListTile(
                 leading: Image.network(
-                  cartItem['img'] ?? 'https://via.placeholder.com/150',
+                  imageUrl,
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
