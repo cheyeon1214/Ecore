@@ -6,37 +6,54 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class SellProductForm extends StatefulWidget {
+  final String name;
+
+  const SellProductForm({super.key, required this.name});
   @override
   State<SellProductForm> createState() => _SellProductFormState();
 }
 
 class _SellProductFormState extends State<SellProductForm> {
   final _formKey = GlobalKey<FormState>();
-  XFile? _image;
+  List<XFile>? _images = []; // 여러 이미지를 저장할 리스트
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<void> getImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      _image = pickedFile;
-    });
+  Future<void> getImages() async {
+    if (_images!.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
+      );
+      return; // 이미 10개 이상의 이미지가 선택된 경우 추가 선택 불가
+    }
+
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        // 최대 10개를 초과하지 않도록 리스트에 추가
+        _images = (_images! + pickedFiles).take(10).toList();
+      });
+    }
   }
 
-  Future<String> uploadImage(File imageFile) async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = _storage.ref().child('images/$fileName');
-      final uploadTask = ref.putFile(imageFile);
+  Future<List<String>> uploadImages(List<XFile> imageFiles) async {
+    List<String> downloadUrls = [];
+    for (XFile imageFile in imageFiles) {
+      try {
+        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        final ref = _storage.ref().child('images/$fileName');
+        final uploadTask = ref.putFile(File(imageFile.path));
 
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e)  {
-      print('Failed to upload image: $e');
-      throw e;
+        final snapshot = await uploadTask.whenComplete(() {});
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        downloadUrls.add(downloadUrl);
+      } catch (e) {
+        print('Failed to upload image: $e');
+        throw e;
+      }
     }
+    return downloadUrls;
   }
 
   Future<void> _submitForm() async {
@@ -50,30 +67,51 @@ class _SellProductFormState extends State<SellProductForm> {
       _showLoadingDialog();
 
       try {
-        String? imageUrl;
-        if (_image != null) {
-          final imageFile = File(_image!.path);
-          imageUrl = await uploadImage(imageFile);
+        List<String>? imageUrls;
+        if (_images != null && _images!.isNotEmpty) {
+          imageUrls = await uploadImages(_images!);
         }
 
-        await _firestore.collection('SellPosts').add({
-          'title': title,
-          'price': price,
-          'category': category,
-          'body': body,
-          'img': imageUrl,
-          'viewCount': 0, // 초기 조회수 0
-          'createdAt': FieldValue.serverTimestamp(), // 생성 시간
-        });
+        // Markets 컬렉션에서 현재 marketId와 동일한 name 필드를 가진 문서를 검색
+        QuerySnapshot marketQuery = await _firestore
+            .collection('Markets')
+            .where('name', isEqualTo: widget.name)
+            .get();
 
-        // 작업 완료 후 로딩 다이얼로그 닫기
-        Navigator.of(context).pop();
+        if (marketQuery.docs.isNotEmpty) {
+          String marketDocumentId = marketQuery.docs.first.id;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('판매 상품이 등록되었습니다.')),
-        );
+          // 1. SellPosts 컬렉션에 새로운 문서를 추가
+          DocumentReference sellPostRef = await _firestore.collection('SellPosts').add({
+            'title': title,
+            'price': price,
+            'category': category,
+            'body': body,
+            'img': imageUrls,
+            'marketId': marketDocumentId, // marketId 필드에 문서 ID를 저장
+            'viewCount': 0, // 초기 조회수 0
+            'createdAt': FieldValue.serverTimestamp(), // 생성 시간
+          });
 
-        Navigator.pop(context);
+          // 2. 생성된 문서의 ID를 Markets 컬렉션의 sellPosts 배열에 추가
+          String sellPostId = sellPostRef.id;
+          DocumentReference marketRef = _firestore.collection('Markets').doc(marketDocumentId);
+
+          await marketRef.update({
+            'sellPosts': FieldValue.arrayUnion([sellPostId])
+          });
+
+          // 작업 완료 후 로딩 다이얼로그 닫기
+          Navigator.of(context).pop();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('판매 상품이 등록되었습니다.')),
+          );
+
+          Navigator.pop(context);
+        } else {
+          throw '해당 이름의 마켓을 찾을 수 없습니다.';
+        }
       } catch (e) {
         // 작업 실패 시 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
@@ -134,7 +172,7 @@ class _SellProductFormState extends State<SellProductForm> {
               Row(
                 children: <Widget>[
                   GestureDetector(
-                    onTap: getImage,
+                    onTap: getImages,
                     child: Container(
                       height: 100,
                       width: 100,
@@ -142,17 +180,7 @@ class _SellProductFormState extends State<SellProductForm> {
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: _image == null
-                          ? Icon(Icons.camera_alt, size: 50)
-                          : ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(_image!.path),
-                          fit: BoxFit.cover,  // 이미지를 컨테이너 크기에 맞게 조정
-                          height: 100,  // 컨테이너와 같은 높이로 설정
-                          width: 100,   // 컨테이너와 같은 너비로 설정
-                        ),
-                      ),
+                      child: Icon(Icons.camera_alt, size: 50), // 항상 카메라 아이콘만 표시
                     ),
                   ),
                   SizedBox(width: 16),
@@ -169,6 +197,30 @@ class _SellProductFormState extends State<SellProductForm> {
                   ),
                 ],
               ),
+              SizedBox(height: 16),
+              _images != null && _images!.isNotEmpty
+                  ? SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _images!.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          File(_images![index].path),
+                          fit: BoxFit.cover,
+                          width: 100,
+                          height: 100,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+                  : Container(),
               SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,

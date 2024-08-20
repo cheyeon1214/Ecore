@@ -34,9 +34,10 @@ class RecentViewedPage extends StatelessWidget {
                 itemCount: recentlyViewedPosts.length,
                 itemBuilder: (context, index) {
                   final post = recentlyViewedPosts[index];
+                  final String firstImageUrl = post.img.isNotEmpty ? post.img[0] : 'https://via.placeholder.com/100';
                   return ListTile(
                     leading: Image.network(
-                      post.img.isNotEmpty ? post.img : 'https://via.placeholder.com/100',
+                      firstImageUrl,
                       width: 50,
                       height: 50,
                       fit: BoxFit.cover,

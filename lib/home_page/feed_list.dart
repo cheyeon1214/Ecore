@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
@@ -80,6 +81,7 @@ class _SellListState extends State<SellList> {
       query = query.orderBy('createdAt', descending: true);
     }
 
+    // 카테고리 필터 적용
     if (_selectedCategory.isNotEmpty) {
       query = query.where('category', isEqualTo: _selectedCategory);
     }
@@ -88,6 +90,9 @@ class _SellListState extends State<SellList> {
   }
 
   Widget _postHeader(SellPostModel sellPost) {
+    // 이미지 리스트에서 첫 번째 이미지를 사용
+    final String firstImageUrl = sellPost.img.isNotEmpty ? sellPost.img[0] : 'https://via.placeholder.com/100';
+
     return TextButton(
       onPressed: () {
         userModel.addRecentlyViewed(sellPost);  // 함수 직접 실행
@@ -107,7 +112,7 @@ class _SellListState extends State<SellList> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
-              imageUrl: sellPost.img.isNotEmpty ? sellPost.img : 'https://via.placeholder.com/100',
+              imageUrl: firstImageUrl,
               width: 100,
               height: 100,
               errorWidget: (context, url, error) => Icon(Icons.error),

@@ -90,6 +90,9 @@ class _DonationListState extends State<DonationList> {
   }
 
   Widget _postHeader(DonaPostModel donaPost) {
+    // 이미지 리스트에서 첫 번째 이미지를 사용
+    final String firstImageUrl = donaPost.img.isNotEmpty ? donaPost.img[0] : 'https://via.placeholder.com/100';
+
     return TextButton(
       onPressed: () {
         Navigator.push(
@@ -108,7 +111,7 @@ class _DonationListState extends State<DonationList> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: CachedNetworkImage(
-              imageUrl: donaPost.img.isNotEmpty ? donaPost.img : 'https://via.placeholder.com/100',
+              imageUrl: firstImageUrl,
               width: 100,
               height: 100,
               errorWidget: (context, url, error) => Icon(Icons.error),
