@@ -1,4 +1,6 @@
 import 'package:ecore/models/firebase_auth_state.dart';
+import 'package:ecore/my_page/favorite_list_page.dart';
+import 'package:ecore/my_page/recently_viewed_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,8 +24,25 @@ class _MyPageListState extends State<MyPageList> {
         Divider(thickness: 5),
         Text('스토어'),
         TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RecentViewedPage(),
+                ),
+              );
+            },
             child: Text('최근 본 상품', style: TextStyle(fontWeight: FontWeight.bold))),
+        TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FavoriteListPage(),
+                ),
+              );
+            },
+            child: Text('찜 한 상품', style: TextStyle(fontWeight: FontWeight.bold))),
         Divider(thickness: 2),
         Text('고객센터'),
         TextButton(
