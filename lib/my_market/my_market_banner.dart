@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecore/my_market/my_market_feedpage.dart';
 import 'package:flutter/material.dart';
 import '../home_page/feed_detail.dart';
 import '../models/firestore/market_model.dart';
@@ -208,9 +209,9 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                     },
                   ),
                   // 피드 페이지
-                  Center(child: Text('피드 페이지')),
+                  MyMarketFeedpage(),
                   // 리뷰 페이지
-                  Center(child: Text('리뷰 페이지')),
+                  MyMarketReviewpage(),
                 ],
               ),
             ),
@@ -238,3 +239,15 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
     return details;
   }
 }
+
+class MyMarketReviewpage extends StatelessWidget {
+  const MyMarketReviewpage({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text('리뷰 페이지'));
+  }
+}
+
