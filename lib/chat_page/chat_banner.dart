@@ -33,7 +33,7 @@ class _ChatBannerState extends State<ChatBanner> {
   void _sendMessage() {
     _controller.text = _controller.text.trim();
     if (_controller.text.isNotEmpty) {
-      FirebaseFirestore.instance.collection('chats').add({
+      FirebaseFirestore.instance.collection('Chats').add({
         'text': _controller.text,
         'sender': loggedInUser!.email,
         'timestamp': Timestamp.now(),
@@ -62,7 +62,8 @@ class _ChatBannerState extends State<ChatBanner> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('chats')
+                  .collection('Chats')
+                  .where('sender', isEqualTo: loggedInUser?.email)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -74,8 +75,7 @@ class _ChatBannerState extends State<ChatBanner> {
                   reverse: true,
                   itemCount: chatDocs.length,
                   itemBuilder: (ctx, index) {
-                    bool isMe =
-                        chatDocs[index]['sender'] == loggedInUser!.email;
+                    bool isMe = chatDocs[index]['sender'] == loggedInUser!.email;
                     return Row(
                       mainAxisAlignment: isMe
                           ? MainAxisAlignment.end
