@@ -23,31 +23,37 @@ class _MyPageBtnState extends State<MyPageBtn> {
   }
 
   Future<void> _fetchMarketData() async {
-    // 현재 로그인된 사용자의 email을 기반으로 market 데이터 가져오기
     String? userEmail = FirebaseAuth.instance.currentUser?.email;
     if (userEmail != null) {
-      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('email', isEqualTo: userEmail)
-          .limit(1)
-          .get();
+      try {
+        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .where('email', isEqualTo: userEmail)
+            .limit(1)
+            .get();
 
-      if (userSnapshot.docs.isNotEmpty) {
-        DocumentSnapshot userDoc = userSnapshot.docs.first;
-        String? marketId = userDoc['marketId']?? ''; // 첫 번째 마켓 ID 사용
+        if (userSnapshot.docs.isNotEmpty) {
+          DocumentSnapshot userDoc = userSnapshot.docs.first;
+          String? marketId = userDoc['marketId'] ?? ''; // 첫 번째 마켓 ID 사용
 
-        if (marketId != null && marketId.isNotEmpty) {
-          DocumentSnapshot marketDoc = await FirebaseFirestore.instance
-              .collection('Markets')
-              .doc(marketId)
-              .get();
+          if (marketId != null && marketId.isNotEmpty) {
+            DocumentSnapshot marketDoc = await FirebaseFirestore.instance
+                .collection('Markets')
+                .doc(marketId)
+                .get();
 
-          if (marketDoc.exists) {
-            setState(() {
-              market = MarketModel.fromSnapshot(marketDoc); // MarketModel로 변환
-            });
+            if (marketDoc.exists) {
+              if (mounted) {
+                setState(() {
+                  market = MarketModel.fromSnapshot(marketDoc); // MarketModel로 변환
+                });
+              }
+            }
           }
         }
+      } catch (e) {
+        // 에러 처리
+        print('Error fetching market data: $e');
       }
     }
   }
@@ -81,6 +87,12 @@ class _MyPageBtnState extends State<MyPageBtn> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    // 비동기 작업이나 타이머가 있다면 여기서 정리할 수 있습니다.
+    super.dispose();
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../models/firestore/user_model.dart';
 import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
@@ -11,26 +12,24 @@ class SellList extends StatefulWidget {
   const SellList({Key? key, required this.selectedSort}) : super(key: key);
 
   @override
-  State<SellList> createState() => _FeedState();
+  State<SellList> createState() => _SellListState();
 }
 
-class _FeedState extends State<SellList> {
-  String _selectedCategory = ''; // 기본값
+class _SellListState extends State<SellList> {
+  final UserModel userModel = UserModel(); // UserModel 인스턴스 생성
+
+  String _selectedCategory = '';
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Padding(
-        //   padding: const EdgeInsets.only(top: 10, bottom: 20),
-        //   child: Center(child: CareouselSlider()),
-        // ),
         Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: CategoryBtn(
             onCategorySelected: (category) {
               setState(() {
-                _selectedCategory = category; // 카테고리 선택 시 업데이트
+                _selectedCategory = category;
               });
             },
           ),
@@ -72,15 +71,14 @@ class _FeedState extends State<SellList> {
 
     Query query = collection;
 
-    // 정렬 기준에 따라 쿼리 수정
     if (widget.selectedSort == '3') {
-      query = query.orderBy('viewCount', descending: true); // 조회순
+      query = query.orderBy('viewCount', descending: true);
     } else if (widget.selectedSort == '1') {
-      query = query.orderBy('createdAt', descending: true); // 최신순
+      query = query.orderBy('createdAt', descending: true);
     } else if (widget.selectedSort == '2') {
-      query = query.orderBy('createdAt', descending: false); // 오래된순
+      query = query.orderBy('createdAt', descending: false);
     } else {
-      query = query.orderBy('createdAt', descending: true); // 기본값: 최신순
+      query = query.orderBy('createdAt', descending: true);
     }
 
     // 카테고리 필터 적용
@@ -97,6 +95,7 @@ class _FeedState extends State<SellList> {
 
     return TextButton(
       onPressed: () {
+        userModel.addRecentlyViewed(sellPost);  // 함수 직접 실행
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -132,9 +131,9 @@ class _FeedState extends State<SellList> {
           PopupMenuButton<String>(
             onSelected: (String value) {
               if (value == 'report') {
-                // 신고 기능 처리
+                // 신고 로직
               } else if (value == 'hide') {
-                // 숨기기 기능 처리
+                // 숨기기 로직
               }
             },
             itemBuilder: (BuildContext context) {
