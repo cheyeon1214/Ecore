@@ -59,14 +59,7 @@ class _MyPageListState extends State<MyPageList> {
             onPressed: () {},
             child: Text('공지사항', style: TextStyle(fontWeight: FontWeight.bold))),
         TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BusinessCheckPage(),
-                ),
-              );
-            },
+            onPressed: () {},
             child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold))),
         Divider(thickness: 2),
         Text('커뮤니티'),

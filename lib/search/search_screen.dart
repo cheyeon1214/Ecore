@@ -62,7 +62,7 @@ class _SearchScreenState extends State<SearchScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
-                hintText: 'Search...',
+                hintText: '검색어를 입력해주세요',
                 fillColor: Colors.white,
                 filled: true,
               ),
