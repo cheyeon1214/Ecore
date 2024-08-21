@@ -7,6 +7,11 @@ class MarketModel {
   final String marketId;
   final String name;
   final String img;
+  final String phone;
+  final String description;
+  final String email;
+  final String cs_phone;
+  final String business_number;
   final List<dynamic> sellPosts; // 판매글 ID 리스트
   final DocumentReference reference;
 
@@ -14,6 +19,11 @@ class MarketModel {
       {required this.reference})
       : name = map[KEY_MARKET_NAME] ?? '',
         userId = map[KEY_MARKET_USERKEY] ?? '',
+        phone = map[KEY_MARKET_PHONE] ?? '',
+        description = map[KEY_MARKET_DESCRIPTION] ?? '',
+        cs_phone = map[KEY_MARKET_CSPHONE] ?? '',
+        business_number = map[KEY_BUSINESS_NUMBER] ?? null,
+        email = map[KEY_MARKET_EMAIL] ?? '',
         img = map[KEY_MARKET_PROFILEIMG] ?? 'https://via.placeholder.com/150',
         sellPosts = List<dynamic>.from(map[KEY_MYSELLPOST] ?? []); // 기본값 빈 리스트
 

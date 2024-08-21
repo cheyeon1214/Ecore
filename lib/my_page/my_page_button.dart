@@ -34,7 +34,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
 
         if (userSnapshot.docs.isNotEmpty) {
           DocumentSnapshot userDoc = userSnapshot.docs.first;
-          String? marketId = userDoc['marketId'] ?? ''; // 첫 번째 마켓 ID 사용
+          String? marketId = userDoc['marketId'] ?? '';
 
           if (marketId != null && marketId.isNotEmpty) {
             DocumentSnapshot marketDoc = await FirebaseFirestore.instance
