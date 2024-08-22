@@ -52,6 +52,17 @@ const KEY_MARKET_PROFILEIMG = 'img';
 const KEY_MARKET_DESCRIPTION = 'description';
 const KEY_MYSELLPOST = 'sellPosts';
 
+// REVIEW KEYS
+const KEY_REVIEW_USERID = 'userId';
+const KEY_REVIEW_MARKETID = 'marketId';
+const KEY_REVIEW_ORDERID = 'orderId';
+const KEY_REVIEW_REVIEW = 'review';
+const KEY_REVIEW_ITEMINDEX = 'itemIndex';
+const KEY_REVIEW_TITLE = 'itemTitle';
+const KEY_REVIEW_SATISFACTION = 'satisfaction';
+const KEY_REVIEW_RATING = 'rating';
+const KEY_REVIEW_TIMESTAMP = 'timestamp';
+
 
 //////////////////
 const COLLECTION_POSTS='Posts';
