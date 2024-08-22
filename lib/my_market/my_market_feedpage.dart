@@ -1,8 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyMarketFeedpage extends StatefulWidget {
-  const MyMarketFeedpage({super.key});
+  final String marketId;
+
+  const MyMarketFeedpage({super.key, required this.marketId});
 
   @override
   _MyMarketFeedpageState createState() => _MyMarketFeedpageState();
@@ -11,9 +13,28 @@ class MyMarketFeedpage extends StatefulWidget {
 class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
   List<String> _feedPosts = [];
 
+  // Firestore에서 데이터를 불러오는 함수
+  Future<Map<String, dynamic>?> _getMarketData() async {
+    try {
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('Markets')
+          .doc(widget.marketId)
+          .get();
+
+      if (docSnapshot.exists) {
+        var data = docSnapshot.data() as Map<String, dynamic>;
+        _feedPosts = List<String>.from(data['feedPosts'] ?? []);
+        return data;
+      }
+    } catch (e) {
+      print('Error fetching market data: $e');
+    }
+    return null;
+  }
+
   void _showAddPostDialog({int? index}) {
     final TextEditingController _postController = TextEditingController(
-      text: index != null ? _feedPosts[index] : '', // 기존 텍스트를 불러오도록 설정
+      text: index != null ? _feedPosts[index] : '',
     );
 
     showDialog(
@@ -59,12 +80,13 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
                     _feedPosts[index] = _postController.text;
                   }
                 });
+                _saveFeedPostsToFirestore();  // Firestore에 저장
                 Navigator.of(context).pop();
               },
               icon: Icon(Icons.check),
               label: Text(index == null ? '추가' : '수정'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue, // 버튼 색상
+                backgroundColor: Colors.blue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
@@ -80,92 +102,120 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
     setState(() {
       _feedPosts.removeAt(index);
     });
+    _saveFeedPostsToFirestore();  // Firestore에 저장
+  }
+
+  Future<void> _saveFeedPostsToFirestore() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Markets')
+          .doc(widget.marketId)
+          .update({'feedPosts': _feedPosts});
+    } catch (e) {
+      print('Error saving feed posts: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _getMarketData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Center(child: Text('데이터를 불러오는 중 오류가 발생했습니다.'));
+        }
+
+        var marketData = snapshot.data!;
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.campaign_outlined),
-                SizedBox(width: 8),
-                Text('커뮤니티 | 공지사항', style: TextStyle(fontWeight: FontWeight.bold)),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _showAddPostDialog,
+                Row(
+                  children: [
+                    Icon(Icons.campaign_outlined),
+                    SizedBox(width: 8),
+                    Text('커뮤니티 | 공지사항', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: _showAddPostDialog,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: 8),
-            // 판매자 정보 박스
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blue, width: 1.0),
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('판매자 정보 확인', style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 8),
-                  _infoRow('대표자명', '윤지원'),
-                  _infoRow('상호명', '에코리'),
-                  _infoRow('문의전화', '010-0000-0000'),
-                  _infoRow('사업자주소', '경기도 수원시 영통구 광교산로 154-42'),
-                  SizedBox(height: 8),
-                  Text('위 주소는 사업자등록증에 표기된 정보입니다', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  SizedBox(height: 8),
-                  _infoRow('사업자등록번호', '261-18-01763 호'),
-                ],
-              ),
-            ),
-            SizedBox(height: 16), // 파란 네모와 공지사항 리스트 사이 간격
-            // 공지사항 리스트
-            ..._feedPosts.asMap().entries.map((entry) {
-              int index = entry.key;
-              String post = entry.value;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  width: double.infinity, // 부모 위젯의 가로 길이를 채우도록 설정
+                SizedBox(height: 8),
+                // 판매자 정보 박스
+                Container(
+                  padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
+                    border: Border.all(color: Colors.blue, width: 1.0),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(post, style: TextStyle(fontSize: 16)),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _showAddPostDialog(index: index),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deletePost(index),
-                          ),
-                        ],
-                      ),
+                      Text('판매자 정보 확인', style: TextStyle(fontWeight: FontWeight.bold)),
+                      SizedBox(height: 8),
+                      _infoRow('대표자명', marketData['ownerName'] ?? 'N/A'),
+                      _infoRow('상호명', marketData['name'] ?? 'N/A'),
+                      _infoRow('문의전화', marketData['cs_phone'] ?? 'N/A'),
+                      _infoRow('문의메일', marketData['email'] ?? 'N/A'),
+                      _infoRow('사업자주소', marketData['address'] ?? 'N/A'),
+                      SizedBox(height: 8),
+                      Text('위 주소는 사업자등록증에 표기된 정보입니다', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      SizedBox(height: 8),
+                      _infoRow('사업자등록번호', marketData['business_number'] ?? 'N/A'),
                     ],
                   ),
                 ),
-              );
-            }).toList(),
-          ],
-        ),
-      ),
+                SizedBox(height: 16), // 파란 네모와 공지사항 리스트 사이 간격
+                // 공지사항 리스트
+                ..._feedPosts.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String post = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(8.0),
+                      width: double.infinity, // 부모 위젯의 가로 길이를 채우도록 설정
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(post, style: TextStyle(fontSize: 16)),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _showAddPostDialog(index: index),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deletePost(index),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -176,13 +226,13 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
           '$title  ',
           style: TextStyle(
             fontWeight: FontWeight.w500,
-            color: Colors.grey[800], // 글씨색을 회색으로 설정
+            color: Colors.grey[800],
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(color: Colors.black), // 값은 검정색으로 설정
+            style: TextStyle(color: Colors.black),
           ),
         ),
       ],
