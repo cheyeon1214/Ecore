@@ -16,9 +16,27 @@ class EditMarketProfilePage extends StatefulWidget {
 class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
   File? _profileImage;
   File? _bannerImage;
+  String? _currentProfileImageUrl;  // 현재 프로필 이미지 URL
+  String? _currentBannerImageUrl;   // 현재 배너 이미지 URL
   final _storeNameController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentImages();
+  }
+
+  Future<void> _loadCurrentImages() async {
+    DocumentSnapshot marketDoc = await _firestore.collection('Markets').doc(widget.marketId).get();
+    if (marketDoc.exists) {
+      setState(() {
+        _currentProfileImageUrl = marketDoc['img'];
+        _currentBannerImageUrl = marketDoc['bannerImg'];
+      });
+    }
+  }
 
   Future<void> _pickProfileImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -180,6 +198,8 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
                       radius: 50,
                       backgroundImage: _profileImage != null
                           ? FileImage(_profileImage!)
+                          : _currentProfileImageUrl != null
+                          ? NetworkImage(_currentProfileImageUrl!)
                           : AssetImage('assets/default_profile.png') as ImageProvider,
                     ),
                     Positioned(
@@ -223,18 +243,35 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
                       image: FileImage(_bannerImage!),
                       fit: BoxFit.cover,
                     )
+                        : _currentBannerImageUrl != null
+                        ? DecorationImage(
+                      image: NetworkImage(_currentBannerImageUrl!),
+                      fit: BoxFit.cover,
+                    )
                         : null,
                   ),
-                  child: _bannerImage == null
-                      ? Center(child: Icon(Icons.add_a_photo, color: Colors.grey[700], size: 50))
-                      : null,
+                  child: Stack(
+                    children: [
+                      if (_bannerImage == null && _currentBannerImageUrl == null)
+                        Center(child: Icon(Icons.add_a_photo, color: Colors.grey[700], size: 50)),
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: Icon(Icons.camera_alt, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black, backgroundColor: Colors.blue[50],
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.blue[50],
                   padding: EdgeInsets.symmetric(vertical: 10),
                   textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
                   minimumSize: Size(double.infinity, 48),
