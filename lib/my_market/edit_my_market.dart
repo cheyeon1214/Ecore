@@ -1,8 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class EditMarketProfilePage extends StatefulWidget {
+  final String marketId; // marketId를 필수 인자로 받음
+
+  const EditMarketProfilePage({Key? key, required this.marketId}) : super(key: key);
+
   @override
   _EditMarketProfilePageState createState() => _EditMarketProfilePageState();
 }
@@ -11,6 +17,8 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
   File? _profileImage;
   File? _bannerImage;
   final _storeNameController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<void> _pickProfileImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -32,22 +40,120 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
     }
   }
 
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      // 고유한 파일 이름 생성
+      final fileName = 'market_images/${DateTime.now().millisecondsSinceEpoch.toString()}.jpg';
+      final ref = _storage.ref().child(fileName);
+
+      // Firebase Storage에 파일 업로드
+      final uploadTask = ref.putFile(imageFile);
+      final snapshot = await uploadTask.whenComplete(() {});
+
+      // 업로드된 파일의 다운로드 URL 가져오기
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print('Failed to upload image: $e');
+      return null;
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    try {
+      // 로딩 중 다이얼로그 표시
+      _showLoadingDialog();
+
+      // 프로필 이미지와 배너 이미지를 Firebase Storage에 업로드
+      String? profileImageUrl;
+      String? bannerImageUrl;
+
+      if (_profileImage != null) {
+        profileImageUrl = await _uploadImage(_profileImage!);
+      }
+
+      if (_bannerImage != null) {
+        bannerImageUrl = await _uploadImage(_bannerImage!);
+      }
+
+      // Firestore에 업데이트할 데이터
+      Map<String, dynamic> updateData = {
+        'name': _storeNameController.text,
+      };
+
+      if (profileImageUrl != null) {
+        updateData['img'] = profileImageUrl;
+      }
+
+      if (bannerImageUrl != null) {
+        updateData['bannerImg'] = bannerImageUrl;
+      }
+
+      // Firestore에서 Markets 컬렉션의 해당 마켓 문서를 업데이트
+      await _firestore.collection('Markets').doc(widget.marketId).update(updateData);
+
+      // 로딩 중 다이얼로그 닫기
+      Navigator.of(context).pop();
+
+      // 성공 메시지 표시
+      _showSuccessDialog();
+    } catch (e) {
+      // 로딩 중 다이얼로그 닫기
+      Navigator.of(context).pop();
+
+      print('Error updating profile: $e');
+      // 에러 처리 로직 추가
+    }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("로딩 중..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("완료"),
+          content: Text("프로필 수정이 완료되었습니다."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+              },
+              child: Text("확인"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _storeNameController.dispose();
     super.dispose();
-  }
-
-  void _saveProfile() {
-    // 여기에 프로필 저장 로직을 추가하세요.
-    print('Store Name: ${_storeNameController.text}');
-    if (_bannerImage != null) {
-      print('Banner Image Path: ${_bannerImage!.path}');
-    }
-    if (_profileImage != null) {
-      print('Profile Image Path: ${_profileImage!.path}');
-    }
-    // 저장 후 페이지를 닫거나 알림을 표시할 수 있습니다.
   }
 
   @override
