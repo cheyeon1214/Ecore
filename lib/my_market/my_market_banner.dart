@@ -1,15 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-
-import '../home_page/feed_detail.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/market_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../sell_donation_page/sell_product_form.dart';
 import 'edit_my_market.dart';
 import 'my_market_feedpage.dart';
+import 'my_market_productpage.dart';
+import 'my_market_reviewpage.dart';  // 새로운 MyMarketProductpage 위젯을 import
 
 class MyMarketBanner extends StatefulWidget {
   final MarketModel market; // MarketModel을 필수 인자로 받음
@@ -173,67 +170,8 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      // 상품 페이지
-                      StreamBuilder<List<dynamic>>(
-                        stream: FirebaseFirestore.instance
-                            .collection('SellPosts')
-                            .where('marketId', isEqualTo: widget.market.marketId)
-                            .snapshots()
-                            .map((snapshot) => snapshot.docs.map((doc) => SellPostModel.fromSnapshot(doc)).toList()),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          }
-
-                          if (snapshot.hasError) {
-                            return Center(child: Text('오류 발생: ${snapshot.error}'));
-                          }
-
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return Center(child: Text('상품이 없습니다.'));
-                          }
-
-                          var details = snapshot.data!;
-
-                          return GridView.builder(
-                            padding: EdgeInsets.all(8.0),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 4.0,
-                              mainAxisSpacing: 4.0,
-                            ),
-                            itemCount: details.length,
-                            itemBuilder: (context, index) {
-                              var sellPost = details[index];
-
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FeedDetail(sellPost: sellPost),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  color: Colors.blueGrey,
-                                  child: sellPost.img.isNotEmpty
-                                      ? Image.network(
-                                    sellPost.img[0],
-                                    fit: BoxFit.cover,
-                                  )
-                                      : Center(
-                                    child: Text(
-                                      '이미지 없음',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
+                      // 상품 페이지를 MyMarketProductpage 위젯으로 교체
+                      MyMarketProductpage(marketId: market.marketId),
                       // 피드 페이지
                       MyMarketFeedpage(),
                       // 리뷰 페이지
@@ -247,16 +185,5 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
         );
       },
     );
-  }
-}
-
-class MyMarketReviewpage extends StatelessWidget {
-  const MyMarketReviewpage({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('리뷰 페이지'));
   }
 }
