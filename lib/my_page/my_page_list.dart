@@ -1,4 +1,5 @@
 import 'package:ecore/models/firebase_auth_state.dart';
+import 'package:ecore/my_market/business_check.dart';
 import 'package:ecore/my_page/favorite_list_page.dart';
 import 'package:ecore/my_page/recently_viewed_page.dart';
 import 'package:flutter/material.dart';
