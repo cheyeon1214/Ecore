@@ -90,7 +90,7 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   Future<void> _submitMarketInfo() async {
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
-      String marketDescription = _marketDescriptionController.text;
+      List<String> marketDescription = _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
       String csemail = _csemailController.text;
       String businessNumber = _businessNumberController.text;
@@ -109,11 +109,11 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
         // Add the market info to Firestore
         DocumentReference docRef = await FirebaseFirestore.instance.collection('Markets').add({
           'name': marketName,
-          'description': marketDescription,
+          'feedPosts': marketDescription,
           'cs_phone': csPhone,
           'cs_email': csemail,
           'business_number': businessNumber.isEmpty ? '' : businessNumber,
-          'userid': userId, // 현재 유저 ID 추가
+          'userId': userId, // 현재 유저 ID 추가
           'seller_name': widget.seller_name,
           'dob': widget.dob,
           'gender': widget.gender,
