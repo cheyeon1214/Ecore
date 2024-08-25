@@ -46,12 +46,16 @@ const KEY_MARKET_USERKEY = 'userId';
 const KEY_MARKET_PHONE = 'phone';
 const KEY_MARKET_CSPHONE = 'cs_phone';
 const KEY_MARKET_EMAIL = 'email';
+const KEY_MARKET_CSEMAIL ='cs_email';
 const KEY_MARKET_NAME = 'name';
 const KEY_BUSINESS_NUMBER = 'business_number';
+const KEY_MARKET_ADDRESS = 'address';
+const KEY_MARKET_SELLERNAME = 'seller_name';
 const KEY_MARKET_PROFILEIMG = 'img';
 const KEY_MARKET_BANNERIMG = 'bannerImg';
 const KEY_MARKET_DESCRIPTION = 'description';
 const KEY_MYSELLPOST = 'sellPosts';
+const KEY_MARKET_FEEDPOST = 'feedPosts';
 
 // REVIEW KEYS
 const KEY_REVIEW_USERID = 'userId';
