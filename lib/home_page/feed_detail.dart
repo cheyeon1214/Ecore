@@ -1,13 +1,13 @@
-import 'package:ecore/chat_page/chat_banner.dart';
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../chat_page/chat_banner.dart';
+import '../models/firestore/chat_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
-import 'package:provider/provider.dart';
-
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -20,11 +20,14 @@ class FeedDetail extends StatefulWidget {
 }
 
 class _FeedDetailState extends State<FeedDetail> {
+  int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
+  bool _isFavorite = false;
+
   @override
   void initState() {
     super.initState();
-    print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
+    _checkIfFavorite(); // 추가: 즐겨찾기 상태를 확인하는 함수 호출
   }
 
   Future<void> _incrementViewCount() async {
@@ -71,36 +74,87 @@ class _FeedDetailState extends State<FeedDetail> {
     await userRef.update({'cart': cart});
   }
 
+  Future<void> _checkIfFavorite() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final favoriteRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .collection('FavoriteList')
+          .doc(widget.sellPost.sellId);
+
+      final doc = await favoriteRef.get();
+      setState(() {
+        _isFavorite = doc.exists;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final userModel = Provider.of<UserModel>(context, listen: false);
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('User not logged in');
+      return;
+    }
+
+    if (_isFavorite) {
+      // Remove from wishlist
+      final favoriteRef = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user.uid)
+          .collection('FavoriteList')
+          .doc(widget.sellPost.sellId);
+
+      await favoriteRef.delete();
+    } else {
+      // Add to wishlist
+      await userModel.addItemToWishlist(widget.sellPost);
+    }
+
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+  }
+
+  Future<String?> _getReceiverId() async {
+    try {
+      final marketDoc = await FirebaseFirestore.instance
+          .collection('Markets')
+          .doc(widget.sellPost.marketId)
+          .get();
+
+      final marketData = marketDoc.data();
+      return marketData?['userId'];
+    } catch (e) {
+      print('Error fetching receiverId: $e');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CachedNetworkImage(
-                  imageUrl: widget.sellPost.img,
-                  width: 300,
-                  height: 300,
-                  fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => Icon(Icons.error),
-                  placeholder: (context, url) => CircularProgressIndicator(),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageCarousel(widget.sellPost.img), // 이미지 리스트 처리
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _marketInfoBuild(context),
+                  SizedBox(height: 16),
+                  Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
+                ],
               ),
-              SizedBox(height: 16),
-              _marketInfoBuild(context),
-              SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child:
-                Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _bottomNaviBar(),
@@ -118,10 +172,11 @@ class _FeedDetailState extends State<FeedDetail> {
             Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.favorite_border),
-                  onPressed: () {
-                    // Add favorite button functionality here
-                  },
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : Colors.black54,
+                  ),
+                  onPressed: _toggleFavorite,
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -131,7 +186,7 @@ class _FeedDetailState extends State<FeedDetail> {
               ],
             ),
             ElevatedButton.icon(
-              onPressed: _addToCart, // Updated to call _addToCart method
+              onPressed: _addToCart,
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
               label: Text('장바구니 담기',
                   style: TextStyle(
@@ -207,30 +262,59 @@ class _FeedDetailState extends State<FeedDetail> {
         ),
         Spacer(),
         IconButton(
-          onPressed: () async {
+          onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ChatBanner()),
+              MaterialPageRoute(builder: (context) => ChatBanner(marketId: widget.sellPost.marketId)),
             );
           },
           icon: Icon(Icons.mail, size: 30),
-        ),
-        IconButton(
-          onPressed: () async {
-            bool isMatched = await isUserMarketMatched(widget.sellPost);
-            if (isMatched) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ChatBanner()),
-              );
-            } else {
-              print('User is not associated with the market of the sell post.');
-            }
-          },
-          icon: Icon(Icons.mail_lock, size: 30),
         ),
       ],
     );
   }
 
+  Widget _buildImageCarousel(List<String> images) {
+    if (images.isEmpty) {
+      return Text('이미지가 없습니다.');
+    }
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
+      child: Stack(
+        children: [
+          PageView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return CachedNetworkImage(
+                imageUrl: images[index],
+                fit: BoxFit.cover,  // 이미지를 가로폭에 맞춰 전체 화면에 걸쳐 표시
+                errorWidget: (context, url, error) => Icon(Icons.error),
+                placeholder: (context, url) => CircularProgressIndicator(),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: Colors.black54,
+              child: Text(
+                '${_currentIndex + 1}/${images.length}',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -63,7 +63,7 @@ class CartBtn extends StatelessWidget {
                       sellId: item['sellId'] ?? '',
                       marketId: item['marketId'] ?? '',
                       title: item['title'] ?? 'Untitled',
-                      img: item['img'] ?? 'https://via.placeholder.com/150',
+                      img: (item['img'] as List<dynamic>?)?.cast<String>() ?? ['https://via.placeholder.com/150'],
                       price: item['price'] ?? 0,
                       category: item['category'] ?? '기타',
                       body: item['body'] ?? '내용 없음',

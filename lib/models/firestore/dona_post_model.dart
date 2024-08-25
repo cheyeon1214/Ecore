@@ -7,7 +7,7 @@ class DonaPostModel {
   final String donaId;
   final String userId;
   final String title;
-  final String img;
+  final List<String> img;
   final String category;
   final String body;
   final DateTime createdAt;
@@ -22,7 +22,9 @@ class DonaPostModel {
       {required this.reference})
       : title = map[KEY_DONATITLE] ?? '',
         userId = map[KEY_DONA_USERKEY] ?? '',
-        img = map[KEY_DONAIMG] ?? '',
+        img = (map[KEY_SELLIMG] is String)
+            ? [map[KEY_SELLIMG]] // String일 경우 리스트로 변환
+            : (map[KEY_SELLIMG] as List<dynamic>?)?.cast<String>() ?? ['https://via.placeholder.com/150'], // List일 경우 그대로 사용
         category = map[KEY_DONACATEGORY] ?? '',
         body = map[KEY_DONABODY] ?? '',
         color = map[KEY_DONACOLOR] ?? '',

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 
 class DonaProductForm extends StatefulWidget {
@@ -11,31 +12,48 @@ class DonaProductForm extends StatefulWidget {
 
 class _DonaProductFormState extends State<DonaProductForm> {
   final _formKey = GlobalKey<FormState>();
-  XFile? _image;
+  List<XFile>? _images = []; // 여러 이미지를 저장할 리스트
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<void> getImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      _image = pickedFile;
-    });
+  // 현재 로그인된 사용자 정보 가져오기
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+
+  Future<void> getImages() async {
+    if (_images!.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
+      );
+      return; // 이미 10개 이상의 이미지가 선택된 경우 추가 선택 불가
+    }
+
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles != null) {
+      setState(() {
+        // 최대 10개를 초과하지 않도록 리스트에 추가
+        _images = (_images! + pickedFiles).take(10).toList();
+      });
+    }
   }
 
-  Future<String> uploadImage(File imageFile) async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = _storage.ref().child('images/$fileName');
-      final uploadTask = ref.putFile(imageFile);
+  Future<List<String>> uploadImages(List<XFile> imageFiles) async {
+    List<String> downloadUrls = [];
+    for (XFile imageFile in imageFiles) {
+      try {
+        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        final ref = _storage.ref().child('images/$fileName');
+        final uploadTask = ref.putFile(File(imageFile.path));
 
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      print('Failed to upload image: $e');
-      throw e;
+        final snapshot = await uploadTask.whenComplete(() {});
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        downloadUrls.add(downloadUrl);
+      } catch (e) {
+        print('Failed to upload image: $e');
+        throw e;
+      }
     }
+    return downloadUrls;
   }
 
   Future<void> _submitForm() async {
@@ -50,12 +68,12 @@ class _DonaProductFormState extends State<DonaProductForm> {
       _showLoadingDialog();
 
       try {
-        String? imageUrl;
-        if (_image != null) {
-          final imageFile = File(_image!.path);
-          imageUrl = await uploadImage(imageFile);
+        List<String>? imageUrls;
+        if (_images != null && _images!.isNotEmpty) {
+          imageUrls = await uploadImages(_images!);
         }
 
+        // 현재 사용자의 UID를 user 필드로 추가
         await _firestore.collection('DonaPosts').add({
           'title': title,
           'category': category,
@@ -63,9 +81,10 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'color': color,
           'condition': condition,
           'body': body,
-          'img': imageUrl,
+          'img': imageUrls,
           'viewCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
+          'userId': currentUser?.uid, // Users 컬렉션 속 현재 사용자의 UID 추가
         });
 
         Navigator.of(context).pop();
@@ -136,7 +155,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
               Row(
                 children: <Widget>[
                   GestureDetector(
-                    onTap: getImage,
+                    onTap: getImages,
                     child: Container(
                       height: 100,
                       width: 100,
@@ -144,17 +163,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: _image == null
-                          ? Icon(Icons.camera_alt, size: 50)
-                          : ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(_image!.path),
-                          fit: BoxFit.cover,
-                          height: 100,
-                          width: 100,
-                        ),
-                      ),
+                      child: Icon(Icons.camera_alt, size: 50), // 항상 카메라 아이콘만 표시
                     ),
                   ),
                   SizedBox(width: 16),
@@ -171,6 +180,30 @@ class _DonaProductFormState extends State<DonaProductForm> {
                   ),
                 ],
               ),
+              SizedBox(height: 16),
+              _images != null && _images!.isNotEmpty
+                  ? SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _images!.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          File(_images![index].path),
+                          fit: BoxFit.cover,
+                          width: 100,
+                          height: 100,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+                  : Container(),
               SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,

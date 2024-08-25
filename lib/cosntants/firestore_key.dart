@@ -76,3 +76,12 @@ const KEY_ORDERTITLE = 'title';
 const KEY_ORDERIMG = 'img';
 const KEY_ORDERPRICE = 'price';
 const KEY_ITEMQUANTITY = 'quantity';
+
+//////////////////
+const COLLECTION_CHATS = 'Chats';
+
+const KEY_CHATID = 'chatId';
+const KEY_SEND_USERID = 'sendId';
+const KEY_RECEIVE_USERID = 'receiveId';
+const KEY_DATE = 'date';
+const KEY_TEXT = 'text';

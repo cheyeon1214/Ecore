@@ -63,9 +63,14 @@ class OrderList extends StatelessWidget {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: (order['items'] as List).map((item) {
+                    // img 필드가 리스트인지 확인하고 첫 번째 이미지를 사용
+                    final List<String> imageList = (item['img'] is List)
+                        ? (item['img'] as List<dynamic>).cast<String>()
+                        : [item['img'] ?? 'https://via.placeholder.com/150'];
                     return ListTile(
+
                       leading: Image.network(
-                        item['img'] ?? 'https://via.placeholder.com/150',
+                        imageList.isNotEmpty ? imageList[0] : 'https://via.placeholder.com/150',
                         width: 50,
                         height: 50,
                         fit: BoxFit.cover,
