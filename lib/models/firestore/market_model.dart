@@ -6,6 +6,7 @@ class MarketModel {
   final String userId;
   final String marketId;
   final String name;
+  final String bannerImg;
   final String img;
   final String phone;
   final String description;
@@ -25,6 +26,7 @@ class MarketModel {
         business_number = map[KEY_BUSINESS_NUMBER] ?? null,
         email = map[KEY_MARKET_EMAIL] ?? '',
         img = map[KEY_MARKET_PROFILEIMG] ?? 'https://via.placeholder.com/150',
+        bannerImg = map[KEY_MARKET_BANNERIMG] ?? 'https://via.placeholder.com/150',
         sellPosts = List<dynamic>.from(map[KEY_MYSELLPOST] ?? []); // 기본값 빈 리스트
 
   MarketModel.fromSnapshot(DocumentSnapshot snapshot)

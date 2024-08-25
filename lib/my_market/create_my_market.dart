@@ -48,9 +48,9 @@ class _SellerInfoFormState extends State<SellerInfoForm> {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context);  // 뒤로가기 기능
-            },
+          onPressed: () {
+            Navigator.pop(context);  // 뒤로가기 기능
+          },
         ),
       ),
       body: SingleChildScrollView(

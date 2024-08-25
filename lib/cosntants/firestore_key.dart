@@ -49,6 +49,7 @@ const KEY_MARKET_EMAIL = 'email';
 const KEY_MARKET_NAME = 'name';
 const KEY_BUSINESS_NUMBER = 'business_number';
 const KEY_MARKET_PROFILEIMG = 'img';
+const KEY_MARKET_BANNERIMG = 'bannerImg';
 const KEY_MARKET_DESCRIPTION = 'description';
 const KEY_MYSELLPOST = 'sellPosts';
 
