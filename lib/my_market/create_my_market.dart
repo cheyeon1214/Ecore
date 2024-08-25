@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For input formatters
+import 'package:flutter/services.dart';  // For input formatters
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import 'create_market_info.dart'; // For date formatting
+import 'create_market_info.dart';
 
 class SellerInfoForm extends StatefulWidget {
   @override
@@ -11,7 +13,7 @@ class SellerInfoForm extends StatefulWidget {
 
 class _SellerInfoFormState extends State<SellerInfoForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _sellernameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -42,16 +44,29 @@ class _SellerInfoFormState extends State<SellerInfoForm> {
     }
   }
 
+  void _goToMarketInfoPage() {
+    if (_formKey.currentState?.validate() ?? false) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MarketInfoPage(
+            seller_name: _sellernameController.text,
+            dob: _dobController.text,
+            gender: _gender,
+            phone: _phoneController.text,
+            email: _emailController.text,
+            address: _addressController.text,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);  // 뒤로가기 기능
-          },
-        ),
+        title: Text('판매자 정보 입력'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -67,7 +82,7 @@ class _SellerInfoFormState extends State<SellerInfoForm> {
                 ),
                 SizedBox(height: 20),
                 _buildTextField(
-                  controller: _nameController,
+                  controller: _sellernameController,
                   label: '판매자명',
                   isRequired: true,
                   validator: (value) {
@@ -174,22 +189,8 @@ class _SellerInfoFormState extends State<SellerInfoForm> {
                 SizedBox(height: 20),
                 Center(
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        // 처리 로직 추가
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('정보가 제출되었습니다.')));
-                      }
-                    },
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => MarketInfoPage()),
-                        );
-                      },
-                      child: Text('다음'),
-                    ),
+                    onPressed: _goToMarketInfoPage,
+                    child: Text('다음'),
                   ),
                 ),
               ],
@@ -218,9 +219,6 @@ class _SellerInfoFormState extends State<SellerInfoForm> {
           labelText: isRequired ? '$label *' : label,
           border: OutlineInputBorder(),
           suffixIcon: suffixIcon,
-          labelStyle: TextStyle(
-            color: Colors.black,
-          ),
         ),
         readOnly: readOnly,
         keyboardType: keyboardType,
