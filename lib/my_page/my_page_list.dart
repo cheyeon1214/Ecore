@@ -63,6 +63,9 @@ class _MyPageListState extends State<MyPageList> {
             child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold))),
         Divider(thickness: 2),
         Text('커뮤니티'),
+        TextButton(
+            onPressed: () {},
+            child: Text('내 기부글 보기', style: TextStyle(fontWeight: FontWeight.bold))),
         SizedBox(height: 40,),
         Divider(thickness: 2),
         Text('서비스 설정'),

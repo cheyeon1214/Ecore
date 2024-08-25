@@ -52,6 +52,7 @@ class BodyContents extends StatelessWidget {
             var userData = userDocSnapshot.data!.data() as Map<String, dynamic>?;
             String userName = userData?['username'] ?? 'Unknown User';
             String userPoints = userData?['points']?.toString() ?? '0';
+            String? profileImageUrl = userData?['profile_img']; // 프로필 이미지 URL 가져오기
 
             return SingleChildScrollView(
               child: Padding(
@@ -62,13 +63,14 @@ class BodyContents extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          onPressed: () {
-                            // 클릭하면 사진 수정 가능
-                          },
-                          icon: Icon(Icons.people_alt_rounded, size: 50),
+                        // 프로필 사진 띄우기
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
                         ),
-                        SizedBox(width: 30,),
+                        SizedBox(width: 30),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

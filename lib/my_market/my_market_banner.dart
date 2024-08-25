@@ -126,7 +126,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                         radius: 30,
                         backgroundImage: market.img.isNotEmpty
                             ? NetworkImage(market.img) // 프로필 이미지 URL 사용
-                            : AssetImage('assets/profile_image.jpg') as ImageProvider,
+                            : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
                       ),
                       SizedBox(width: 8),
                       Column(
