@@ -51,7 +51,7 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
           content: TextField(
             controller: _postController,
             decoration: InputDecoration(
-              hintText: '공지사항 입력',
+              hintText: '공지사항을 입력해주세요',
               filled: true,
               fillColor: Colors.grey[200],
               border: OutlineInputBorder(
@@ -86,7 +86,7 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
               icon: Icon(Icons.check),
               label: Text(index == null ? '추가' : '수정'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Colors.blue[50],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
