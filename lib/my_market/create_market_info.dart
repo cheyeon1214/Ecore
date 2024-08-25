@@ -96,7 +96,7 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           'description': marketDescription,
           'cs_phone': csPhone,
           'email': email,
-          'business_number': businessNumber.isEmpty ? 0 : businessNumber,
+          'business_number': businessNumber.isEmpty ? '' : businessNumber,
           'user_id': userId, // 현재 유저 ID 추가
         });
 

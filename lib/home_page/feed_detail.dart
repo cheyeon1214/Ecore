@@ -62,6 +62,7 @@ class _FeedDetailState extends State<FeedDetail> {
       'price': widget.sellPost.price,
       'category': widget.sellPost.category,
       'body': widget.sellPost.body,
+      'marketId' : widget.sellPost.marketId,
       'reference': widget.sellPost.reference.path,
     };
 

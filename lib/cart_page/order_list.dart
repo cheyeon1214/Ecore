@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../my_page/create_review_page.dart';
+
 class OrderList extends StatefulWidget {
   const OrderList({super.key});
 
@@ -35,10 +37,9 @@ class _OrderListState extends State<OrderList> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16.0, vertical: 8.0), // 양쪽 간격을 더 띄우기 위해 수평 패딩을 변경
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SizedBox(
-              height: 40, // 검색창의 높이를 조절
+              height: 40,
               child: TextField(
                 decoration: InputDecoration(
                   hintText: '검색',
@@ -46,14 +47,13 @@ class _OrderListState extends State<OrderList> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 10), // 내부 텍스트 간격 조절
+                  contentPadding: EdgeInsets.symmetric(vertical: 10),
                 ),
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value; // 검색어를 업데이트
-                    });
-                  },
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value; // 검색어를 업데이트
+                  });
+                },
               ),
             ),
           ),
@@ -78,60 +78,92 @@ class _OrderListState extends State<OrderList> {
                   return Center(child: Text('주문 내역이 없습니다.'));
                 }
 
-                final orders = snapshot.data!.docs.map((doc) {
-                  return doc.data() as Map<String, dynamic>;
-                }).toList();
+                final orders = snapshot.data!.docs;
 
-                // 검색어에 따라 주문 목록 필터링
-                final filteredOrders = orders.where((order) {
-                  return (order['items'] as List).any((item) {
-                    return (item['title'] ?? '')
-                        .toString()
-                        .toLowerCase()
-                        .contains(searchQuery.toLowerCase());
-                  });
-                }).toList();
+                // Fetch items for each order
+                return FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _fetchOrdersWithItems(orders),
+                  builder: (context, itemsSnapshot) {
+                    if (itemsSnapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-                // 날짜별로 그룹화된 주문 데이터
-                Map<String, List<Map<String, dynamic>>> groupedOrders = {};
+                    if (itemsSnapshot.hasError) {
+                      return Center(child: Text('Error: ${itemsSnapshot.error}'));
+                    }
 
-                for (var order in filteredOrders) {
-                  Timestamp timestamp = order['date'];
-                  DateTime dateTime = timestamp.toDate();
-                  String formattedDate =
+                    if (!itemsSnapshot.hasData || itemsSnapshot.data!.isEmpty) {
+                      return Center(child: Text('주문 내역이 없습니다.'));
+                    }
+
+                    final filteredOrders = itemsSnapshot.data!.where((order) {
+                      final items = order['items'] as List<dynamic>?;
+                      // items가 null이 아니고 검색어와 일치하는 경우 필터링
+                      return items != null && items.any((item) {
+                        return item['title']
+                            .toString()
+                            .toLowerCase()
+                            .contains(searchQuery.toLowerCase());
+                      });
+                    }).toList();
+
+                    // 날짜별로 그룹화된 주문 데이터
+                    Map<String, List<Map<String, dynamic>>> groupedOrders = {};
+
+                    for (var order in filteredOrders) {
+                      Timestamp timestamp = order['date'];
+                      DateTime dateTime = timestamp.toDate();
+                      String formattedDate =
                       DateFormat('yyyy-MM-dd').format(dateTime);
 
-                  if (groupedOrders.containsKey(formattedDate)) {
-                    groupedOrders[formattedDate]!.add(order);
-                  } else {
-                    groupedOrders[formattedDate] = [order];
-                  }
-                }
+                      if (groupedOrders.containsKey(formattedDate)) {
+                        groupedOrders[formattedDate]!.add(order);
+                      } else {
+                        groupedOrders[formattedDate] = [order];
+                      }
+                    }
 
-                return Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: ListView(
-                    children: groupedOrders.keys.map((date) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _viewDate(date, groupedOrders[date]!),
-                          ...groupedOrders[date]!.expand((order) {
-                            return (order['items'] as List).map((item) {
-                              final List<String> imageList = (item['img'] is List)
-                                  ? (item['img'] as List<dynamic>).cast<String>()
-                                  : [
+                    return Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: ListView(
+                        children: groupedOrders.keys.map((date) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _viewDate(date),
+                              ...groupedOrders[date]!.map((order) {
+                                return Column(
+                                  children: (order['items'] as List<dynamic>?)
+                                      ?.asMap()
+                                      .entries
+                                      .map((entry) {
+                                    final item = entry.value;
+                                    final index = entry.key;
+                                    final List<String> imageList = (item['img'] is List)
+                                        ? (item['img'] as List<dynamic>)
+                                        .cast<String>()
+                                        : [
                                       item['img'] ??
                                           'https://via.placeholder.com/150'
                                     ];
 
-                              return _buildCard(imageList, item);
-                            }).toList();
-                          }).toList(),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                                    return _buildCard(
+                                      imageList,
+                                      item,
+                                      order['id'], // 주문 ID 전달
+                                      index, // 아이템 인덱스 전달
+                                      item['marketId'] ?? 'unknown_store', // 가게 ID 전달
+                                    );
+                                  }).toList() ??
+                                      [],
+                                );
+                              }).toList(),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -141,11 +173,41 @@ class _OrderListState extends State<OrderList> {
     );
   }
 
-  Padding _buildCard(List<String> imageList, item) {
+  Future<List<Map<String, dynamic>>> _fetchOrdersWithItems(List<QueryDocumentSnapshot> orders) async {
+    List<Map<String, dynamic>> ordersWithItems = [];
+
+    for (var orderDoc in orders) {
+      final orderId = orderDoc.id;
+      final orderData = orderDoc.data() as Map<String, dynamic>;
+
+      // Fetch items for this order
+      final itemsQuerySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .collection('Orders')
+          .doc(orderId)
+          .collection('items')
+          .get();
+
+      final items = itemsQuerySnapshot.docs.map((doc) => doc.data()).toList();
+
+      ordersWithItems.add({
+        ...orderData,
+        'id': orderId,
+        'items': items,
+      });
+    }
+
+    return ordersWithItems;
+  }
+
+  Padding _buildCard(List<String> imageList, item, String orderId, int itemIndex, String marketId) {
+    bool isReviewed = item['reviewed'] ?? false;
+
     return Padding(
       padding: const EdgeInsets.all(5.0),
       child: Card(
-        color: Colors.white, // 내부 색상을 흰색으로 설정
+        color: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: Colors.grey, width: 1),
@@ -158,7 +220,37 @@ class _OrderListState extends State<OrderList> {
             children: [
               _orderBox(imageList, item),
               SizedBox(height: 16),
-              _createReview(),
+              if (!isReviewed) // 리뷰가 작성되지 않은 경우에만 버튼을 표시
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateReview(
+                            orderId: orderId,
+                            itemIndex: itemIndex,
+                            itemTitle: item['title'] ?? '제목 없음',
+                            itemImg: imageList.isNotEmpty ? imageList[0] : '',
+                            itemPrice: item['price'] ?? 0,
+                            marketId: item['marketId'] ?? '',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text('리뷰 작성'),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black,
+                      backgroundColor: Colors.white,
+                      side: BorderSide(color: Colors.grey, width: 2),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -166,7 +258,8 @@ class _OrderListState extends State<OrderList> {
     );
   }
 
-  Padding _viewDate(String date, List<Map<String, dynamic>> orders) {
+
+  Padding _viewDate(String date) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -207,29 +300,6 @@ class _OrderListState extends State<OrderList> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  SizedBox _createReview() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // 리뷰 작성 버튼 액션 추가
-        },
-        child: Text('리뷰 작성'),
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          backgroundColor: Colors.white,
-          // 텍스트 색상
-          side: BorderSide(color: Colors.grey, width: 2),
-          // 테두리 설정
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
       ),
     );
   }
