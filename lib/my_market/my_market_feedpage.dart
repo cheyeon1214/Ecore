@@ -168,8 +168,10 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
                       _infoRow('문의메일', marketData['email'] ?? 'N/A'),
                       _infoRow('사업자주소', marketData['address'] ?? 'N/A'),
                       SizedBox(height: 8),
-                      SizedBox(height: 8),
-                      _infoRow('사업자등록번호', marketData['business_number'] ?? '없음'),
+                      // 사업자 등록 번호가 있을 경우에만 표시
+                      if (marketData['business_number'] != null &&
+                          marketData['business_number'].isNotEmpty)
+                        _infoRow('사업자등록번호', marketData['business_number']),
                     ],
                   ),
                 ),

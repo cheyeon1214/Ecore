@@ -90,12 +90,12 @@ class _SellListState extends State<SellList> {
   }
 
   Widget _postHeader(SellPostModel sellPost) {
-    // 이미지 리스트에서 첫 번째 이미지를 사용
+    // Use the first image in the list or a placeholder
     final String firstImageUrl = sellPost.img.isNotEmpty ? sellPost.img[0] : 'https://via.placeholder.com/100';
 
-    return TextButton(
+    return OutlinedButton(
       onPressed: () {
-        userModel.addRecentlyViewed(sellPost);  // 함수 직접 실행
+        userModel.addRecentlyViewed(sellPost);  // Function call directly
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -103,19 +103,25 @@ class _SellListState extends State<SellList> {
           ),
         );
       },
-      style: TextButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        backgroundColor: Colors.grey[200],
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+        backgroundColor: Colors.white,
+        side: BorderSide(color: Colors.grey[300]!, width: 1), // Light gray border color
+        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Increased vertical padding
       ),
       child: Row(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: CachedNetworkImage(
-              imageUrl: firstImageUrl,
-              width: 100,
-              height: 100,
-              errorWidget: (context, url, error) => Icon(Icons.error),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10.0), // Adjust radius as needed
+              child: CachedNetworkImage(
+                imageUrl: firstImageUrl,
+                width: 110,
+                height: 110,
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => Icon(Icons.error),
+              ),
             ),
           ),
           SizedBox(width: 10.0),
@@ -123,17 +129,30 @@ class _SellListState extends State<SellList> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(sellPost.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black87)),
-                Text('${sellPost.price}원', style: TextStyle(fontSize: 20)),
+                Text(
+                  sellPost.title,
+                  style: TextStyle(
+                    fontSize: 20, // Increase font size
+                    fontWeight: FontWeight.bold, // Make the font bold
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  '${sellPost.price}원',
+                  style: TextStyle(
+                    fontSize: 20, // Adjust font size for price
+                    color: Colors.grey[700], // Change color to gray
+                  ),
+                ),
               ],
             ),
           ),
           PopupMenuButton<String>(
             onSelected: (String value) {
               if (value == 'report') {
-                // 신고 로직
+                _showReportDialog();  // Show report dialog
               } else if (value == 'hide') {
-                // 숨기기 로직
+                // Hide logic
               }
             },
             itemBuilder: (BuildContext context) {
@@ -153,4 +172,44 @@ class _SellListState extends State<SellList> {
       ),
     );
   }
+
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('신고 이유를 선택해주세요'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                _buildReportOption('부적절한 내용'),
+                _buildReportOption('스팸'),
+                _buildReportOption('기타'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('취소'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReportOption(String reason) {
+    return ListTile(
+      title: Text(reason),
+      onTap: () {
+        // Handle the selection of the reason here
+        Navigator.of(context).pop();
+        // You could add additional logic to process the report
+      },
+    );
+  }
+
 }
