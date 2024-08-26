@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 임포트
+import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage를 위한 임포트
 
 import '../home_page/home_page_menu.dart';
 import '../models/firestore/market_model.dart';
@@ -40,18 +44,53 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
 
   String? _businessNumber; // Holds the business number
 
+  String? _profileImageUrl;
+  XFile? _image;
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _image = image;
+      });
+    }
+  }
+
+  Future<void> _uploadImage(String marketId) async {
+    if (_image != null) {
+      try {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('market_images')
+            .child('$marketId.jpg');
+
+        await ref.putFile(File(_image!.path));
+        String imageUrl = await ref.getDownloadURL();
+
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
+      } catch (e) {
+        print('이미지 업로드 오류: $e');
+      }
+    }
+  }
+
   Future<void> _submitMarketInfo() async {
+    // 로딩 중 다이얼로그 표시
+    _showLoadingDialog();
+
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
       List<String> marketDescription = _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
       String csemail = _csemailController.text;
 
-      // 현재 유저 아이디 가져오기
       String? userId = FirebaseAuth.instance.currentUser?.uid;
 
       try {
-        // Add the market info to Firestore
         DocumentReference docRef = await FirebaseFirestore.instance.collection('Markets').add({
           'name': marketName,
           'feedPosts': marketDescription,
@@ -65,10 +104,22 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           'phone': widget.phone,
           'email': widget.email,
           'address': widget.address,
+          'img': _profileImageUrl ?? '',
+          'bannerImg': 'https://via.placeholder.com/150',
         });
 
-        // Get the document ID
         String marketId = docRef.id;
+
+        if (_image != null) {
+          await _uploadImage(marketId);
+
+          await FirebaseFirestore.instance
+              .collection('Markets')
+              .doc(marketId)
+              .update({
+            'img': _profileImageUrl,
+          });
+        }
 
         if (userId != null) {
           await FirebaseFirestore.instance.collection('Users').doc(userId).update({
@@ -82,7 +133,9 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
             .get();
         MarketModel market = MarketModel.fromSnapshot(marketDoc);
 
-        // Navigate to HomePage
+        // 로딩 중 다이얼로그 닫기
+        Navigator.of(context).pop();
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
@@ -93,9 +146,37 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           SnackBar(content: Text('마켓 정보가 제출되었습니다.')),
         );
       } catch (e) {
+        // 로딩 중 다이얼로그 닫기
+        Navigator.of(context).pop();
+
         print(e);
       }
+    } else {
+      // 폼이 유효하지 않을 때 로딩 중 다이얼로그 닫기
+      Navigator.of(context).pop();
     }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 다이얼로그 바깥을 눌러도 닫히지 않도록 설정
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("마켓 정보 등록 중..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _navigateToBusinessCheckPage() async {
@@ -115,6 +196,38 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
     }
   }
 
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '프로필 사진',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 8),
+        GestureDetector(
+          onTap: _pickImage,
+          child: CircleAvatar(
+            radius: 50,
+            backgroundImage:
+            _image != null ? FileImage(File(_image!.path)) : null,
+            child: _image == null
+                ? Icon(
+              Icons.add_a_photo,
+              size: 50,
+              color: Colors.grey,
+            )
+                : null,
+          ),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,76 +238,79 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
         padding: EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(
-                controller: _marketNameController,
-                label: '마켓 이름',
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '마켓 이름을 입력해 주세요.';
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _marketDescriptionController,
-                label: '소개글',
-                isRequired: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '소개글을 입력해 주세요.';
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _csPhoneController,
-                label: 'CS 전화번호',
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'CS 전화번호를 입력해 주세요.';
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _csemailController,
-                label: 'CS 이메일',
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '이메일을 입력해 주세요.';
-                  } else if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                    return '유효한 이메일 주소를 입력해 주세요.';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _navigateToBusinessCheckPage,
-                child: Text('사업자 번호 확인하기'),
-              ),
-              SizedBox(height: 10),
-              Text(
-                _businessNumber != null
-                    ? '사업자 번호: $_businessNumber'
-                    : '사업자 등록 번호가 존재하면 인증마크가 부여됩니다',
-                style: TextStyle(fontSize: 16, color: Colors.green),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitMarketInfo,
-                child: Text('제출'),
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildImagePicker(),
+                _buildTextField(
+                  controller: _marketNameController,
+                  label: '마켓 이름',
+                  isRequired: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '마켓 이름을 입력해 주세요.';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  controller: _marketDescriptionController,
+                  label: '소개글',
+                  isRequired: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '소개글을 입력해 주세요.';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  controller: _csPhoneController,
+                  label: 'CS 전화번호',
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'CS 전화번호를 입력해 주세요.';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  controller: _csemailController,
+                  label: 'CS 이메일',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이메일을 입력해 주세요.';
+                    } else if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+                      return '유효한 이메일 주소를 입력해 주세요.';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _navigateToBusinessCheckPage,
+                  child: Text('사업자 번호 확인하기'),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  _businessNumber != null
+                      ? '사업자 번호: $_businessNumber'
+                      : '사업자 등록 번호가 존재하면 인증마크가 부여됩니다',
+                  style: TextStyle(fontSize: 16, color: Colors.green),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _submitMarketInfo,
+                  child: Text('제출'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

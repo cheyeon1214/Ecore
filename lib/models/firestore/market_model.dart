@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../cosntants/firestore_key.dart';
@@ -33,7 +34,7 @@ class MarketModel {
         address = map[KEY_MARKET_ADDRESS] ?? '',
         seller_name = map[KEY_MARKET_SELLERNAME] ?? '',
         img = map[KEY_MARKET_PROFILEIMG] ?? 'https://via.placeholder.com/150',
-        bannerImg = map[KEY_MARKET_BANNERIMG] ?? 'https://via.placeholder.com/150',
+        bannerImg = map[KEY_MARKET_BANNERIMG] ?? '',
         sellPosts = List<dynamic>.from(map[KEY_MYSELLPOST] ?? []), // 기본값 빈 리스트
         feedPosts = List<dynamic>.from(map[KEY_MARKET_FEEDPOST] ?? []); // 기본값 빈 리스트
 
