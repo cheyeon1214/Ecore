@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // For input formatters
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;  // For HTTP requests
-import 'dart:convert';  // For JSON encoding/decoding
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../home_page/home_page_menu.dart';
 import '../models/firestore/market_model.dart';
-import 'my_market_banner.dart';  // For Firebase Auth
+import 'business_check.dart';
+import 'my_market_banner.dart';
 
 class MarketInfoPage extends StatefulWidget {
+  final String seller_name;
+  final String dob;
+  final String? gender;
+  final String phone;
+  final String email;
+  final String address;
+
+  MarketInfoPage({
+    required this.seller_name,
+    required this.dob,
+    required this.gender,
+    required this.phone,
+    required this.email,
+    required this.address,
+  });
+
   @override
   _MarketInfoPageState createState() => _MarketInfoPageState();
 }
@@ -19,85 +36,35 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   final _marketNameController = TextEditingController();
   final _marketDescriptionController = TextEditingController();
   final _csPhoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _businessNumberController = TextEditingController();
+  final _csemailController = TextEditingController();
 
-  bool _isBusinessNumberChecked = false;
-  bool _isBusinessNumberVerified = false;
-
-  Future<void> _checkBusinessNumber() async {
-    String businessNumber = _businessNumberController.text;
-
-    var data = {"b_no": [businessNumber]};
-    String serviceKey = "AC9zdZTlBsdv4Ylv3CdSllj0yXx6N7SjO%2FieWH0EiNu8CpZLRkxJ%2Ba9b1IkI3kI1Y40eIIMfJIEndaYW9ma3zg%3D%3D";
-
-    try {
-      var response = await http.post(
-        Uri.parse("https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=$serviceKey"),
-        headers: {
-          "Content-Type": "application/json; charset=UTF-8",
-          "Accept": "application/json",
-        },
-        body: jsonEncode(data),
-      );
-
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        if (result['match_cnt'] == 1) {
-          setState(() {
-            _isBusinessNumberChecked = true;
-            _isBusinessNumberVerified = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('사업자 등록번호가 확인되었습니다.')),
-          );
-        } else {
-          setState(() {
-            _isBusinessNumberVerified = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('사업자 등록번호 확인 실패.')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('서버 오류: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류: $e')),
-      );
-    }
-  }
+  String? _businessNumber; // Holds the business number
 
   Future<void> _submitMarketInfo() async {
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
-      String marketDescription = _marketDescriptionController.text;
+      List<String> marketDescription = _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
-      String email = _emailController.text;
-      String businessNumber = _businessNumberController.text;
+      String csemail = _csemailController.text;
 
       // 현재 유저 아이디 가져오기
       String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-      if (_isBusinessNumberChecked && !_isBusinessNumberVerified) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('사업자 등록번호를 먼저 확인해 주세요.')),
-        );
-        return;
-      }
 
       try {
         // Add the market info to Firestore
         DocumentReference docRef = await FirebaseFirestore.instance.collection('Markets').add({
           'name': marketName,
-          'description': marketDescription,
+          'feedPosts': marketDescription,
           'cs_phone': csPhone,
-          'email': email,
-          'business_number': businessNumber.isEmpty ? '' : businessNumber,
-          'user_id': userId, // 현재 유저 ID 추가
+          'cs_email': csemail,
+          'business_number': _businessNumber ?? '', // 사업자 번호 추가
+          'userId': userId,
+          'seller_name': widget.seller_name,
+          'dob': widget.dob,
+          'gender': widget.gender,
+          'phone': widget.phone,
+          'email': widget.email,
+          'address': widget.address,
         });
 
         // Get the document ID
@@ -115,14 +82,12 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
             .get();
         MarketModel market = MarketModel.fromSnapshot(marketDoc);
 
-        // Navigate to MyMarketBanner with the document ID
-        // HomePage로 네비게이션 할 때
+        // Navigate to HomePage
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-              (route) => false,  // 모든 기존 페이지를 제거하고 새로운 페이지로 이동
+              (route) => false,
         );
-
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('마켓 정보가 제출되었습니다.')),
@@ -130,6 +95,23 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
       } catch (e) {
         print(e);
       }
+    }
+  }
+
+  void _navigateToBusinessCheckPage() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => BusinessCheckPage()),
+    );
+
+    if (result != null) {
+      setState(() {
+        _businessNumber = result;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('사업자 등록번호가 입력되었습니다: $result')),
+      );
     }
   }
 
@@ -183,8 +165,8 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
                 },
               ),
               _buildTextField(
-                controller: _emailController,
-                label: '이메일',
+                controller: _csemailController,
+                label: 'CS 이메일',
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -196,38 +178,21 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
                 },
               ),
               SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text(
-                  '사업자 등록 번호가 존재하면 인증마크가 부여됩니다.',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              ElevatedButton(
+                onPressed: _navigateToBusinessCheckPage,
+                child: Text('사업자 번호 확인하기'),
               ),
-              SizedBox(height: 5),
-              _buildTextField(
-                controller: _businessNumberController,
-                label: '사업자 등록번호',
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+              SizedBox(height: 10),
+              Text(
+                _businessNumber != null
+                    ? '사업자 번호: $_businessNumber'
+                    : '사업자 등록 번호가 존재하면 인증마크가 부여됩니다',
+                style: TextStyle(fontSize: 16, color: Colors.green),
               ),
               SizedBox(height: 20),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: _checkBusinessNumber,
-                    child: Text('사업자 등록번호 조회'),
-                  ),
-                  SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _submitMarketInfo,
-                    child: Text('제출'),
-                  ),
-                ],
+              ElevatedButton(
+                onPressed: _submitMarketInfo,
+                child: Text('제출'),
               ),
             ],
           ),

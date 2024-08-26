@@ -21,8 +21,23 @@ class MyPageBanner extends StatelessWidget {
   }
 }
 
-class BodyContents extends StatelessWidget {
+class BodyContents extends StatefulWidget {
   const BodyContents({super.key});
+
+  @override
+  _BodyContentsState createState() => _BodyContentsState();
+}
+
+class _BodyContentsState extends State<BodyContents> {
+  Future<User?> _getCurrentUser() async {
+    return FirebaseAuth.instance.currentUser;
+  }
+
+  Future<void> _refreshData() async {
+    setState(() {
+      // 상태를 업데이트하여 FutureBuilder를 다시 빌드하게 만듭니다.
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,53 +67,59 @@ class BodyContents extends StatelessWidget {
             var userData = userDocSnapshot.data!.data() as Map<String, dynamic>?;
             String userName = userData?['username'] ?? 'Unknown User';
             String userPoints = userData?['points']?.toString() ?? '0';
+            String? profileImageUrl = userData?['profile_img']; // 프로필 이미지 URL 가져오기
 
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(15.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            // 클릭하면 사진 수정 가능
-                          },
-                          icon: Icon(Icons.people_alt_rounded, size: 50),
-                        ),
-                        SizedBox(width: 30,),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('$userName 님 반갑습니다.', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text('포인트 보유 현황 : $userPoints', style: TextStyle(fontWeight: FontWeight.bold)),
-                            TextButton(
-                              onPressed: () {
-                                // 포인트 내역 확인
-                              },
-                              style: TextButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(10),
+            return RefreshIndicator(
+              onRefresh: _refreshData, // 스와이프 시 새로고침 동작 추가
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(), // 스크롤 가능하도록 설정
+                child: Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // 프로필 사진 띄우기
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                                ? NetworkImage(profileImageUrl)
+                                : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
+                          ),
+                          SizedBox(width: 30),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('$userName 님 반갑습니다.', style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text('포인트 보유 현황 : $userPoints', style: TextStyle(fontWeight: FontWeight.bold)),
+                              TextButton(
+                                onPressed: () {
+                                  // 포인트 내역 확인
+                                },
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                   ),
+                                  backgroundColor: Colors.blue[50],
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                 ),
-                                backgroundColor: Colors.blue[50],
-                                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                child: Text(
+                                  '포인트 내역 확인',
+                                  style: TextStyle(color: Colors.black),
+                                ),
                               ),
-                              child: Text(
-                                '포인트 내역 확인',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    MyPageBtn(),
-                    MyPageList(),
-                  ],
+                            ],
+                          ),
+                        ],
+                      ),
+                      MyPageBtn(),
+                      MyPageList(),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -106,9 +127,5 @@ class BodyContents extends StatelessWidget {
         );
       },
     );
-  }
-
-  Future<User?> _getCurrentUser() async {
-    return FirebaseAuth.instance.currentUser;
   }
 }

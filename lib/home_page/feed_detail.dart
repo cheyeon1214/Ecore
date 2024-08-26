@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +7,7 @@ import '../chat_page/chat_banner.dart';
 import '../models/firestore/chat_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import 'package:provider/provider.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -67,8 +67,7 @@ class _FeedDetailState extends State<FeedDetail> {
       return;
     }
 
-    final userRef =
-    FirebaseFirestore.instance.collection('Users').doc(user.uid);
+    final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
     final userDoc = await userRef.get();
     if (!userDoc.exists) {
       // User document does not exist
@@ -209,9 +208,7 @@ class _FeedDetailState extends State<FeedDetail> {
             ElevatedButton.icon(
               onPressed: _addToCart,
               icon: Icon(Icons.shopping_cart, color: Colors.black54),
-              label: Text('장바구니 담기',
-                  style: TextStyle(
-                      color: Colors.black54, fontWeight: FontWeight.bold)),
+              label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
@@ -249,15 +246,15 @@ class _FeedDetailState extends State<FeedDetail> {
         }
 
         String marketName = marketData['name'] ?? 'Unknown Market';
-        String marketImage =
-            marketData['img'] ?? 'https://via.placeholder.com/150';
+        String marketImage = marketData['img'] ?? 'https://via.placeholder.com/150';
+        String businessNumber = marketData['business_number'] ?? '';
 
-        return _marketView(marketImage, marketName);
+        return _marketView(marketImage, marketName, businessNumber);
       },
     );
   }
 
-  Row _marketView(String marketImage, String marketName) {
+  Row _marketView(String marketImage, String marketName, String businessNumber) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
