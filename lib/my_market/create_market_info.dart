@@ -79,6 +79,9 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   }
 
   Future<void> _submitMarketInfo() async {
+    // 로딩 중 다이얼로그 표시
+    _showLoadingDialog();
+
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
       List<String> marketDescription = _marketDescriptionController.text.split('\n');
@@ -130,6 +133,9 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
             .get();
         MarketModel market = MarketModel.fromSnapshot(marketDoc);
 
+        // 로딩 중 다이얼로그 닫기
+        Navigator.of(context).pop();
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
@@ -140,9 +146,37 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           SnackBar(content: Text('마켓 정보가 제출되었습니다.')),
         );
       } catch (e) {
+        // 로딩 중 다이얼로그 닫기
+        Navigator.of(context).pop();
+
         print(e);
       }
+    } else {
+      // 폼이 유효하지 않을 때 로딩 중 다이얼로그 닫기
+      Navigator.of(context).pop();
     }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 다이얼로그 바깥을 눌러도 닫히지 않도록 설정
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("마켓 정보 등록 중..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _navigateToBusinessCheckPage() async {
