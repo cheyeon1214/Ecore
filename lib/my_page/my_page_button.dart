@@ -54,11 +54,11 @@ class _MyPageBtnState extends State<MyPageBtn> {
           }
         }
       } catch (e) {
-        // 에러 처리
         print('Error fetching market data: $e');
       }
     }
   }
+
 
   void _showMarketCreationDialog(BuildContext context) {
     showDialog(
@@ -216,12 +216,20 @@ class _MyPageBtnState extends State<MyPageBtn> {
               SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SettingPage(userId : userId)),
+                      MaterialPageRoute(
+                        builder: (context) => SettingPage(userId: userId),
+                      ),
                     );
+
+                    // result가 true라면 데이터를 다시 불러옵니다.
+                    if (result == true) {
+                      _fetchMarketData();  // 마켓 데이터를 다시 불러옵니다.
+                    }
                   },
+
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[50], // 배경색 설정
                     shape: RoundedRectangleBorder(

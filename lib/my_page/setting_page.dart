@@ -148,7 +148,7 @@ class SettingPageState extends State<SettingPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
-                Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+                Navigator.of(context).pop(true); // 이전 화면으로 돌아가며 결과 전달
               },
               child: Text("확인"),
             ),
@@ -157,6 +157,7 @@ class SettingPageState extends State<SettingPage> {
       },
     );
   }
+
 
   @override
   void dispose() {
