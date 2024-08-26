@@ -4,10 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../chat_page/chat_banner.dart';
-import '../models/firestore/chat_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
-import 'package:provider/provider.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -136,21 +134,6 @@ class _FeedDetailState extends State<FeedDetail> {
     setState(() {
       _isFavorite = !_isFavorite;
     });
-  }
-
-  Future<String?> _getReceiverId() async {
-    try {
-      final marketDoc = await FirebaseFirestore.instance
-          .collection('Markets')
-          .doc(widget.sellPost.marketId)
-          .get();
-
-      final marketData = marketDoc.data();
-      return marketData?['userId'];
-    } catch (e) {
-      print('Error fetching receiverId: $e');
-      return null;
-    }
   }
 
   @override
