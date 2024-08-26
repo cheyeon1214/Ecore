@@ -18,6 +18,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
   final _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   User? loggedInUser;
+  final Map<String, String> _usernameCache = {};
 
   @override
   void initState() {
@@ -108,6 +109,22 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     return widget.otherUserId;
   }
 
+  Future<String> _getUsername(String userId) async {
+    // 캐시에 username이 있으면 반환
+    if (_usernameCache.containsKey(userId)) {
+      return _usernameCache[userId]!;
+    }
+
+    // Firestore에서 username 가져오기
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final username = doc.data()?[KEY_USERNAME] ?? 'Unknown';
+
+    // 캐시에 저장
+    _usernameCache[userId] = username;
+
+    return username;
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -130,7 +147,34 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat with ${widget.otherUserId}'),
+        title: FutureBuilder<String>(
+          future: _getUsername(widget.otherUserId), // 유저네임을 가져옴
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Text('Loading...');
+            } else if (snapshot.hasError || !snapshot.hasData) {
+              return Text('Error');
+            } else {
+              return Text(
+                '${snapshot.data}',
+                style: TextStyle(
+                  fontSize: 22, // 사용자 이름의 크기
+                  fontWeight: FontWeight.bold, // 사용자 이름의 굵기
+                ),
+              );
+            }
+          },
+        ),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(20.0), // 구분선의 높이 설정
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 15),
+            child: Container(
+              color: Colors.grey[300], // 구분선 색상
+              height: 3.0, // 구분선의 두께
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -177,7 +221,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                               margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                               decoration: BoxDecoration(
-                                color: isMe ? Colors.grey[300] : Colors.grey[500],
+                                color: isMe ? Colors.blue[100] : Colors.grey[300],
                                 borderRadius: isMe
                                     ? BorderRadius.only(
                                   topLeft: Radius.circular(14),
@@ -209,19 +253,37 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(labelText: 'Send a message...'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.grey[300]!), // 선택적으로 테두리 추가
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: 'Send a message...',
+                        border: InputBorder.none,
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    final message = _controller.text.trim();
-                    if (message.isNotEmpty) {
-                      _sendMessage(message);
-                    }
-                  },
+                SizedBox(width: 8.0), // 텍스트 필드와 버튼 사이의 간격
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue[300], // 버튼 배경색
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.send, color: Colors.white),
+                    onPressed: () {
+                      final message = _controller.text.trim();
+                      if (message.isNotEmpty) {
+                        _sendMessage(message);
+                      }
+                    },
+                  ),
                 ),
               ],
             ),

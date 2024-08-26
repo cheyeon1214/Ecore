@@ -55,6 +55,7 @@ dev_dependencies:
   image_picker: ^1.1.2
   provider: ^6.1.2
   intl: ^0.19.0
+  http: ^1.2.2
   async: ^2.11.0
 
 
@@ -84,7 +85,6 @@ flutter:
     - assets/images/review.png
     - assets/images/setting.png
     - assets/images/ecore_logo.png
-    - assets/images/letter.png
   #   - images/a_dot_ham.jpeg
   # To add assets to your application, add an assets section, like this:
     - assets/images/리유니클로.jpg

@@ -22,12 +22,32 @@ class FeedDetail extends StatefulWidget {
 class _FeedDetailState extends State<FeedDetail> {
   int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
   bool _isFavorite = false;
+  String? marketUserId;
+  String? currentUserId;
 
   @override
   void initState() {
     super.initState();
     _incrementViewCount();
     _checkIfFavorite(); // 추가: 즐겨찾기 상태를 확인하는 함수 호출
+    _fetchMarketUserId();
+    currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  Future<void> _fetchMarketUserId() async {
+    try {
+      final marketDoc = await FirebaseFirestore.instance
+          .collection('Markets')
+          .doc(widget.sellPost.marketId)
+          .get();
+
+      final marketData = marketDoc.data();
+      setState(() {
+        marketUserId = marketData?['userId'];
+      });
+    } catch (e) {
+      print('Error fetching market userId: $e');
+    }
   }
 
   Future<void> _incrementViewCount() async {
@@ -64,6 +84,7 @@ class _FeedDetailState extends State<FeedDetail> {
       'price': widget.sellPost.price,
       'category': widget.sellPost.category,
       'body': widget.sellPost.body,
+      'marketId' : widget.sellPost.marketId,
       'reference': widget.sellPost.reference.path,
     };
 
@@ -263,13 +284,38 @@ class _FeedDetailState extends State<FeedDetail> {
         Spacer(),
         IconButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ChatBanner(marketId: widget.sellPost.marketId)),
-            );
+            if (currentUserId == marketUserId) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    content: Padding(
+                      padding: const EdgeInsets.only(top: 15),
+                      child: Text("자신의 마켓과는 채팅이 불가합니다."),
+                    ),
+                    actions: [
+                      TextButton(
+                        child: Text("확인"),
+                        onPressed: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            } else {
+              // 조건을 만족하지 않을 때만 채팅 화면으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatBanner(marketId: widget.sellPost.marketId),
+                ),
+              );
+            }
           },
           icon: Icon(Icons.mail, size: 30),
-        ),
+        )
       ],
     );
   }

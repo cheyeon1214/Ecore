@@ -166,20 +166,24 @@ class UserModel extends ChangeNotifier {
         return sum + post.price.toInt();
       });
 
-      final List<Map<String, dynamic>> orderItems = sellPosts.map((post) => {
-        'sellId': post.sellId,
-        'title': post.title,
-        'img': post.img,
-        'price': post.price,
-      }).toList();
-
       await orderRef.set({
         'orderId': orderId,
         'date': Timestamp.now(),
         'status': '처리 중',
         'totalPrice': totalPrice,
-        'items': orderItems,
       });
+
+      // items를 서브컬렉션으로 저장
+      for (var post in sellPosts) {
+        await orderRef.collection('items').add({
+          'sellId': post.sellId,
+          'title': post.title,
+          'img': post.img,
+          'price': post.price,
+          'marketId' : post.marketId,
+          'reviewed' : false,
+        });
+      }
 
       await updateCart([]);
 
@@ -188,6 +192,7 @@ class UserModel extends ChangeNotifier {
       print('Error creating order: $e');
     }
   }
+
 
 
   Future<void> fetchUserData(String uid) async {

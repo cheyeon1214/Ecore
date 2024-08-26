@@ -264,7 +264,7 @@ class _ChatRoomState extends State<ChatRoom> {
                               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                               margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                               decoration: BoxDecoration(
-                                color: isMe ? Colors.grey[300] : Colors.grey[500],
+                                color: isMe ? Colors.blue[100] : Colors.grey[300],
                                 borderRadius: isMe
                                     ? BorderRadius.only(
                                   topLeft: Radius.circular(14),
@@ -296,19 +296,37 @@ class _ChatRoomState extends State<ChatRoom> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(labelText: 'Send a message...'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.grey[300]!), // 선택적으로 테두리 추가
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: 'Send a message...',
+                        border: InputBorder.none,
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    final message = _controller.text.trim();
-                    if (message.isNotEmpty) {
-                      _sendMessage(message);
-                    }
-                  },
+                SizedBox(width: 8.0), // 텍스트 필드와 버튼 사이의 간격
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue[300], // 버튼 배경색
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.send, color: Colors.white),
+                    onPressed: () {
+                      final message = _controller.text.trim();
+                      if (message.isNotEmpty) {
+                        _sendMessage(message);
+                      }
+                    },
+                  ),
                 ),
               ],
             ),

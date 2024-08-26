@@ -1,10 +1,12 @@
-import 'package:ecore/chat_page/select_chat_room.dart';
 import 'package:flutter/material.dart';
-import '../cosntants/firestore_key.dart';
-import '../models/firestore/chat_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+
+import '../models/firestore/chat_model.dart';
+import 'package:ecore/chat_page/select_chat_room.dart';
+import '../cosntants/firestore_key.dart';
+import '../models/firestore/user_model.dart';
 
 class ChatList extends StatefulWidget {
   const ChatList({Key? key}) : super(key: key);
@@ -15,6 +17,7 @@ class ChatList extends StatefulWidget {
 
 class _ChatListState extends State<ChatList> {
   final StreamController<List<ChatModel>> _chatController = StreamController<List<ChatModel>>.broadcast();
+  final Map<String, String> _usernameCache = {}; // 사용자 이름 캐시
 
   late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _sendSubscription;
   late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _receiveSubscription;
@@ -64,7 +67,7 @@ class _ChatListState extends State<ChatList> {
       allChats.addAll(receiveSnapshot.docs.map((doc) => ChatModel.fromSnapshot(doc)));
     }
 
-    // Filter to get the most recent message per user
+    // 각 사용자와의 최근 메시지만 필터링
     Map<String, ChatModel> recentChatsMap = {};
     for (var chat in allChats) {
       final otherUserId = chat.sendId == userId ? chat.receiveId : chat.sendId;
@@ -74,11 +77,27 @@ class _ChatListState extends State<ChatList> {
       }
     }
 
-    // Convert to list and sort by date
+    // List로 변환 후 날짜순으로 정렬
     List<ChatModel> recentChats = recentChatsMap.values.toList();
     recentChats.sort((a, b) => b.date.compareTo(a.date));
 
     _chatController.add(recentChats);
+  }
+
+  Future<String> _getUsername(String userId) async {
+    // 캐시에 username이 있으면 반환
+    if (_usernameCache.containsKey(userId)) {
+      return _usernameCache[userId]!;
+    }
+
+    // Firestore에서 username 가져오기
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final username = doc.data()?[KEY_USERNAME] ?? 'Unknown';
+
+    // 캐시에 저장
+    _usernameCache[userId] = username;
+
+    return username;
   }
 
   @override
@@ -93,7 +112,7 @@ class _ChatListState extends State<ChatList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat List'),
+        title: const Text('채팅'),
       ),
       body: StreamBuilder<List<ChatModel>>(
         stream: _chatController.stream,
@@ -115,19 +134,56 @@ class _ChatListState extends State<ChatList> {
               final isSentByMe = chat.sendId == FirebaseAuth.instance.currentUser!.uid;
               final otherUserId = isSentByMe ? chat.receiveId : chat.sendId;
 
-              return ListTile(
-                title: Text('Chat with $otherUserId'),
-                subtitle: Text(chat.text),
-                trailing: Text(
-                  _formatDate(chat.date),
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SelectChatRoom(otherUserId: otherUserId),
+              return FutureBuilder<String>(
+                future: _getUsername(otherUserId), // otherUserId의 username 가져오기
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return ListTile(
+                      title: Text('Loading...'),
+                      subtitle: Text(chat.text),
+                    );
+                  }
+
+                  if (userSnapshot.hasError) {
+                    return ListTile(
+                      title: Text('Error'),
+                      subtitle: Text(chat.text),
+                    );
+                  }
+
+                  final username = userSnapshot.data ?? 'Unknown';
+
+                  return ListTile(
+                    title: Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text('$username',style: TextStyle(fontWeight: FontWeight.bold),),
                     ),
+                    subtitle: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[100], // 배경색 설정
+                        borderRadius: BorderRadius.circular(5.0), // 둥글게 만들기
+                      ),
+                      child: Text(
+                        chat.text,
+                        style: TextStyle(
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis, // 텍스트가 길 경우 말줄임표로 표시
+                      ),
+                    ),
+                    trailing: Text(
+                      _formatDate(chat.date),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SelectChatRoom(otherUserId: otherUserId),
+                        ),
+                      );
+                    },
                   );
                 },
               );
