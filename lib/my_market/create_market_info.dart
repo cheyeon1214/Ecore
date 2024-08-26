@@ -1,17 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // 입력 포맷터를 위한 임포트
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;  // HTTP 요청을 위한 임포트
-import 'dart:convert';  // JSON 인코딩/디코딩을 위한 임포트
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';  // 이미지 선택을 위한 임포트
-import 'package:firebase_storage/firebase_storage.dart';  // Firebase Storage를 위한 임포트
+import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 임포트
+import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage를 위한 임포트
 
 import '../home_page/home_page_menu.dart';
 import '../models/firestore/market_model.dart';
-import 'my_market_banner.dart';  // Firebase Auth를 위한 임포트
+import 'business_check.dart';
+import 'my_market_banner.dart';
 
 class MarketInfoPage extends StatefulWidget {
   final String seller_name;
@@ -40,12 +41,9 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   final _marketDescriptionController = TextEditingController();
   final _csPhoneController = TextEditingController();
   final _csemailController = TextEditingController();
-  final _businessNumberController = TextEditingController();
 
-  bool _isBusinessNumberChecked = false;
-  bool _isBusinessNumberVerified = false;
+  String? _businessNumber; // Holds the business number
 
-  // 새로운 프로필 이미지 관련 변수
   String? _profileImageUrl;
   XFile? _image;
 
@@ -80,68 +78,14 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
     }
   }
 
-  Future<void> _checkBusinessNumber() async {
-    String businessNumber = _businessNumberController.text;
-
-    var data = {"b_no": [businessNumber]};
-    String serviceKey = "AC9zdZTlBsdv4Ylv3CdSllj0yXx6N7SjO%2FieWH0EiNu8CpZLRkxJ%2Ba9b1IkI3kI1Y40eIIMfJIEndaYW9ma3zg%3D%3D";
-
-    try {
-      var response = await http.post(
-        Uri.parse("https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=$serviceKey"),
-        headers: {
-          "Content-Type": "application/json; charset=UTF-8",
-          "Accept": "application/json",
-        },
-        body: jsonEncode(data),
-      );
-
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        if (result['match_cnt'] == 1) {
-          setState(() {
-            _isBusinessNumberChecked = true;
-            _isBusinessNumberVerified = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('사업자 등록번호가 확인되었습니다.')),
-          );
-        } else {
-          setState(() {
-            _isBusinessNumberVerified = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('사업자 등록번호 확인 실패.')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('서버 오류: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류: $e')),
-      );
-    }
-  }
-
   Future<void> _submitMarketInfo() async {
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
       List<String> marketDescription = _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
       String csemail = _csemailController.text;
-      String businessNumber = _businessNumberController.text;
 
       String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-      if (_isBusinessNumberChecked && !_isBusinessNumberVerified) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('사업자 등록번호를 먼저 확인해 주세요.')),
-        );
-        return;
-      }
 
       try {
         DocumentReference docRef = await FirebaseFirestore.instance.collection('Markets').add({
@@ -149,7 +93,7 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           'feedPosts': marketDescription,
           'cs_phone': csPhone,
           'cs_email': csemail,
-          'business_number': businessNumber.isEmpty ? '' : businessNumber,
+          'business_number': _businessNumber ?? '', // 사업자 번호 추가
           'userId': userId,
           'seller_name': widget.seller_name,
           'dob': widget.dob,
@@ -180,6 +124,12 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
           });
         }
 
+        DocumentSnapshot marketDoc = await FirebaseFirestore.instance
+            .collection('Markets')
+            .doc(marketId)
+            .get();
+        MarketModel market = MarketModel.fromSnapshot(marketDoc);
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
@@ -193,6 +143,55 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
         print(e);
       }
     }
+  }
+
+  void _navigateToBusinessCheckPage() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => BusinessCheckPage()),
+    );
+
+    if (result != null) {
+      setState(() {
+        _businessNumber = result;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('사업자 등록번호가 입력되었습니다: $result')),
+      );
+    }
+  }
+
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '프로필 사진',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 8),
+        GestureDetector(
+          onTap: _pickImage,
+          child: CircleAvatar(
+            radius: 50,
+            backgroundImage:
+            _image != null ? FileImage(File(_image!.path)) : null,
+            child: _image == null
+                ? Icon(
+              Icons.add_a_photo,
+              size: 50,
+              color: Colors.grey,
+            )
+                : null,
+          ),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
   }
 
   @override
@@ -260,65 +259,27 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
                   },
                 ),
                 SizedBox(height: 20),
-                _buildTextField(
-                  controller: _businessNumberController,
-                  label: '사업자 등록번호',
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                ElevatedButton(
+                  onPressed: _navigateToBusinessCheckPage,
+                  child: Text('사업자 번호 확인하기'),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  _businessNumber != null
+                      ? '사업자 번호: $_businessNumber'
+                      : '사업자 등록 번호가 존재하면 인증마크가 부여됩니다',
+                  style: TextStyle(fontSize: 16, color: Colors.green),
                 ),
                 SizedBox(height: 20),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: _checkBusinessNumber,
-                      child: Text('사업자 등록번호 조회'),
-                    ),
-                    SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: _submitMarketInfo,
-                      child: Text('제출'),
-                    ),
-                  ],
+                ElevatedButton(
+                  onPressed: _submitMarketInfo,
+                  child: Text('제출'),
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildImagePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '프로필 사진',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 8),
-        GestureDetector(
-          onTap: _pickImage,
-          child: CircleAvatar(
-            radius: 50,
-            backgroundImage:
-            _image != null ? FileImage(File(_image!.path)) : null,
-            child: _image == null
-                ? Icon(
-              Icons.add_a_photo,
-              size: 50,
-              color: Colors.grey,
-            )
-                : null,
-          ),
-        ),
-        SizedBox(height: 16),
-      ],
     );
   }
 

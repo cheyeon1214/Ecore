@@ -42,7 +42,14 @@ class RecentViewedPage extends StatelessWidget {
                       height: 50,
                       fit: BoxFit.cover,
                     ),
-                    title: Text(post.title),
+                    title: Text(
+                      post.title,
+                      style: TextStyle(
+                        fontSize: 17, // Increase font size
+                        fontWeight: FontWeight.bold, // Make the font bold
+                        color: Colors.black87,
+                      ),
+                    ),
                     subtitle: Text('${post.price}원'),
                     onTap: () {
                       Navigator.push(

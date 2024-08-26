@@ -1,6 +1,6 @@
-import 'dart:convert';  // JSON 인코딩 및 디코딩을 위한 라이브러리
-import 'package:http/http.dart' as http;  // HTTP 요청을 위한 패키지
-import 'package:flutter/material.dart';  // Flutter의 기본 위젯 패키지
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
 class BusinessCheckPage extends StatefulWidget {
   @override
@@ -11,7 +11,7 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
   final _code1Controller = TextEditingController();
   final _code2Controller = TextEditingController();
   final _code3Controller = TextEditingController();
-  String _resultMessage = ''; // 결과 메시지 저장
+  String _resultMessage = '';
 
   Future<void> _checkBusinessNumber() async {
     String code1 = _code1Controller.text;
@@ -32,7 +32,6 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
     };
 
     try {
-      // 여기에 서비스 키를 넣어주세요
       String serviceKey =
           "AC9zdZTlBsdv4Ylv3CdSllj0yXx6N7SjO%2FieWH0EiNu8CpZLRkxJ%2Ba9b1IkI3kI1Y40eIIMfJIEndaYW9ma3zg%3D%3D";
 
@@ -51,6 +50,7 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
           setState(() {
             _resultMessage = '사업자 등록 번호가 유효합니다.';
           });
+          Navigator.pop(context, businessNumber); // Return the valid business number
         } else {
           setState(() {
             _resultMessage = '사업자 등록 번호가 유효하지 않습니다.\n'
@@ -86,7 +86,6 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
                 Expanded(
                   child: TextField(
                     controller: _code1Controller,
-                    decoration: InputDecoration(labelText: '사업자등록번호1'),
                     keyboardType: TextInputType.number,
                     maxLength: 3,
                   ),
@@ -95,7 +94,6 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
                 Expanded(
                   child: TextField(
                     controller: _code2Controller,
-                    decoration: InputDecoration(labelText: '사업자등록번호2'),
                     keyboardType: TextInputType.number,
                     maxLength: 2,
                   ),
@@ -104,7 +102,6 @@ class _BusinessCheckPageState extends State<BusinessCheckPage> {
                 Expanded(
                   child: TextField(
                     controller: _code3Controller,
-                    decoration: InputDecoration(labelText: '사업자등록번호3'),
                     keyboardType: TextInputType.number,
                     maxLength: 5,
                   ),
