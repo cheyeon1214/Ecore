@@ -35,7 +35,6 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
         _currentProfileImageUrl = marketDoc['img'];
         _currentBannerImageUrl = marketDoc['bannerImg'];
         _storeNameController.text = marketDoc['name']; // 이전 이름을 텍스트 필드에 설정
-
       });
     }
   }
@@ -84,33 +83,34 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
       // 로딩 중 다이얼로그 표시
       _showLoadingDialog();
 
-      // 프로필 이미지와 배너 이미지를 Firebase Storage에 업로드
-      String? profileImageUrl;
-      String? bannerImageUrl;
+      // 업데이트할 데이터를 저장할 맵 생성
+      Map<String, dynamic> updateData = {};
 
+      // 프로필 이미지 업데이트
       if (_profileImage != null) {
-        profileImageUrl = await _uploadImage(_profileImage!);
+        String? profileImageUrl = await _uploadImage(_profileImage!);
+        if (profileImageUrl != null) {
+          updateData['img'] = profileImageUrl;
+        }
       }
 
+      // 배너 이미지 업데이트
       if (_bannerImage != null) {
-        bannerImageUrl = await _uploadImage(_bannerImage!);
+        String? bannerImageUrl = await _uploadImage(_bannerImage!);
+        if (bannerImageUrl != null) {
+          updateData['bannerImg'] = bannerImageUrl;
+        }
       }
 
-      // Firestore에 업데이트할 데이터
-      Map<String, dynamic> updateData = {
-        'name': _storeNameController.text,
-      };
-
-      if (profileImageUrl != null) {
-        updateData['img'] = profileImageUrl;
+      // 마켓 이름 업데이트
+      if (_storeNameController.text.isNotEmpty) {
+        updateData['name'] = _storeNameController.text;
       }
 
-      if (bannerImageUrl != null) {
-        updateData['bannerImg'] = bannerImageUrl;
+      // 변경된 데이터가 있을 경우에만 Firestore 업데이트 수행
+      if (updateData.isNotEmpty) {
+        await _firestore.collection('Markets').doc(widget.marketId).update(updateData);
       }
-
-      // Firestore에서 Markets 컬렉션의 해당 마켓 문서를 업데이트
-      await _firestore.collection('Markets').doc(widget.marketId).update(updateData);
 
       // 로딩 중 다이얼로그 닫기
       Navigator.of(context).pop();
@@ -200,9 +200,9 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
                       radius: 50,
                       backgroundImage: _profileImage != null
                           ? FileImage(_profileImage!)
-                          : _currentProfileImageUrl != null
-                          ? NetworkImage(_currentProfileImageUrl!)
-                          : AssetImage('assets/default_profile.png') as ImageProvider,
+                          : (_currentProfileImageUrl != null
+                          ? NetworkImage(_currentProfileImageUrl!) as ImageProvider
+                          : null), // null일 때 기본 이미지를 보여주거나 빈 상태로 둡니다.
                     ),
                     Positioned(
                       bottom: 0,

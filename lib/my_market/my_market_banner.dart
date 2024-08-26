@@ -124,9 +124,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundImage: market.img.isNotEmpty
-                            ? NetworkImage(market.img) // 프로필 이미지 URL 사용
-                            : AssetImage('assets/profile_image.jpg') as ImageProvider,
+                        backgroundImage: NetworkImage(market.img), // 프로필 이미지 URL 사용
                       ),
                       SizedBox(width: 8),
                       Column(
