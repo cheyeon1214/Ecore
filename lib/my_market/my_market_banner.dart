@@ -132,12 +132,26 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            market.name, // 현재 market 이름을 텍스트로 표시
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                market.name, // 현재 market 이름을 텍스트로 표시
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              // 사업자 등록 번호가 있을 경우 이모티콘 추가
+                              if (market.business_number.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 5.0),
+                                  child: Icon(
+                                    Icons.verified, // 표시할 아이콘
+                                    color: Colors.blue, // 아이콘 색상
+                                    size: 20, // 아이콘 크기
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),

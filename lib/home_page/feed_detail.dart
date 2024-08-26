@@ -211,13 +211,14 @@ class _FeedDetailState extends State<FeedDetail> {
 
         String marketName = marketData['name'] ?? 'Unknown Market';
         String marketImage = marketData['img'] ?? 'https://via.placeholder.com/150';
+        String businessNumber = marketData['business_number'] ?? '';
 
-        return _marketView(marketImage, marketName);
+        return _marketView(marketImage, marketName, businessNumber);
       },
     );
   }
 
-  Row _marketView(String marketImage, String marketName) {
+  Row _marketView(String marketImage, String marketName, String businessNumber) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -236,9 +237,22 @@ class _FeedDetailState extends State<FeedDetail> {
                 overflow: TextOverflow.ellipsis,
               ),
               SizedBox(height: 8),
-              Text(
-                marketName,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Text(
+                    marketName,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  if (businessNumber.isNotEmpty) // 사업자 등록 번호가 있을 때만 아이콘 표시
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Icon(
+                        Icons.verified, // 표시할 아이콘
+                        color: Colors.blue, // 아이콘 색상
+                        size: 20, // 아이콘 크기
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
