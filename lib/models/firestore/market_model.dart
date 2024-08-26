@@ -9,11 +9,15 @@ class MarketModel {
   final String bannerImg;
   final String img;
   final String phone;
+  final String cs_phone;
   final String description;
   final String email;
-  final String cs_phone;
+  final String cs_email;
+  final String address;
+  final String seller_name;
   final String business_number;
   final List<dynamic> sellPosts; // 판매글 ID 리스트
+  final List<dynamic> feedPosts;
   final DocumentReference reference;
 
   MarketModel.fromMap(Map<String, dynamic> map, this.marketId,
@@ -25,9 +29,14 @@ class MarketModel {
         cs_phone = map[KEY_MARKET_CSPHONE] ?? '',
         business_number = map[KEY_BUSINESS_NUMBER] ?? null,
         email = map[KEY_MARKET_EMAIL] ?? '',
+        cs_email = map[KEY_MARKET_CSEMAIL] ?? '',
+        address = map[KEY_MARKET_ADDRESS] ?? '',
+        seller_name = map[KEY_MARKET_SELLERNAME] ?? '',
         img = map[KEY_MARKET_PROFILEIMG] ?? 'https://via.placeholder.com/150',
         bannerImg = map[KEY_MARKET_BANNERIMG] ?? 'https://via.placeholder.com/150',
-        sellPosts = List<dynamic>.from(map[KEY_MYSELLPOST] ?? []); // 기본값 빈 리스트
+        sellPosts = List<dynamic>.from(map[KEY_MYSELLPOST] ?? []), // 기본값 빈 리스트
+        feedPosts = List<dynamic>.from(map[KEY_MARKET_FEEDPOST] ?? []); // 기본값 빈 리스트
+
 
   MarketModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id,

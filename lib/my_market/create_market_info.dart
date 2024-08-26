@@ -10,6 +10,22 @@ import '../models/firestore/market_model.dart';
 import 'my_market_banner.dart';  // For Firebase Auth
 
 class MarketInfoPage extends StatefulWidget {
+  final String seller_name;
+  final String dob;
+  final String? gender;
+  final String phone;
+  final String email;
+  final String address;
+
+  MarketInfoPage({
+    required this.seller_name,
+    required this.dob,
+    required this.gender,
+    required this.phone,
+    required this.email,
+    required this.address,
+  });
+
   @override
   _MarketInfoPageState createState() => _MarketInfoPageState();
 }
@@ -19,7 +35,7 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   final _marketNameController = TextEditingController();
   final _marketDescriptionController = TextEditingController();
   final _csPhoneController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _csemailController = TextEditingController();
   final _businessNumberController = TextEditingController();
 
   bool _isBusinessNumberChecked = false;
@@ -74,9 +90,9 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
   Future<void> _submitMarketInfo() async {
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
-      String marketDescription = _marketDescriptionController.text;
+      List<String> marketDescription = _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
-      String email = _emailController.text;
+      String csemail = _csemailController.text;
       String businessNumber = _businessNumberController.text;
 
       // 현재 유저 아이디 가져오기
@@ -93,11 +109,17 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
         // Add the market info to Firestore
         DocumentReference docRef = await FirebaseFirestore.instance.collection('Markets').add({
           'name': marketName,
-          'description': marketDescription,
+          'feedPosts': marketDescription,
           'cs_phone': csPhone,
-          'email': email,
+          'cs_email': csemail,
           'business_number': businessNumber.isEmpty ? '' : businessNumber,
-          'user_id': userId, // 현재 유저 ID 추가
+          'userId': userId, // 현재 유저 ID 추가
+          'seller_name': widget.seller_name,
+          'dob': widget.dob,
+          'gender': widget.gender,
+          'phone': widget.phone,
+          'email': widget.email,
+          'address': widget.address,
         });
 
         // Get the document ID
@@ -183,8 +205,8 @@ class _MarketInfoPageState extends State<MarketInfoPage> {
                 },
               ),
               _buildTextField(
-                controller: _emailController,
-                label: '이메일',
+                controller: _csemailController,
+                label: 'CS 이메일',
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {

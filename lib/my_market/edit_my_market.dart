@@ -34,6 +34,8 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
       setState(() {
         _currentProfileImageUrl = marketDoc['img'];
         _currentBannerImageUrl = marketDoc['bannerImg'];
+        _storeNameController.text = marketDoc['name']; // 이전 이름을 텍스트 필드에 설정
+
       });
     }
   }
@@ -222,7 +224,6 @@ class _EditMarketProfilePageState extends State<EditMarketProfilePage> {
               TextField(
                 controller: _storeNameController,
                 decoration: InputDecoration(
-                  hintText: '마켓이름 입력하세요',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 10),
                 ),
