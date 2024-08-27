@@ -27,6 +27,7 @@ class _SignUpFormState extends State<SignUpForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFFFFFFF), // 여기서 배경색을 흰색으로 설정
       resizeToAvoidBottomInset: true,
       body: Padding(
         padding: const EdgeInsets.all(common_gap),
