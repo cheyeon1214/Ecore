@@ -1,3 +1,4 @@
+import 'package:ecore/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -31,16 +32,24 @@ class MyApp extends StatelessWidget {
           },
         ),
       ],
-      child: Consumer<FirebaseAuthState>(
-        builder: (context, authState, _) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: authState.firebaseAuthStatus == FirebaseAuthStatus.signin
-                ? HomePage() // 로그인 상태이면 홈 화면
-                : SignInForm(), // 비로그인 상태이면 로그인 화면
-          );
-        },
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: SplashScreen(), // 스플래시 스크린을 초기 화면으로 설정
       ),
+    );
+  }
+}
+
+
+class MyAppContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<FirebaseAuthState>(
+      builder: (context, authState, _) {
+        return authState.firebaseAuthStatus == FirebaseAuthStatus.signin
+            ? HomePage() // 로그인 상태이면 홈 화면
+            : SignInForm(); // 비로그인 상태이면 로그인 화면
+      },
     );
   }
 }
