@@ -93,7 +93,9 @@ class _SignUpFormState extends State<SignUpForm> {
             Text('이미 계정이 있으신가요? '),
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => SignInForm()));
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => SignInForm()),
+                );
               },
               child: Text(
                 '로그인하기',
