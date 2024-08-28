@@ -1,3 +1,4 @@
+import 'package:ecore/cart_page/pay_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/firestore/sell_post_model.dart';
@@ -81,7 +82,7 @@ class CartBtn extends StatelessWidget {
                   // 주문 목록 화면으로 이동
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const OrderList()),
+                    MaterialPageRoute(builder: (context) => const PayPage()),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
