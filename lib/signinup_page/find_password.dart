@@ -41,7 +41,7 @@ class _FindPasswordScreenState extends State<FindPasswordScreen> {
           },
         ),
         title: Text(
-          "비밀번호 찾기",
+          "비밀번호 재설정",
           style: textStyle.copyWith(
             color: Colors.black,
             fontSize: 16,
