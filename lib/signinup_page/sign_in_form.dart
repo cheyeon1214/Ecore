@@ -78,6 +78,8 @@ class _SignInFormState extends State<SignInForm> {
               ),
               SizedBox(height: common_s_gap),
               _submitButton(context),
+              SizedBox(height: common_s_gap / 2),  // 간격을 절반으로 줄임
+              _googleSignInButton(context),  // Google Sign-In 버튼 추가
               SizedBox(height: common_s_gap),
             ],
           ),
@@ -128,6 +130,36 @@ class _SignInFormState extends State<SignInForm> {
       child: Text(
         '로그인',
         style: TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _googleSignInButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black, backgroundColor: Colors.white,
+        side: BorderSide(color: Colors.grey),  // 테두리 추가
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      onPressed: () {
+        // Google Sign-In 로직 구현
+        print('Google Sign-In 버튼 클릭됨');
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/google_logo.png', height: 24),  // 구글 로고 이미지
+            SizedBox(width: 12),
+            Text(
+              'Google 계정으로 가입',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }
