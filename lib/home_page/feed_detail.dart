@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../donation_page/donation_list.dart';
 import '../models/firestore/market_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 import '../search/market_detail.dart';
+import '../chat_page/chat_banner.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -22,13 +22,32 @@ class FeedDetail extends StatefulWidget {
 class _FeedDetailState extends State<FeedDetail> {
   int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
   bool _isFavorite = false;
+  String? marketUserId;
+  String? currentUserId;
 
   @override
   void initState() {
     super.initState();
-    print('Market ID in initState: ${widget.sellPost.marketId}');
     _incrementViewCount();
     _checkIfFavorite(); // 추가: 즐겨찾기 상태를 확인하는 함수 호출
+    _fetchMarketUserId();
+    currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  Future<void> _fetchMarketUserId() async {
+    try {
+      final marketDoc = await FirebaseFirestore.instance
+          .collection('Markets')
+          .doc(widget.sellPost.marketId)
+          .get();
+
+      final marketData = marketDoc.data();
+      setState(() {
+        marketUserId = marketData?['userId'];
+      });
+    } catch (e) {
+      print('Error fetching market userId: $e');
+    }
   }
 
   Future<void> _incrementViewCount() async {
@@ -241,36 +260,56 @@ class _FeedDetailState extends State<FeedDetail> {
           radius: 30,
         ),
         SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.sellPost.title,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    marketName,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  if (businessNumber.isNotEmpty) // 사업자 등록 번호가 있을 때만 아이콘 표시
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
-                      child: Icon(
-                        Icons.verified, // 표시할 아이콘
-                        color: Colors.blue, // 아이콘 색상
-                        size: 20, // 아이콘 크기
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.sellPost.title,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 8),
+            Text(
+              marketName,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
+        Spacer(),
+        IconButton(
+          onPressed: () {
+            if (currentUserId == marketUserId) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    content: Padding(
+                      padding: const EdgeInsets.only(top: 15),
+                      child: Text("자신의 마켓과는 채팅이 불가합니다."),
+                    ),
+                    actions: [
+                      TextButton(
+                        child: Text("확인"),
+                        onPressed: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            } else {
+              // 조건을 만족하지 않을 때만 채팅 화면으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatBanner(marketId: widget.sellPost.marketId),
+                ),
+              );
+            }
+          },
+          icon: Icon(Icons.mail, size: 30),
+        )
       ],
     );
   }

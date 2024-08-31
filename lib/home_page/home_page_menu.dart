@@ -1,8 +1,8 @@
-import 'package:ecore/chatting_page/chatting_page_banner.dart';
 import 'package:ecore/home_page/home_page_banner.dart';
 import 'package:ecore/my_page/my_page_banner.dart';
 import 'package:flutter/material.dart';
 import '../cart_page/cart_page_banner.dart';
+import '../chat_page/chat_list.dart';
 import '../donation_page/donation_page_banner.dart';
 
 class HomePage extends StatefulWidget {
@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   static List<Widget> _screens = <Widget>[
     TitleBanner(),
     DonationBanner(),
-    ChattingBanner(),
+    ChatList(),
     CartBanner(),
     MyPageBanner(),
   ];

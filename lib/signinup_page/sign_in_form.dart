@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../cosntants/common_size.dart';
 import '../models/firebase_auth_state.dart';
+import 'find_password.dart';
 import 'sign_up_form.dart';  // SignUpForm 클래스가 정의된 파일을 import
 
 class SignInForm extends StatefulWidget {
@@ -25,6 +26,7 @@ class _SignInFormState extends State<SignInForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFFFFFFF), //
       resizeToAvoidBottomInset: true,
       body: Padding(
         padding: const EdgeInsets.all(common_gap),
@@ -62,7 +64,9 @@ class _SignInFormState extends State<SignInForm> {
               ),
               TextButton(
                 onPressed: () {
-                  // Add the forgot password functionality here
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => FindPasswordScreen()),
+                  );
                 },
                 child: Align(
                   alignment: Alignment.centerRight,

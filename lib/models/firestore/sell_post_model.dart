@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../cosntants/firestore_key.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SellPostModel {
   final String sellId; // sellPost ID
@@ -57,4 +58,36 @@ class SellPostModel {
   // DocumentSnapshot에서 객체 생성
   SellPostModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id, reference: snapshot.reference);
+}
+
+
+Future<bool> isUserMarketMatched(SellPostModel sellPost) async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('User is not logged in.');
+      return false;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user.uid)
+        .get();
+
+    if (!userDoc.exists) {
+      print('User document does not exist.');
+      return false;
+    }
+
+    final userMarketId = userDoc.data()?['marketId'] as String?;
+
+    if (userMarketId == null) {
+      print('User market ID does not exist.');
+      return false;
+    }
+    return sellPost.marketId == userMarketId;
+  } catch (e) {
+    print('Error checking market match: $e');
+    return false;
+  }
 }
