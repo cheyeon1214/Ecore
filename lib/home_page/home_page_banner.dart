@@ -76,7 +76,7 @@ class _TitleBannerState extends State<TitleBanner> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SearchScreen(isDonationSearch: false),
+                    builder: (context) => SearchScreen(isDonationSearch:null),
                   ),
                 );
               },
