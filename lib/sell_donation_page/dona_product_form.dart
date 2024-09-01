@@ -185,7 +185,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                                   onTap: () {
                                     Navigator.pop(context);
                                     captureImage();
-                                    },
+                                  },
                                 ),
                                 ListTile(
                                   leading: Icon(Icons.photo_library),
@@ -193,7 +193,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                                   onTap: () {
                                     Navigator.pop(context);
                                     getImages();
-                                    },
+                                  },
                                 ),
                               ],
                             ),
@@ -235,14 +235,40 @@ class _DonaProductFormState extends State<DonaProductForm> {
                   itemBuilder: (context, index) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(_images![index].path),
-                          fit: BoxFit.cover,
-                          width: 100,
-                          height: 100,
-                        ),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(_images![index].path),
+                              fit: BoxFit.cover,
+                              width: 100,
+                              height: 100,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _images!.removeAt(index);
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.grey[800],
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
