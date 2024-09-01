@@ -37,6 +37,22 @@ class _DonaProductFormState extends State<DonaProductForm> {
     }
   }
 
+  Future<void> captureImage() async {
+    if (_images!.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
+      );
+      return;
+    }
+
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _images = (_images! + [pickedFile]).take(10).toList();
+      });
+    }
+  }
+
   Future<List<String>> uploadImages(List<XFile> imageFiles) async {
     List<String> downloadUrls = [];
     for (XFile imageFile in imageFiles) {
@@ -155,7 +171,36 @@ class _DonaProductFormState extends State<DonaProductForm> {
               Row(
                 children: <Widget>[
                   GestureDetector(
-                    onTap: getImages,
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return SafeArea(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: Icon(Icons.camera_alt),
+                                  title: Text('카메라로 촬영'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    captureImage();
+                                  },
+                                ),
+                                ListTile(
+                                  leading: Icon(Icons.photo_library),
+                                  title: Text('갤러리에서 선택'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    getImages();
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                     child: Container(
                       height: 100,
                       width: 100,
@@ -190,14 +235,40 @@ class _DonaProductFormState extends State<DonaProductForm> {
                   itemBuilder: (context, index) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(_images![index].path),
-                          fit: BoxFit.cover,
-                          width: 100,
-                          height: 100,
-                        ),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(_images![index].path),
+                              fit: BoxFit.cover,
+                              width: 100,
+                              height: 100,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _images!.removeAt(index);
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.grey[800],
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
