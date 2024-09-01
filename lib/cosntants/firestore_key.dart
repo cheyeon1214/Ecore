@@ -13,6 +13,7 @@ const KEY_POINT = 'point';
 const KEY_MYDONAPOST = 'my_dona_post';
 const KEY_CART = 'cart'; // 장바구니 배열 값
 const KEY_USER_MARKETID = 'marketId';
+const KEY_ADDRESS = 'address';
 
 
 // Keys for SELL_PRODUCTS collection

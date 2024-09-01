@@ -82,7 +82,7 @@ class CartBtn extends StatelessWidget {
                   // 주문 목록 화면으로 이동
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PayPage()),
+                    MaterialPageRoute(builder: (context) => OrderList()),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
