@@ -17,6 +17,7 @@ class UserModel extends ChangeNotifier {
   String username = '';
   List<dynamic> followings = [];
   List<dynamic> cart = [];
+  List<String> address = [];
   DocumentReference? reference;
 
   UserModel({
@@ -29,6 +30,7 @@ class UserModel extends ChangeNotifier {
     this.username = '',
     List<dynamic>? followings,
     List<dynamic>? cart,
+    List<String>? address,
     this.reference,
     this.marketId = '',
   })  : myPosts = myPosts ?? [],
@@ -45,7 +47,8 @@ class UserModel extends ChangeNotifier {
         followings = List.from(map[KEY_FOLLOWINGS] ?? []),
         myPosts = List.from(map[KEY_MYPOSTS] ?? []),
         cart = List.from(map[KEY_CART] ?? []),
-        marketId = (map['marketId'] ?? '').isNotEmpty ? map['marketId'] : null;
+        marketId = (map['marketId'] ?? '').isNotEmpty ? map['marketId'] : null,
+        address = List.from(map[KEY_ADDRESS] ?? []);
 
   UserModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(
@@ -64,7 +67,8 @@ class UserModel extends ChangeNotifier {
       KEY_FOLLOWINGS: [],
       KEY_MYPOSTS: [],
       KEY_CART: [],
-      KEY_USER_MARKETID : []
+      KEY_USER_MARKETID : [],
+      KEY_ADDRESS : []
     };
   }
 

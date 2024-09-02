@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../repo/user_network_repository.dart';
 import '../signinup_page/sign_in_form.dart';
 
@@ -166,6 +167,28 @@ class FirebaseAuthState extends ChangeNotifier {
 
       _firebaseAuthStatus = _user != null ? FirebaseAuthStatus.signin : FirebaseAuthStatus.signout;
       notifyListeners();
+    }
+  }
+
+  Future<void> loginWithGoogle(BuildContext context, User user) async {
+    _firebaseAuthStatus = FirebaseAuthStatus.progress;
+    notifyListeners();
+
+    try {
+      // 기존 사용자가 아니면 Firestore에 사용자 정보 생성
+      await userNetworkRepository.attemptCreateUser(userkey: user.uid, email: user.email ?? "");
+
+      // 로그인 상태 업데이트
+      _user = user;
+      _firebaseAuthStatus = FirebaseAuthStatus.signin;
+      notifyListeners();
+
+      // 홈 화면으로 이동
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => MyAppContent()),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("알 수 없는 오류 발생")));
     }
   }
 

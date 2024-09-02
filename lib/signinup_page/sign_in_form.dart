@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
-import '../cosntants/common_size.dart';
+import '../main.dart';
 import '../models/firebase_auth_state.dart';
+import '../cosntants/common_size.dart';
 import 'find_password.dart';
-import 'sign_up_form.dart';  // SignUpForm 클래스가 정의된 파일을 import
+import 'sign_up_form.dart';
 
 class SignInForm extends StatefulWidget {
   @override
@@ -26,7 +29,7 @@ class _SignInFormState extends State<SignInForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFFFF), //
+      backgroundColor: Color(0xFFFFFFFF),
       resizeToAvoidBottomInset: true,
       body: Padding(
         padding: const EdgeInsets.all(common_gap),
@@ -78,6 +81,8 @@ class _SignInFormState extends State<SignInForm> {
               ),
               SizedBox(height: common_s_gap),
               _submitButton(context),
+              SizedBox(height: common_s_gap / 2),  // 간격을 절반으로 줄임
+              _googleSignInButton(context),  // Google Sign-In 버튼 추가
               SizedBox(height: common_s_gap),
             ],
           ),
@@ -131,6 +136,62 @@ class _SignInFormState extends State<SignInForm> {
       ),
     );
   }
+
+  Widget _googleSignInButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black, backgroundColor: Colors.white,
+        side: BorderSide(color: Colors.grey),  // 테두리 추가
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      onPressed: () async {
+        print("Google Sign-In 버튼 클릭됨");
+
+        await _signInWithGoogle(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/google_logo.png', height: 24),  // 구글 로고 이미지
+            SizedBox(width: 12),
+            Text(
+              'Google 계정으로 가입',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+          accessToken: googleAuth.accessToken,
+        );
+
+        // FirebaseAuth로 구글 계정으로 로그인
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+        User? user = userCredential.user;
+
+        if (user != null) {
+          // 로그인 상태 업데이트 및 Firestore에 사용자 정보 저장
+          Provider.of<FirebaseAuthState>(context, listen: false).loginWithGoogle(context, user);
+        }
+      }
+    } catch (error) {
+      print("Google 로그인 중 오류 발생: $error");
+    }
+  }
 }
 
 InputDecoration textInputDecor(String hint) {
@@ -162,19 +223,3 @@ OutlineInputBorder activeInputBorder() {
     borderRadius: BorderRadius.circular(common_s_gap),
   );
 }
-
-const MaterialColor white = MaterialColor(
-  0xFFFFFFFF,
-  <int, Color>{
-    50: Color(0x0FFFFFFF),
-    100: Color(0x1FFFFFFF),
-    200: Color(0x2FFFFFFF),
-    300: Color(0x3FFFFFFF),
-    400: Color(0x4FFFFFFF),
-    500: Color(0x5FFFFFFF),
-    600: Color(0x6FFFFFFF),
-    700: Color(0x7FFFFFFF),
-    800: Color(0x8FFFFFFF),
-    900: Color(0x9FFFFFFF),
-  },
-);
