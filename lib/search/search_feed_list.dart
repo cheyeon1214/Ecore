@@ -5,10 +5,12 @@ import '../donation_page/dona_detail.dart';
 import '../home_page/feed_detail.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/sell_post_model.dart';
-import '../widgets/view_counter.dart';
 
 Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, BuildContext context) {
-  final imageUrl = result['img']?.toString() ?? 'https://via.placeholder.com/100';
+  // Use the first image in the list or a placeholder
+  final imageUrl = (result['img'] != null && result['img'].isNotEmpty)
+      ? result['img'][0].toString()
+      : 'https://via.placeholder.com/100';
 
   return InkWell(
     onTap: () {
@@ -16,7 +18,7 @@ Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, Build
         final docId = result['id'];
         if (docId == null || docId.isEmpty) {
           print('Document ID is null or empty');
-          return; // Handle the error or return to avoid processing
+          return;
         }
         final donaPostReference = FirebaseFirestore.instance.collection('DonaPosts').doc(docId);
         final donaPost = DonaPostModel.fromMap(result, '', reference: donaPostReference);
@@ -28,16 +30,18 @@ Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, Build
           ),
         );
       } else {
-        final docId = result['id']; // Ensure 'id' exists in 'result'
+        final docId = result['id'];
+        if (docId == null || docId.isEmpty) {
+          print('Document ID is null or empty');
+          return;
+        }
         final sellPostReference = FirebaseFirestore.instance.collection('SellPosts').doc(docId);
         final sellPost = SellPostModel.fromMap(result, '', reference: sellPostReference);
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => FeedDetail(
-              sellPost: sellPost,
-            ),
+            builder: (context) => FeedDetail(sellPost: sellPost),
           ),
         );
       }
@@ -50,6 +54,7 @@ Widget SearchFeedList(Map<String, dynamic> result, bool _isDonationSearch, Build
             imageUrl: imageUrl,
             width: 100,
             height: 100,
+            fit: BoxFit.cover,
             errorWidget: (context, url, error) => Icon(Icons.error),
           ),
         ),

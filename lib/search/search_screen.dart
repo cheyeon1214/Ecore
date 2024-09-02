@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 import 'donation_search.dart';
 import 'sell_posts_search.dart';
 import 'search_result_screen.dart';
+import 'market_search.dart';
 
 class SearchScreen extends StatefulWidget {
-  final bool isDonationSearch; // true면 기부글 검색, false면 판매글 검색
+  final bool? isDonationSearch; // Change to bool?
 
-  SearchScreen({this.isDonationSearch = false});
+  SearchScreen({this.isDonationSearch});
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
 
+
 class _SearchScreenState extends State<SearchScreen> {
   final DonationSearch _donationSearch = DonationSearch();
   final SellPostSearch _sellPostSearch = SellPostSearch();
+  final MarketSearch _marketSearch = MarketSearch();
   final TextEditingController _searchController = TextEditingController();
 
   void _performSearch() async {
@@ -24,24 +27,34 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    List<Map<String, dynamic>> results = [];
+    List<Map<String, dynamic>> donationResults = [];
+    List<Map<String, dynamic>> sellPostResults = [];
+    List<Map<String, dynamic>> marketResults = [];
 
-    if (widget.isDonationSearch) {
-      results = await _donationSearch.searchDonations(query);
+    if (widget.isDonationSearch == true) {
+      donationResults = await _donationSearch.searchDonations(query);
+    } else if (widget.isDonationSearch == false) {
+      sellPostResults = await _sellPostSearch.searchSellPosts(query);
     } else {
-      results = await _sellPostSearch.searchSellPosts(query);
+      // 전체 검색 수행
+      donationResults = await _donationSearch.searchDonations(query);
+      sellPostResults = await _sellPostSearch.searchSellPosts(query);
+      marketResults = await _marketSearch.searchMarkets(query);
     }
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SearchResultsScreen(
-          results: results,
+          donationResults: donationResults,
+          sellPostResults: sellPostResults,
+          marketResults: marketResults,
           isDonationSearch: widget.isDonationSearch,
         ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

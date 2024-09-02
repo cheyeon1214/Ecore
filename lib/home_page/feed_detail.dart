@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import '../chat_page/chat_banner.dart';
+import '../models/firestore/market_model.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import 'package:provider/provider.dart';
+import '../search/market_detail.dart';
+import '../chat_page/chat_banner.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -232,10 +234,22 @@ class _FeedDetailState extends State<FeedDetail> {
         String marketImage = marketData['img'] ?? 'https://via.placeholder.com/150';
         String businessNumber = marketData['business_number'] ?? '';
 
-        return _marketView(marketImage, marketName, businessNumber);
+        return InkWell(
+          onTap: () {
+            final market = MarketModel.fromSnapshot(snapshot.data!);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MarketDetail(market: market),
+              ),
+            );
+          },
+          child: _marketView(marketImage, marketName, businessNumber),
+        );
       },
     );
   }
+
 
   Row _marketView(String marketImage, String marketName, String businessNumber) {
     return Row(
