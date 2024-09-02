@@ -2,6 +2,7 @@ import 'package:ecore/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'cart_page/cart_list.dart';
 import 'models/firebase_auth_state.dart';
 import 'models/firestore/user_model.dart';
 import 'package:ecore/home_page/home_page_menu.dart';

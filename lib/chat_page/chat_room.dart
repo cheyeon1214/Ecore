@@ -73,26 +73,6 @@ class _ChatRoomState extends State<ChatRoom> {
     }
   }
 
-  Stream<List<ChatModel>> _combineStreams() {
-    final myMessagesStream = _fetchMyMessages();
-    final otherMessagesStream = _fetchOtherMessages();
-
-    return StreamGroup.merge([myMessagesStream, otherMessagesStream]).map((List<List<ChatModel>> results) {
-      final myMessages = results[0];
-      final otherMessages = results[1];
-      final allMessages = [...myMessages, ...otherMessages];
-      allMessages.sort((a, b) => a.date.compareTo(b.date));
-      return allMessages;
-    } as List<ChatModel> Function(List<ChatModel> event));
-  }
-
-
-  List<ChatModel> _getSortedMessages(List<ChatModel> myMessages, List<ChatModel> otherMessages) {
-    final allMessages = [...myMessages, ...otherMessages];
-    allMessages.sort((a, b) => a.date.compareTo(b.date));
-    return allMessages;
-  }
-
   Future<void> startOrGetChat(String initialMessage) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
