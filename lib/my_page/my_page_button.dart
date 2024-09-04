@@ -1,11 +1,14 @@
+import 'package:ecore/my_market/my_market_reviewpage.dart';
 import 'package:ecore/my_page/setting_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cart_page/order_list.dart';
+import '../models/firestore/user_model.dart';
 import '../my_market/create_my_market.dart';
 import '../my_market/my_market_banner.dart';
 import '../models/firestore/market_model.dart';
+import 'my_review_page.dart';
 
 class MyPageBtn extends StatefulWidget {
   const MyPageBtn({super.key});
@@ -17,11 +20,32 @@ class MyPageBtn extends StatefulWidget {
 class _MyPageBtnState extends State<MyPageBtn> {
   String userId = FirebaseAuth.instance.currentUser?.uid ?? ''; // Get current userId
   MarketModel? market;
+  UserModel? userModel;
 
   @override
   void initState() {
     super.initState();
     _fetchMarketData();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (userId.isNotEmpty) {
+      try {
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userId)
+            .get();
+
+        if (userSnapshot.exists) {
+          setState(() {
+            userModel = UserModel.fromSnapshot(userSnapshot);
+          });
+        }
+      } catch (e) {
+        print('Error fetching user data: $e');
+      }
+    }
   }
 
   Future<void> _fetchMarketData() async {
@@ -189,27 +213,38 @@ class _MyPageBtnState extends State<MyPageBtn> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50], // 배경색 설정
-                    borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyReviewPage(userModel: userModel!,)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
+                    ),
+                    padding: EdgeInsets.zero, // 기본 패딩 제거
                   ),
-                  height: 70,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/review.png',
-                        height: 40,
-                      ),
-                      Text(
-                        '리뷰',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                  child: Container(
+                    height: 70,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/review.png',
+                          height: 40,
                         ),
-                      ),
-                    ],
+                        Text(
+                          '리뷰',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
