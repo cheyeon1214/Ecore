@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../models/firestore/user_model.dart';
+import 'edit_review_page.dart';
 
 class MyReviewPage extends StatefulWidget {
   final UserModel userModel;
@@ -30,13 +31,16 @@ class _MyReviewPageState extends State<MyReviewPage> {
         .orderBy('timestamp', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => {
-      'id': doc.id,
-      ...doc.data() as Map<String, dynamic>,
-    }).toList();
+    return snapshot.docs
+        .map((doc) => {
+              'id': doc.id,
+              ...doc.data() as Map<String, dynamic>,
+            })
+        .toList();
   }
 
-  Future<String?> _getItemImageUrl(String userId, String orderId, int itemIndex) async {
+  Future<String?> _getItemImageUrl(
+      String userId, String orderId, int itemIndex) async {
     final itemSnapshot = await _firestore
         .collection('Users')
         .doc(userId)
@@ -56,7 +60,8 @@ class _MyReviewPageState extends State<MyReviewPage> {
   }
 
   Future<void> _deleteReview(String reviewId) async {
-    if (reviewId.isNotEmpty) { // reviewId가 비어 있지 않은지 확인
+    if (reviewId.isNotEmpty) {
+      // reviewId가 비어 있지 않은지 확인
       try {
         await _firestore.collection('Reviews').doc(reviewId).delete();
         // 리뷰 삭제 후 데이터를 새로 고침
@@ -106,7 +111,8 @@ class _MyReviewPageState extends State<MyReviewPage> {
           // 리뷰를 날짜별로 그룹화
           for (var review in reviews) {
             final timestamp = (review['timestamp'] as Timestamp).toDate();
-            final date = DateTime(timestamp.year, timestamp.month, timestamp.day);
+            final date =
+                DateTime(timestamp.year, timestamp.month, timestamp.day);
 
             if (!groupedReviews.containsKey(date)) {
               groupedReviews[date] = [];
@@ -123,9 +129,11 @@ class _MyReviewPageState extends State<MyReviewPage> {
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                          ? NetworkImage(profileImageUrl)
-                          : AssetImage('assets/images/default_profile.jpg') as ImageProvider,
+                      backgroundImage:
+                          profileImageUrl != null && profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : AssetImage('assets/images/default_profile.jpg')
+                                  as ImageProvider,
                     ),
                     SizedBox(width: 16),
                     Column(
@@ -133,7 +141,8 @@ class _MyReviewPageState extends State<MyReviewPage> {
                       children: [
                         Text(
                           '$userName 님',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                         Text(
                           '작성한 리뷰 수: ${reviews.length}',
@@ -160,15 +169,20 @@ class _MyReviewPageState extends State<MyReviewPage> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Divider(color: Colors.black, thickness: 1.5), // 날짜 구분 선
+                          Divider(color: Colors.black, thickness: 1.5),
+                          // 날짜 구분 선
                           SizedBox(height: 8.0),
                           Text(
                             DateFormat('yyyy-MM-dd').format(date),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.black),
                           ),
                           SizedBox(height: 8.0),
                           ...reviewList.map((review) {
-                            final reviewId = review['id'] ?? ''; // Default to empty string if null
+                            final reviewId = review['id'] ??
+                                ''; // Default to empty string if null
                             return Container(
                               margin: const EdgeInsets.symmetric(vertical: 8.0),
                               child: Row(
@@ -181,36 +195,47 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                       review['itemIndex'],
                                     ),
                                     builder: (context, imageSnapshot) {
-                                      if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                                      if (imageSnapshot.connectionState ==
+                                          ConnectionState.waiting) {
                                         return Container(
                                           width: 80,
                                           height: 80,
                                           color: Colors.grey[200],
-                                          child: Center(child: CircularProgressIndicator()),
+                                          child: Center(
+                                              child:
+                                                  CircularProgressIndicator()),
                                         );
-                                      } else if (imageSnapshot.hasError || !imageSnapshot.hasData) {
+                                      } else if (imageSnapshot.hasError ||
+                                          !imageSnapshot.hasData) {
                                         return Container(
                                           width: 80,
                                           height: 80,
                                           color: Colors.grey[200],
-                                          child: Icon(Icons.error, size: 40, color: Colors.red),
+                                          child: Icon(Icons.error,
+                                              size: 40, color: Colors.red),
                                         );
                                       }
 
-                                      final imageUrl = imageSnapshot.data ?? 'https://via.placeholder.com/80';
+                                      final imageUrl = imageSnapshot.data ??
+                                          'https://via.placeholder.com/80';
                                       return Container(
                                         width: 80,
                                         height: 80,
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8.0),
-                                          border: Border.all(color: Colors.grey[300]!),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
+                                          border: Border.all(
+                                              color: Colors.grey[300]!),
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                           child: CachedNetworkImage(
                                             imageUrl: imageUrl,
                                             fit: BoxFit.cover,
-                                            errorWidget: (context, url, error) => Icon(Icons.error),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Icon(Icons.error),
                                           ),
                                         ),
                                       );
@@ -219,7 +244,8 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                   SizedBox(width: 10.0),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           review['itemTitle'] ?? 'No Title',
@@ -237,7 +263,9 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                         Row(
                                           children: List.generate(5, (index) {
                                             return Icon(
-                                              index < (review['rating'] ?? 0) ? Icons.star : Icons.star_border,
+                                              index < (review['rating'] ?? 0.0)
+                                                  ? Icons.star
+                                                  : Icons.star_border,
                                               color: Colors.yellow[600],
                                               size: 20.0,
                                             );
@@ -246,6 +274,22 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                         SizedBox(height: 8.0),
                                       ],
                                     ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => EditReviewPage(
+                                            reviewId: review['id']!,
+                                            initialReview:
+                                                review['review'] ?? '',
+                                            initialRating:
+                                                review['rating'] ?? 0.0,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.delete, color: Colors.red),
@@ -257,22 +301,29 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                           content: Text('정말로 이 리뷰를 삭제하시겠습니까?'),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.of(context).pop(true),
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(true),
                                               child: Text('삭제'),
                                             ),
                                             TextButton(
-                                              onPressed: () => Navigator.of(context).pop(false),
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(false),
                                               child: Text('취소'),
                                             ),
                                           ],
                                         ),
                                       );
 
-                                      if (confirm == true && reviewId.isNotEmpty) {
+                                      if (confirm == true &&
+                                          reviewId.isNotEmpty) {
                                         await _deleteReview(reviewId);
                                       } else if (confirm != true) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('리뷰 삭제가 취소되었습니다.')),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text('리뷰 삭제가 취소되었습니다.')),
                                         );
                                       }
                                     },
