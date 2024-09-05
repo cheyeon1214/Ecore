@@ -1,8 +1,7 @@
-import 'package:ecore/signinup_page/sign_in_form.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../cosntants/common_size.dart';
-import '../models/firebase_auth_state.dart';
+import '../signinup_page/sign_in_form.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpForm extends StatefulWidget {
   @override
@@ -11,26 +10,114 @@ class SignUpForm extends StatefulWidget {
 
 class _SignUpFormState extends State<SignUpForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _pwController = TextEditingController();
   final TextEditingController _cpwController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
+  bool _isEmailSent = false;
+  bool _isEmailVerified = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _pwController.dispose();
     _cpwController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
+
+  Future<void> _sendVerificationEmail() async {
+    try {
+      // Create a new user with email and password
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _pwController.text,
+      );
+
+      // Get the newly created user
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Send email verification
+        await user.sendEmailVerification();
+        setState(() {
+          _isEmailSent = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이메일 인증을 전송했습니다. 이메일을 확인해 주세요.')),
+        );
+      }
+    } catch (e) {
+      print('Error sending verification email: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이메일 인증을 보낼 수 없습니다.')),
+      );
+    }
+  }
+
+  Future<void> _completeSignUp() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      try {
+        // Sign in the user
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _pwController.text,
+        );
+
+        User? user = userCredential.user;
+        if (user != null && user.emailVerified) {
+          // 이메일 인증 확인 후 Firestore에 사용자 정보 저장
+          await _saveUserToFirestore(user);
+
+          // Finalize sign up process
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('회원가입이 완료되었습니다.')),
+          );
+
+          // Navigate to the sign-in page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => SignInForm()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('이메일 인증이 필요합니다.')),
+          );
+        }
+      } catch (e) {
+        print('Error completing sign up: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('회원가입 완료에 실패했습니다.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveUserToFirestore(User user) async {
+    try {
+      // 이메일에서 username 추출
+      String username = user.email!.split('@').first;
+
+      await FirebaseFirestore.instance.collection('Users').doc(user.uid).set({
+        'email': user.email,
+        'phone': _phoneController.text,
+        'username': username,
+        'createdAt': Timestamp.now(),
+      });
+    } catch (e) {
+      print('Error saving user to Firestore: $e');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFFFF), // 여기서 배경색을 흰색으로 설정
+      backgroundColor: Color(0xFFFFFFFF),
       resizeToAvoidBottomInset: true,
       body: Padding(
-        padding: const EdgeInsets.all(common_gap),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
@@ -49,7 +136,7 @@ class _SignUpFormState extends State<SignUpForm> {
                   }
                 },
               ),
-              SizedBox(height: common_xs_gap),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _pwController,
                 cursorColor: Colors.black54,
@@ -63,7 +150,7 @@ class _SignUpFormState extends State<SignUpForm> {
                   }
                 },
               ),
-              SizedBox(height: common_xs_gap),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _cpwController,
                 cursorColor: Colors.black54,
@@ -77,10 +164,35 @@ class _SignUpFormState extends State<SignUpForm> {
                   }
                 },
               ),
-              SizedBox(height: common_s_gap),
-              _submitButton(context),
-              SizedBox(height: common_s_gap),
-
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                cursorColor: Colors.black54,
+                decoration: textInputDecor('전화번호'),
+                validator: (text) {
+                  if (text != null && text.isNotEmpty) {
+                    return null;
+                  } else {
+                    return '전화번호를 입력해 주세요.';
+                  }
+                },
+              ),
+              SizedBox(height: 16),
+              if (!_isEmailSent) ...[
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      _sendVerificationEmail();
+                    }
+                  },
+                  child: Text('인증 이메일 전송'),
+                ),
+              ] else if (_isEmailSent && !_isEmailVerified) ...[
+                ElevatedButton(
+                  onPressed: _completeSignUp,
+                  child: Text('이메일 인증 확인'),
+                ),
+              ],
             ],
           ),
         ),
@@ -109,81 +221,35 @@ class _SignUpFormState extends State<SignUpForm> {
         ),
       ),
     );
-
   }
 
-  TextButton _submitButton(BuildContext context) {
-    return TextButton(
-      style: TextButton.styleFrom(
-        backgroundColor: Color.fromRGBO(0, 0, 128, 1.0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
-      onPressed: () {
-        if (_formKey.currentState?.validate() ?? false) {
-          print('Validation success!!');
-          Provider.of<FirebaseAuthState>(context, listen: false).registerUser(
-              context,
-              email: _emailController.text,
-              password: _pwController.text);
-        }
-      },
-      child: Text(
-        '회원가입',
-        style: TextStyle(color: Colors.white),
-      ),
-    );
-  }
-}
-
-
-
-
-InputDecoration textInputDecor(String hint) {
-  return InputDecoration(
+  InputDecoration textInputDecor(String hint) {
+    return InputDecoration(
       hintText: hint,
       enabledBorder: activeInputBorder(),
       focusedBorder: activeInputBorder(),
-      errorBorder:  errorInputBorder(),
+      errorBorder: errorInputBorder(),
       focusedErrorBorder: errorInputBorder(),
       filled: true,
-      fillColor: Colors.grey[100]!);
-}
+      fillColor: Colors.grey[100]!,
+    );
+  }
 
-OutlineInputBorder errorInputBorder() {
-  return OutlineInputBorder(
+  OutlineInputBorder errorInputBorder() {
+    return OutlineInputBorder(
       borderSide: BorderSide(
         color: Colors.redAccent,
       ),
-      borderRadius: BorderRadius.circular(common_s_gap));
+      borderRadius: BorderRadius.circular(8.0),
+    );
+  }
+
+  OutlineInputBorder activeInputBorder() {
+    return OutlineInputBorder(
+      borderSide: BorderSide(
+        color: Colors.grey[300]!,
+      ),
+      borderRadius: BorderRadius.circular(8.0),
+    );
+  }
 }
-
-OutlineInputBorder activeInputBorder() {
-  return OutlineInputBorder(
-    borderSide: BorderSide(
-      color: Colors.grey[300]!,
-    ),
-    borderRadius: BorderRadius.circular(common_s_gap),
-  );
-}
-
-
-
-const MaterialColor white = MaterialColor(
-  0xFFFFFFFF,
-  <int, Color>{
-    50: Color(0x0FFFFFFF),
-    100: Color(0x1FFFFFFF),
-    200: Color(0x2FFFFFFF),
-    300: Color(0x3FFFFFFF),
-    400: Color(0x4FFFFFFF),
-    500: Color(0x5FFFFFFF),
-    600: Color(0x6FFFFFFF),
-    700: Color(0x7FFFFFFF),
-    800: Color(0x8FFFFFFF),
-    900: Color(0x9FFFFFFF),
-  },
-);
-
-

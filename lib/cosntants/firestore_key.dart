@@ -6,6 +6,7 @@ const COLLECTION_MARKETS = 'Markets';
 
 // Keys for USERS collection
 const KEY_USERKEY = 'user_key';
+const KEY_PHONE = 'phone';
 const KEY_EMAIL = 'email';
 const KEY_NAME = 'username';
 const KEY_PROFILEIMG = 'profile_img';

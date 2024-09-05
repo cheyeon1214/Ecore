@@ -12,12 +12,10 @@ class UserModel extends ChangeNotifier {
   String email = '';
   String marketId = '';
   List<dynamic> myPosts = [];
-  int followers = 0;
-  List<dynamic> likedPosts = [];
   String username = '';
-  List<dynamic> followings = [];
   List<dynamic> cart = [];
   List<String> address = [];
+  String phone = '';
   DocumentReference? reference;
 
   UserModel({
@@ -25,26 +23,22 @@ class UserModel extends ChangeNotifier {
     this.profileImg = '',
     this.email = '',
     List<dynamic>? myPosts,
-    this.followers = 0,
     List<dynamic>? likedPosts,
     this.username = '',
     List<dynamic>? followings,
     List<dynamic>? cart,
     List<String>? address,
+    String phone = '',
     this.reference,
     this.marketId = '',
   })  : myPosts = myPosts ?? [],
-        likedPosts = likedPosts ?? [],
-        followings = followings ?? [],
         cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME] ?? '',
         profileImg = map[KEY_PROFILEIMG] ?? '',
         email = map[KEY_EMAIL] ?? '',
-        followers = map[KEY_FOLLOWERS] ?? 0,
-        likedPosts = List.from(map[KEY_LIKEDPOSTS] ?? []),
-        followings = List.from(map[KEY_FOLLOWINGS] ?? []),
+        phone = map[KEY_PHONE] ?? '',
         myPosts = List.from(map[KEY_MYPOSTS] ?? []),
         cart = List.from(map[KEY_CART] ?? []),
         marketId = (map['marketId'] ?? '').isNotEmpty ? map['marketId'] : null,
@@ -62,11 +56,9 @@ class UserModel extends ChangeNotifier {
       KEY_PROFILEIMG: "",
       KEY_USERNAME: email.split("@")[0],
       KEY_EMAIL: email,
-      KEY_LIKEDPOSTS: [],
-      KEY_FOLLOWERS: 0,
-      KEY_FOLLOWINGS: [],
       KEY_MYPOSTS: [],
       KEY_CART: [],
+      KEY_PHONE: "",
       KEY_USER_MARKETID : [],
       KEY_ADDRESS : []
     };
@@ -208,9 +200,6 @@ class UserModel extends ChangeNotifier {
         username = data[KEY_USERNAME] ?? '';
         profileImg = data[KEY_PROFILEIMG] ?? '';
         email = data[KEY_EMAIL] ?? '';
-        followers = data[KEY_FOLLOWERS] ?? 0;
-        likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
-        followings = List.from(data[KEY_FOLLOWINGS] ?? []);
         myPosts = List.from(data[KEY_MYPOSTS] ?? []);
         cart = List.from(data[KEY_CART] ?? []);
         marketId = data[KEY_USER_MARKETID] ?? '';
