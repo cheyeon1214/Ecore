@@ -1,9 +1,11 @@
 import 'package:ecore/models/firebase_auth_state.dart';
 import 'package:ecore/my_page/favorite_list_page.dart';
-import 'package:ecore/my_page/my_destination.dart';
+import 'package:ecore/my_page/my_address_form.dart';
 import 'package:ecore/my_page/recently_viewed_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'my_address_list.dart';
 
 class MyPageList extends StatefulWidget {
   const MyPageList({super.key});
@@ -49,7 +51,7 @@ class _MyPageListState extends State<MyPageList> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => AddressForm(),
+                  builder: (context) => AddressListPage(),
                 ),
               );
             },

@@ -1,65 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'my_address_search.dart'; // 주소 검색 페이지 추가
 
-class AddressForm extends StatefulWidget {
+class AddressEditForm extends StatefulWidget {
+  final String addressId; // 수정할 주소의 ID를 받아오기 위한 필드
+
+  AddressEditForm({required this.addressId});
+
   @override
-  _AddressFormState createState() => _AddressFormState();
+  _AddressEditFormState createState() => _AddressEditFormState();
 }
 
-class _AddressFormState extends State<AddressForm> {
+class _AddressEditFormState extends State<AddressEditForm> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _detailAddressController = TextEditingController();
-  final TextEditingController _recipientController = TextEditingController(); // 변경
+  final TextEditingController _recipientController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
   @override
   void dispose() {
     _addressController.dispose();
     _detailAddressController.dispose();
-    _recipientController.dispose(); // 변경
+    _recipientController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  // 폼 데이터 Firestore에 저장
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingData(); // Firestore에서 기존 데이터를 불러옴
+  }
+
+  // Firestore에서 기존 데이터 불러오기
+  Future<void> _loadExistingData() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      // Firestore에서 해당 주소의 데이터를 가져옴
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.uid)
+          .collection('Addresses')
+          .doc(widget.addressId)
+          .get();
+
+      if (docSnapshot.exists) {
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+
+        setState(() {
+          _addressController.text = data['address'] ?? ''; // 주소 필드
+          _detailAddressController.text = data['detailAddress'] ?? ''; // 상세주소 필드
+          _recipientController.text = data['recipient'] ?? '';
+          _phoneController.text = data['phone'] ?? '';
+        });
+      }
+    }
+  }
+
+  // 주소 필드 클릭 시 주소 검색 페이지 열기
+  Future<void> _openAddressSearch() async {
+    final selectedAddress = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddressAndPlaceSearchPage(), // 주소 검색 페이지로 이동
+      ),
+    );
+
+    if (selectedAddress != null) {
+      setState(() {
+        _addressController.text = selectedAddress; // 선택한 주소를 주소 필드에 입력
+      });
+    }
+  }
+
+  // 폼 데이터 Firestore에 수정하여 저장
   void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // 현재 로그인된 사용자의 uid 가져오기
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
-        // 주소와 상세주소 결합
-        String fullAddress = _addressController.text + " " + _detailAddressController.text;
-
-        // Firestore에 데이터 저장
+        // Firestore에서 데이터 수정
         await FirebaseFirestore.instance
             .collection('Users')
             .doc(currentUser.uid)
-            .collection('Addresses') // 서브컬렉션에 주소를 추가
-            .add({
-          'address': fullAddress, // 주소 + 상세주소 결합해서 저장
-          'recipient': _recipientController.text, // 변경
+            .collection('Addresses')
+            .doc(widget.addressId) // 해당 문서 ID로 데이터 업데이트
+            .update({
+          'address': _addressController.text, // 주소 필드
+          'detailAddress': _detailAddressController.text, // 상세주소 필드
+          'recipient': _recipientController.text,
           'phone': _phoneController.text,
-          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // 폼 제출 완료 팝업
+        // 수정 완료 팝업
         _showSuccessDialog();
       }
     }
   }
 
-  // 폼 제출 성공 팝업
+  // 폼 수정 성공 팝업
   void _showSuccessDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // 팝업 외부를 누르면 닫히지 않도록 설정
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('알림'),
-          content: Text('배송지 추가가 완료되었습니다.'),
+          content: Text('배송지가 수정되었습니다.'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -77,44 +128,43 @@ class _AddressFormState extends State<AddressForm> {
   InputDecoration _inputDecoration(String hintText) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상
+      hintStyle: TextStyle(color: Colors.grey),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5), // 기본 테두리
+        borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent, width: 2), // 포커스 시 테두리
+        borderSide: BorderSide(color: Colors.black, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent, width: 2), // 에러 테두리
+        borderSide: BorderSide(color: Colors.redAccent, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent, width: 2), // 에러 발생 시 포커스 테두리
+        borderSide: BorderSide(color: Colors.redAccent, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
-      contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16), // 패딩
+      contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       suffixIcon: hintText == '주소 검색'
-          ? Icon(Icons.search, color: Colors.grey) // 주소 필드에만 검색 아이콘 추가
+          ? Icon(Icons.search, color: Colors.grey)
           : null,
     );
   }
 
-  // 필드 라벨과 * 표시를 위한 위젯
   Widget _buildLabel(String labelText) {
     return RichText(
       text: TextSpan(
         text: labelText,
         style: TextStyle(
-          color: Colors.black, // 기본 라벨 색상
+          color: Colors.black,
           fontSize: 14,
         ),
         children: [
           TextSpan(
             text: ' *',
             style: TextStyle(
-              color: Colors.red, // 별표 색상
+              color: Colors.red,
               fontSize: 14,
             ),
           ),
@@ -126,8 +176,10 @@ class _AddressFormState extends State<AddressForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('배송지 추가'),
+        backgroundColor: Colors.white,
+        title: Text('배송지 수정'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -139,14 +191,16 @@ class _AddressFormState extends State<AddressForm> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('주소'), // 라벨 + 별표
+                  _buildLabel('주소'),
                   SizedBox(height: 8),
                   TextFormField(
                     controller: _addressController,
+                    readOnly: true,
+                    onTap: _openAddressSearch,
                     decoration: _inputDecoration('주소 검색'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '주소를 검색해주세요'; // 에러 메시지
+                        return '주소를 검색해주세요';
                       }
                       return null;
                     },
@@ -159,7 +213,7 @@ class _AddressFormState extends State<AddressForm> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('상세주소'), // 라벨 + 별표
+                  _buildLabel('상세주소'),
                   SizedBox(height: 8),
                   TextFormField(
                     controller: _detailAddressController,
@@ -173,14 +227,14 @@ class _AddressFormState extends State<AddressForm> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('수령인'), // 라벨 + 별표
+                  _buildLabel('수령인'),
                   SizedBox(height: 8),
                   TextFormField(
-                    controller: _recipientController, // 변경
-                    decoration: _inputDecoration('수령인을 입력해주세요'), // 변경
+                    controller: _recipientController,
+                    decoration: _inputDecoration('수령인을 입력해주세요'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '수령인을 입력해주세요.'; // 변경
+                        return '수령인을 입력해주세요.';
                       }
                       return null;
                     },
@@ -193,7 +247,7 @@ class _AddressFormState extends State<AddressForm> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('휴대폰'), // 라벨 + 별표
+                  _buildLabel('휴대폰'),
                   SizedBox(height: 8),
                   TextFormField(
                     controller: _phoneController,
@@ -213,7 +267,7 @@ class _AddressFormState extends State<AddressForm> {
               ),
               SizedBox(height: 16),
 
-              // 추가하기 버튼
+              // 수정하기 버튼
               ElevatedButton(
                 onPressed: _submitForm,
                 style: ElevatedButton.styleFrom(
@@ -223,7 +277,7 @@ class _AddressFormState extends State<AddressForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text('추가하기', style: TextStyle(fontSize: 16, color: Colors.grey[900])),
+                child: Text('수정하기', style: TextStyle(fontSize: 16, color: Colors.grey[900])),
               ),
             ],
           ),
