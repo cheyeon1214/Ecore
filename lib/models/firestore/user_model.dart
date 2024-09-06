@@ -281,3 +281,115 @@ class UserModel extends ChangeNotifier {
   }
 
 }
+
+// 주소 생성
+Future<void> addAddress({
+  required String address,
+  required String detailAddress,
+  required String phone,
+  required String recipient,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션에 새로운 주소 추가
+    await userDoc.collection('Addresses').add({
+      'address': address,
+      'detailAddress': detailAddress,
+      'phone': phone,
+      'recipient': recipient,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    print('Address added successfully');
+  } catch (e) {
+    print('Error adding address: $e');
+  }
+}
+
+
+Stream<List<Map<String, dynamic>>> get addressStream {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    return Stream.value([]); // 유저가 로그인되어 있지 않으면 빈 스트림 반환
+  }
+
+  return FirebaseFirestore.instance
+      .collection('Users')
+      .doc(user.uid)
+      .collection('Addresses')
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'address': data['address'] ?? '',
+        'detailAddress': data['detailAddress'] ?? '',
+        'phone': data['phone'] ?? '',
+        'recipient': data['recipient'] ?? '',
+      };
+    }).toList();
+  });
+}
+
+// 주소 업데이트
+Future<void> updateAddress(String addressId, {
+  required String address,
+  required String detailAddress,
+  required String phone,
+  required String recipient,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션의 특정 문서 업데이트
+    await userDoc.collection('Addresses').doc(addressId).update({
+      'address': address,
+      'detailAddress': detailAddress,
+      'phone': phone,
+      'recipient': recipient,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    print('Address updated successfully');
+  } catch (e) {
+    print('Error updating address: $e');
+  }
+}
+
+// 주소 삭제
+Future<void> deleteAddress(String addressId) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션의 특정 문서 삭제
+    await userDoc.collection('Addresses').doc(addressId).delete();
+
+    print('Address deleted successfully');
+  } catch (e) {
+    print('Error deleting address: $e');
+  }
+}
+

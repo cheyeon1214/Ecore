@@ -108,3 +108,14 @@ const KEY_SEND_USERID = 'sendId';
 const KEY_RECEIVE_USERID = 'receiveId';
 const KEY_DATE = 'date';
 const KEY_TEXT = 'text';
+
+
+//////////////////
+const COLLECTION_ADDRESSES = 'Addresses';
+
+const KEYADDRESS = 'address';
+const KEYDETAIL_ADDRESS = 'detailAddress';
+const KEYPHONE = 'phone';
+const KEYRECIPIENT = 'recipient';
+const KEY_CREATED_AT = 'createdAt';
+const KEY_UPDATED_AT = 'updatedAt';
