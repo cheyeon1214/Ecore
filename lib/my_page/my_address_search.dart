@@ -4,17 +4,20 @@ import 'dart:convert';
 
 class AddressAndPlaceSearchPage extends StatefulWidget {
   @override
-  _AddressAndPlaceSearchPageState createState() =>
-      _AddressAndPlaceSearchPageState();
+  _AddressAndPlaceSearchPageState createState() => _AddressAndPlaceSearchPageState();
 }
 
-class _AddressAndPlaceSearchPageState
-    extends State<AddressAndPlaceSearchPage> {
+class _AddressAndPlaceSearchPageState extends State<AddressAndPlaceSearchPage> {
   final TextEditingController _searchController = TextEditingController();
   List<String> _searchResults = [];
 
   // Kakao API 호출 함수 (주소 + 장소 통합 검색)
   Future<void> _search(String query) async {
+    if (query.isEmpty) {
+      print('검색어가 비어 있습니다.');
+      return; // 검색어가 비어 있으면 API 호출을 하지 않음
+    }
+
     // Kakao API 키를 여기에 입력하세요
     final String kakaoApiKey = '44cd9bd8d2b5fb2024c1758ba89083ac';
 
@@ -22,8 +25,7 @@ class _AddressAndPlaceSearchPageState
     final String encodedQuery = Uri.encodeComponent(query);
 
     // Kakao 장소 검색 API URL
-    final String placeApiUrl =
-        'https://dapi.kakao.com/v2/local/search/keyword.json?query=$encodedQuery';
+    final String placeApiUrl = 'https://dapi.kakao.com/v2/local/search/keyword.json?query=$encodedQuery';
 
     // 장소 검색 API 호출
     final placeResponse = await http.get(
@@ -50,7 +52,8 @@ class _AddressAndPlaceSearchPageState
         }).toList();
       });
     } else {
-      print('Failed to fetch data from Kakao API');
+      print('Error: Failed to fetch data from Kakao API. Status Code: ${placeResponse.statusCode}');
+      print('Response body: ${placeResponse.body}');
     }
   }
 
@@ -101,8 +104,9 @@ class _AddressAndPlaceSearchPageState
                 ),
               ),
               onChanged: (query) {
-                setState(() {}); // 상태 갱신하여 삭제 버튼 표시
-                _search(query); // 검색 API 호출
+                if (query.isNotEmpty) {
+                  _search(query); // 검색어가 입력되었을 때만 API 호출
+                }
               },
             ),
             SizedBox(height: 16),
@@ -113,7 +117,7 @@ class _AddressAndPlaceSearchPageState
                   return ListTile(
                     title: Text(_searchResults[index]),
                     onTap: () {
-                      // 검색 결과 선택 시 데이터를 반환하고 메인 페이지로 돌아갑니다.
+                      // 검색 결과 선택 시 데이터를 반환하고 메인 페이지로 돌아감
                       Navigator.pop(context, _searchResults[index]);
                     },
                   );

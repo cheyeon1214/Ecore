@@ -616,6 +616,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.2"
+  remedi_kopo:
+    dependency: "direct dev"
+    description:
+      name: remedi_kopo
+      sha256: "6f1df613d795fb38726632a9df6c17adee06c662c271cd381f65e6a6f6610721"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   rxdart:
     dependency: "direct dev"
     description:
@@ -750,7 +758,7 @@ packages:
     source: hosted
     version: "0.5.1"
   webview_flutter:
-    dependency: "direct dev"
+    dependency: "direct overridden"
     description:
       name: webview_flutter
       sha256: ec81f57aa1611f8ebecf1d2259da4ef052281cb5ad624131c93546c79ccc7736
