@@ -31,12 +31,15 @@ class MyMarketProductpage extends StatelessWidget {
 
         var details = snapshot.data!;
 
+
+
         return GridView.builder(
           padding: EdgeInsets.all(8.0),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
+            crossAxisCount: 3,  // 3개의 열
             crossAxisSpacing: 4.0,
             mainAxisSpacing: 4.0,
+            childAspectRatio: 0.6,  // 비율을 줄여 세로 공간을 더 확보
           ),
           itemCount: details.length,
           itemBuilder: (context, index) {
@@ -51,23 +54,50 @@ class MyMarketProductpage extends StatelessWidget {
                   ),
                 );
               },
-              child: Container(
-                color: Colors.blueGrey,
-                child: sellPost.img.isNotEmpty
-                    ? Image.network(
-                  sellPost.img[0],
-                  fit: BoxFit.cover,
-                )
-                    : Center(
-                  child: Text(
-                    '이미지 없음',
-                    style: TextStyle(color: Colors.white),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게 설정
+                    child: AspectRatio(
+                      aspectRatio: 1.0,  // 1:1 비율 고정
+                      child: Container(
+                        color: Colors.blueGrey,
+                        child: sellPost.img.isNotEmpty
+                            ? Image.network(
+                          sellPost.img[0],
+                          fit: BoxFit.cover,  // 이미지를 컨테이너에 맞게 1:1로 채움
+                        )
+                            : Center(
+                          child: Text(
+                            '이미지 없음',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 10),  // 이미지와 텍스트 간의 간격
+                  Text(
+                    '${sellPost.price}원',  // 가격 정보
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.0,
+                    ),
+                  ),
+                  Text(
+                    sellPost.title,  // 제목 정보
+                    maxLines: 2,  // 두 줄까지 표시
+                    overflow: TextOverflow.ellipsis,  // 두 줄 이상일 경우 생략
+                    style: TextStyle(fontSize: 12.0),
+                  ),
+                ],
               ),
             );
           },
         );
+
+
       },
     );
   }
