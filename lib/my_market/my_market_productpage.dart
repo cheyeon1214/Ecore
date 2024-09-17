@@ -82,7 +82,6 @@ class MyMarketProductpage extends StatelessWidget {
                         right: 8,  // 우측에서 8px 왼쪽
                         child: GestureDetector(
                           onTap: () {
-                            // 더보기 버튼 클릭시 실행할 동작
                             showModalBottomSheet(
                               context: context,
                               builder: (context) {
@@ -101,17 +100,92 @@ class MyMarketProductpage extends StatelessWidget {
                                       ListTile(
                                         leading: Icon(Icons.delete),
                                         title: Text('삭제'),
-                                        onTap: () {
-                                          // 삭제 버튼 동작
-                                          Navigator.pop(context);
+                                        onTap: () async {
+                                          // 삭제 확인 다이얼로그 띄우기
+                                          final bool confirmed = await showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text('삭제 확인'),
+                                              content: Text('정말로 이 상품을 삭제하시겠습니까?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context, false); // '아니오' 선택 시 팝업 닫기
+                                                  },
+                                                  child: Text('아니오'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context, true); // '예' 선택 시 삭제 진행
+                                                  },
+                                                  child: Text('예'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          // '예'를 선택한 경우에만 삭제 진행
+                                          if (confirmed == true) {
+                                            try {
+                                              // Firestore에서 해당 문서 삭제
+                                              await FirebaseFirestore.instance
+                                                  .collection('SellPosts')
+                                                  .doc(sellPost.sellId) // sellId 사용
+                                                  .delete();
+
+                                              // 모달 시트 닫기 (수정, 삭제 버튼이 있는 하단 모달)
+                                              Navigator.pop(context); // showModalBottomSheet 닫기
+
+                                              // 삭제 완료 팝업 띄우기
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) {
+                                                  return AlertDialog(
+                                                    title: Text('삭제 완료'),
+                                                    content: Text('상품이 삭제되었습니다.'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context); // 삭제 완료 팝업 닫기
+                                                        },
+                                                        child: Text('확인'),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                            } catch (e) {
+                                              // 오류 처리 팝업
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) {
+                                                  return AlertDialog(
+                                                    title: Text('오류 발생'),
+                                                    content: Text('삭제 실패: $e'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context); // 오류 팝업 닫기
+                                                        },
+                                                        child: Text('확인'),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                            }
+                                          }
                                         },
                                       ),
+
+
                                     ],
                                   ),
                                 );
                               },
                             );
                           },
+
                           child: Icon(Icons.more_vert, color: Colors.white),
                         ),
                       ),
