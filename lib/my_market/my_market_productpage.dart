@@ -31,8 +31,6 @@ class MyMarketProductpage extends StatelessWidget {
 
         var details = snapshot.data!;
 
-
-
         return GridView.builder(
           padding: EdgeInsets.all(8.0),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -57,25 +55,67 @@ class MyMarketProductpage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게 설정
-                    child: AspectRatio(
-                      aspectRatio: 1.0,  // 1:1 비율 고정
-                      child: Container(
-                        color: Colors.blueGrey,
-                        child: sellPost.img.isNotEmpty
-                            ? Image.network(
-                          sellPost.img[0],
-                          fit: BoxFit.cover,  // 이미지를 컨테이너에 맞게 1:1로 채움
-                        )
-                            : Center(
-                          child: Text(
-                            '이미지 없음',
-                            style: TextStyle(color: Colors.white),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게 설정
+                        child: AspectRatio(
+                          aspectRatio: 1.0,  // 1:1 비율 고정
+                          child: Container(
+                            color: Colors.blueGrey,
+                            child: sellPost.img.isNotEmpty
+                                ? Image.network(
+                              sellPost.img[0],
+                              fit: BoxFit.cover,  // 이미지를 컨테이너에 맞게 1:1로 채움
+                            )
+                                : Center(
+                              child: Text(
+                                '이미지 없음',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      Positioned(
+                        top: 8,  // 상단에서 8px 아래
+                        right: 8,  // 우측에서 8px 왼쪽
+                        child: GestureDetector(
+                          onTap: () {
+                            // 더보기 버튼 클릭시 실행할 동작
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (context) {
+                                return Container(
+                                  height: 150,
+                                  child: Column(
+                                    children: [
+                                      ListTile(
+                                        leading: Icon(Icons.edit),
+                                        title: Text('수정'),
+                                        onTap: () {
+                                          // 수정 버튼 동작
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: Icon(Icons.delete),
+                                        title: Text('삭제'),
+                                        onTap: () {
+                                          // 삭제 버튼 동작
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          child: Icon(Icons.more_vert, color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 10),  // 이미지와 텍스트 간의 간격
                   Text(
@@ -96,8 +136,6 @@ class MyMarketProductpage extends StatelessWidget {
             );
           },
         );
-
-
       },
     );
   }
