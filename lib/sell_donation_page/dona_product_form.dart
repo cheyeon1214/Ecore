@@ -153,7 +153,9 @@ class _DonaProductFormState extends State<DonaProductForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text('기부하기'),
         leading: IconButton(
           icon: Icon(Icons.close),
