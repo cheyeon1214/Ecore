@@ -175,7 +175,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                       // 피드 페이지
                       MyMarketFeedpage(marketId: market.marketId,),
                       // 리뷰 페이지
-                      MyMarketReviewpage(),
+                      MyMarketReviewPage(marketId: market.marketId), // marketId 전달
                     ],
                   ),
                 ),
