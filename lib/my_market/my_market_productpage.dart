@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../home_page/feed_detail.dart';
+import '../sell_donation_page/edit_sell_product_form.dart';
 
 class MyMarketProductpage extends StatelessWidget {
   final String marketId;
@@ -94,7 +95,15 @@ class MyMarketProductpage extends StatelessWidget {
                                         title: Text('수정'),
                                         onTap: () {
                                           // 수정 버튼 동작
-                                          Navigator.pop(context);
+                                          Navigator.pop(context); // 모달 닫기
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => EditProductForm(
+                                                productId: sellPost.sellId, // sellId 전달
+                                              ),
+                                            ),
+                                          );
                                         },
                                       ),
                                       ListTile(
