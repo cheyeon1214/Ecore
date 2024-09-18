@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // 날짜 형식을 위해 추가
+
 
 class MyMarketReviewPage extends StatelessWidget {
   final String marketId; // 마켓 ID를 받음
@@ -100,26 +102,62 @@ class MyMarketReviewPage extends StatelessWidget {
                   itemCount: reviews.length,
                   itemBuilder: (context, index) {
                     var review = reviews[index];
-                    return ListTile(
-                      leading: Icon(Icons.star, color: Colors.amber),
-                      title: Text(
-                        review['itemTitle'],
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0), // 리뷰 간 여백
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('평점: ${review['rating']}'),
-                          Text(review['review']),
-                          Text('만족도: ${review['satisfaction']}'),
-                          SizedBox(height: 8),
-                          Text(
-                            '작성일: ${DateTime.fromMillisecondsSinceEpoch((review['timestamp'] as Timestamp).millisecondsSinceEpoch)}',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          // 별과 평점 부분
+                          Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              SizedBox(width: 4),
+                              Text(
+                                review['rating'].toString(),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16), // 평점 굵게
+                              ),
+                            ],
                           ),
+                          SizedBox(height: 4),
+                          // 리뷰 내용 부분
+                          Text(
+                            review['review'],
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          SizedBox(height: 8),
+                          // 주문 ID와 작성일
+                          Row(
+                            children: [
+                              Text(
+                                review['orderId'], // 주문 ID 표시
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              SizedBox(width: 16),
+                              Text(
+                                DateFormat('yyyy-MM-dd').format(
+                                  // Timestamp를 DateTime으로 변환 후 년-월-일 포맷으로 변환
+                                  (review['timestamp'] as Timestamp).toDate(),
+                                ),
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          // 거래 상품 제목
+                          Container(
+                            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200], // 회색 배경으로 강조
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '거래상품  ${review['itemTitle']}', // 거래 상품 제목
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          SizedBox(height: 8), // 다음 리뷰와의 간격을 유지하기 위한 여백
                         ],
                       ),
-                      isThreeLine: true,
                     );
                   },
                 ),
