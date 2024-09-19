@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart'; // 날짜 형식을 위해 추가
 
-
 class MyMarketReviewPage extends StatelessWidget {
   final String marketId; // 마켓 ID를 받음
 
@@ -103,7 +102,7 @@ class MyMarketReviewPage extends StatelessWidget {
                   itemBuilder: (context, index) {
                     var review = reviews[index];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0), // 리뷰 간 여백
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0), // 전체 간격 조정
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -135,7 +134,6 @@ class MyMarketReviewPage extends StatelessWidget {
                               SizedBox(width: 16),
                               Text(
                                 DateFormat('yyyy-MM-dd').format(
-                                  // Timestamp를 DateTime으로 변환 후 년-월-일 포맷으로 변환
                                   (review['timestamp'] as Timestamp).toDate(),
                                 ),
                                 style: TextStyle(color: Colors.grey, fontSize: 12),
@@ -145,14 +143,22 @@ class MyMarketReviewPage extends StatelessWidget {
                           SizedBox(height: 8),
                           // 거래 상품 제목
                           Container(
-                            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
                               color: Colors.grey[200], // 회색 배경으로 강조
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              '거래상품  ${review['itemTitle']}', // 거래 상품 제목
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 거래상품 제목 가운데 정렬
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '거래상품  ${review['itemTitle']}', // 거래 상품 제목
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.center, // 텍스트 중앙 정렬
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           SizedBox(height: 8), // 다음 리뷰와의 간격을 유지하기 위한 여백
