@@ -11,7 +11,7 @@ class UserModel extends ChangeNotifier {
   String profileImg = '';
   String email = '';
   String marketId = '';
-  List<dynamic> myPosts = [];
+  List<String> myPosts = [];
   String username = '';
   List<dynamic> cart = [];
   List<String> address = [];
@@ -22,7 +22,7 @@ class UserModel extends ChangeNotifier {
     this.userKey = '',
     this.profileImg = '',
     this.email = '',
-    List<dynamic>? myPosts,
+    List<String>? myPosts,
     List<dynamic>? likedPosts,
     this.username = '',
     List<dynamic>? followings,
