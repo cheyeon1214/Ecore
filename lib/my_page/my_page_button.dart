@@ -38,9 +38,11 @@ class _MyPageBtnState extends State<MyPageBtn> {
             .get();
 
         if (userSnapshot.exists) {
-          setState(() {
-            userModel = UserModel.fromSnapshot(userSnapshot);
-          });
+          if (mounted) { // mounted 속성 확인
+            setState(() {
+              userModel = UserModel.fromSnapshot(userSnapshot);
+            });
+          }
         }
       } catch (e) {
         print('Error fetching user data: $e');
@@ -69,7 +71,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                 .get();
 
             if (marketDoc.exists) {
-              if (mounted) {
+              if (mounted) { // mounted 속성 확인
                 setState(() {
                   market = MarketModel.fromSnapshot(marketDoc); // MarketModel로 변환
                 });
@@ -82,7 +84,6 @@ class _MyPageBtnState extends State<MyPageBtn> {
       }
     }
   }
-
 
   void _showMarketCreationDialog(BuildContext context) {
     showDialog(
@@ -118,6 +119,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
   @override
   void dispose() {
     // 비동기 작업이나 타이머가 있다면 여기서 정리할 수 있습니다.
+    // 여기서는 Firebase 리스너 같은 비동기 작업이 없다면, super.dispose()만 호출해도 충분합니다.
     super.dispose();
   }
 
@@ -173,7 +175,6 @@ class _MyPageBtnState extends State<MyPageBtn> {
                   ),
                 ),
               ),
-
               SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
@@ -215,10 +216,14 @@ class _MyPageBtnState extends State<MyPageBtn> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MyReviewPage(userModel: userModel!,)),
-                    );
+                    if (userModel != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyReviewPage(userModel: userModel!),
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[50], // 배경색 설정
@@ -264,7 +269,6 @@ class _MyPageBtnState extends State<MyPageBtn> {
                       _fetchMarketData();  // 마켓 데이터를 다시 불러옵니다.
                     }
                   },
-
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[50], // 배경색 설정
                     shape: RoundedRectangleBorder(
