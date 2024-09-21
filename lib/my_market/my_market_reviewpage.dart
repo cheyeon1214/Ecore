@@ -141,23 +141,25 @@ class MyMarketReviewPage extends StatelessWidget {
                             ],
                           ),
                           SizedBox(height: 8),
-                          // 거래 상품 제목
+                          // 거래 상품 제목과 > 버튼
                           Container(
+                            height: 40, // 원하는 세로 길이 설정
                             padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: Colors.grey[200], // 회색 배경으로 강조
+                              color: Colors.grey[200], // 회색 배경
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 거래상품 제목 가운데 정렬
+                              crossAxisAlignment: CrossAxisAlignment.center, // 세로축 중앙 정렬
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 좌우 정렬
                               children: [
                                 Expanded(
                                   child: Text(
                                     '거래상품  ${review['itemTitle']}', // 거래 상품 제목
                                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center, // 텍스트 중앙 정렬
                                   ),
                                 ),
+                                Icon(Icons.arrow_forward_ios, size: 16), // > 버튼 크기 조정
                               ],
                             ),
                           ),
@@ -175,3 +177,5 @@ class MyMarketReviewPage extends StatelessWidget {
     );
   }
 }
+
+
