@@ -62,6 +62,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                 ),
               ],
             ),
+            backgroundColor: Colors.white, // 배경색 흰색으로 설정
             body: Column(
               children: [
                 // 배너 이미지와 글쓰기 버튼 영역
@@ -175,7 +176,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                       // 피드 페이지
                       MyMarketFeedpage(marketId: market.marketId,),
                       // 리뷰 페이지
-                      MyMarketReviewpage(),
+                      MyMarketReviewPage(marketId: market.marketId), // marketId 전달
                     ],
                   ),
                 ),

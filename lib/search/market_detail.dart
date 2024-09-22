@@ -143,7 +143,7 @@ class _MarketDetailState extends State<MarketDetail> {
                     children: [
                       MyMarketProductpage(marketId: market.marketId),
                       MarketFeedPageView(marketId: market.marketId),
-                      MyMarketReviewpage(),
+                      MyMarketReviewPage(marketId: market.marketId,),
                     ],
                   ),
                 ),
