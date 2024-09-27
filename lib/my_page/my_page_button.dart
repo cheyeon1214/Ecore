@@ -38,9 +38,11 @@ class _MyPageBtnState extends State<MyPageBtn> {
             .get();
 
         if (userSnapshot.exists) {
-          setState(() {
-            userModel = UserModel.fromSnapshot(userSnapshot);
-          });
+          if (mounted) { // mounted 속성 확인
+            setState(() {
+              userModel = UserModel.fromSnapshot(userSnapshot);
+            });
+          }
         }
       } catch (e) {
         print('Error fetching user data: $e');
