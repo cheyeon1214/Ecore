@@ -6,7 +6,8 @@ import '../sell_donation_page/sell_product_form.dart';
 import 'edit_my_market.dart';
 import 'my_market_feedpage.dart';
 import 'my_market_productpage.dart';
-import 'my_market_reviewpage.dart';  // 새로운 MyMarketProductpage 위젯을 import
+import 'my_market_reviewpage.dart';
+import 'my_market_search.dart';  // 새로운 MyMarketProductpage 위젯을 import
 
 class MyMarketBanner extends StatefulWidget {
   final MarketModel market; // MarketModel을 필수 인자로 받음
@@ -58,6 +59,12 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                   icon: Icon(Icons.search),
                   onPressed: () {
                     // 검색 버튼 동작
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SearchPage(marketId: market.marketId,),
+                      ),
+                    );
                   },
                 ),
               ],
