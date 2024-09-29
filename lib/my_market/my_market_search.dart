@@ -14,6 +14,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   String searchQuery = '';  // 검색어를 저장할 변수
   bool showResults = false; // 검색 결과를 보여줄지 결정하는 변수
+  TextEditingController _controller = TextEditingController(); // 텍스트 필드를 컨트롤할 컨트롤러
 
   @override
   Widget build(BuildContext context) {
@@ -28,24 +29,42 @@ class _SearchPageState extends State<SearchPage> {
             Navigator.pop(context); // 뒤로 가기 버튼 클릭 시 이전 페이지로 돌아감
           },
         ),
-        title: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          decoration: BoxDecoration(
-            color: Colors.grey[200], // 배경색 설정 (연한 회색)
-            borderRadius: BorderRadius.circular(30), // 테두리 둥글게
-          ),
-          child: TextField(
-            onChanged: (query) {
-              setState(() {
-                searchQuery = query;
-              });
-            },
-            decoration: InputDecoration(
-              border: InputBorder.none, // 기본 테두리 제거
-              hintText: '검색어를 입력해주세요', // 힌트 텍스트
-              hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상 설정
+        title: Stack(
+          alignment: Alignment.centerRight, // 오른쪽 끝에 버튼 배치
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[200], // 배경색 설정 (연한 회색)
+                borderRadius: BorderRadius.circular(10), // 테두리 둥글게
+              ),
+              child: TextField(
+                controller: _controller, // 컨트롤러 추가
+                onChanged: (query) {
+                  setState(() {
+                    searchQuery = query;
+                    showResults = false; // 검색 중에는 결과를 숨김
+                  });
+                },
+                decoration: InputDecoration(
+                  border: InputBorder.none, // 기본 테두리 제거
+                  hintText: '상품을 검색해보세요.', // 힌트 텍스트
+                  hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상 설정
+                ),
+              ),
             ),
-          ),
+            if (searchQuery.isNotEmpty) // 검색어가 있을 때만 X 버튼 표시
+              IconButton(
+                icon: Icon(Icons.cancel, color: Colors.grey), // X 아이콘
+                onPressed: () {
+                  _controller.clear(); // 텍스트 필드를 비움
+                  setState(() {
+                    searchQuery = ''; // 검색어 초기화
+                    showResults = false; // 검색 결과도 초기화
+                  });
+                },
+              ),
+          ],
         ),
         centerTitle: true,
         actions: [
@@ -62,7 +81,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
       ),
-      body: showResults
+      body: showResults && searchQuery.isNotEmpty
           ? StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('SellPosts')
@@ -91,7 +110,7 @@ class _SearchPageState extends State<SearchPage> {
           return GridView.builder(
             padding: EdgeInsets.all(8.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,  // 한 줄에 2개씩
+              crossAxisCount: 3,  // 한 줄에 3개씩
               crossAxisSpacing: 8.0,  // 그리드 아이템 간격 (가로)
               mainAxisSpacing: 8.0,   // 그리드 아이템 간격 (세로)
               childAspectRatio: 0.6,  // 그리드 아이템 비율 (이미지 + 텍스트)
