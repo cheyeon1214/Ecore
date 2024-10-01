@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../cosntants/firestore_key.dart';
 import '../models/firestore/chat_model.dart';
-import 'package:async/async.dart';
 
 class ChatRoom extends StatefulWidget {
   final String marketId;
@@ -17,7 +17,6 @@ class _ChatRoomState extends State<ChatRoom> {
   final _controller = TextEditingController();
   final _auth = FirebaseAuth.instance;
   User? loggedInUser;
-  String? _initialMessage;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -43,11 +42,10 @@ class _ChatRoomState extends State<ChatRoom> {
     if (loggedInUser == null) {
       yield [];
     } else {
-      final receiveId = await _getReceiverId();
       yield* FirebaseFirestore.instance
           .collection(COLLECTION_CHATS)
           .where(KEY_SEND_USERID, isEqualTo: loggedInUser!.uid)
-          .where(KEY_RECEIVE_USERID, isEqualTo: receiveId)
+          .where(KEY_RECEIVE_USERID, isEqualTo: widget.marketId)
           .orderBy(KEY_DATE, descending: false)
           .snapshots()
           .map((snapshot) => snapshot.docs
@@ -60,10 +58,9 @@ class _ChatRoomState extends State<ChatRoom> {
     if (loggedInUser == null) {
       yield [];
     } else {
-      final receiveId = await _getReceiverId();
       yield* FirebaseFirestore.instance
           .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: receiveId)
+          .where(KEY_SEND_USERID, isEqualTo: widget.marketId)
           .where(KEY_RECEIVE_USERID, isEqualTo: loggedInUser!.uid)
           .orderBy(KEY_DATE, descending: false)
           .snapshots()
@@ -73,77 +70,10 @@ class _ChatRoomState extends State<ChatRoom> {
     }
   }
 
-  Future<void> startOrGetChat(String initialMessage) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print('User not logged in');
-      return;
-    }
-    final String senderId = user.uid;
-
-    String? receiverId = await _getReceiverId();
-
-    if (receiverId == null) {
-      print('Receiver ID could not be fetched.');
-      return;
-    }
-
-    String chatId = await _findExistingChatId(senderId, receiverId);
-
-    if (chatId.isEmpty) {
-      chatId = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc().id;
-      ChatModel newChat = ChatModel(
-        chatId: chatId,
-        sendId: senderId,
-        receiveId: receiverId,
-        date: DateTime.now(),
-        text: initialMessage,
-      );
-
-      await FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .doc(chatId)
-          .set(newChat.toMap());
-
-      print('New chat started with ID: $chatId');
-    } else {
-      print('Existing chat found with ID: $chatId');
-    }
-  }
-
-  Future<String> _findExistingChatId(String senderId, String receiverId) async {
-    try {
-      final chatQuerySnapshot = await FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: senderId)
-          .where(KEY_RECEIVE_USERID, isEqualTo: receiverId)
-          .get();
-
-      if (chatQuerySnapshot.docs.isNotEmpty) {
-        return chatQuerySnapshot.docs.first.id;
-      }
-
-      final receivedChatQuerySnapshot = await FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: receiverId)
-          .where(KEY_RECEIVE_USERID, isEqualTo: senderId)
-          .get();
-
-      if (receivedChatQuerySnapshot.docs.isNotEmpty) {
-        return receivedChatQuerySnapshot.docs.first.id;
-      }
-
-      return '';
-    } catch (e) {
-      print('Error finding existing chat: $e');
-      return '';
-    }
-  }
-
   void _sendMessage(String text) async {
     if (loggedInUser == null || text.trim().isEmpty) return;
 
-    final receiveId = await _getReceiverId();
+    final receiveId = widget.marketId;
     if (receiveId == null) return;
 
     final newChatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
@@ -165,23 +95,6 @@ class _ChatRoomState extends State<ChatRoom> {
     _controller.clear();
   }
 
-  Future<String?> _getReceiverId() async {
-    final marketDoc = await FirebaseFirestore.instance
-        .collection('Markets')
-        .doc(widget.marketId)
-        .get();
-
-    if (!marketDoc.exists) {
-      print('Market document does not exist for ID: $marketDoc');
-      return null;
-    }
-
-    final marketData = marketDoc.data();
-    final receiveId = marketData?['userId'] as String?;
-
-    return receiveId;
-  }
-
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -194,7 +107,7 @@ class _ChatRoomState extends State<ChatRoom> {
   Widget build(BuildContext context) {
     if (loggedInUser == null) {
       return Scaffold(
-        body: Center(child: Text('User not logged in')),
+        body: Center(child: Text('유저가 존재하지 않습니다.')),
       );
     }
 
@@ -217,13 +130,11 @@ class _ChatRoomState extends State<ChatRoom> {
                       return Center(child: Text('No messages found'));
                     }
 
-                    // 두 스트림의 데이터를 합침
                     final allMessages = [
                       ...mySnapshot.data ?? [],
                       ...otherSnapshot.data ?? []
                     ];
 
-                    // 날짜 순으로 메시지 정렬
                     allMessages.sort((a, b) => a.date.compareTo(b.date));
 
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -281,22 +192,22 @@ class _ChatRoomState extends State<ChatRoom> {
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(30.0),
-                      border: Border.all(color: Colors.grey[300]!), // 선택적으로 테두리 추가
+                      border: Border.all(color: Colors.grey[300]!),
                     ),
                     child: TextField(
                       controller: _controller,
                       decoration: InputDecoration(
-                        hintText: 'Send a message...',
+                        hintText: '메시지를 입력해주세요.',
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 8.0), // 텍스트 필드와 버튼 사이의 간격
+                SizedBox(width: 8.0),
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.blue[300], // 버튼 배경색
+                    color: Colors.blue[300],
                   ),
                   child: IconButton(
                     icon: Icon(Icons.send, color: Colors.white),
