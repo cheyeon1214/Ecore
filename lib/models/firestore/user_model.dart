@@ -12,12 +12,10 @@ class UserModel extends ChangeNotifier {
   String email = '';
   String marketId = '';
   List<dynamic> myPosts = [];
-  int followers = 0;
-  List<dynamic> likedPosts = [];
   String username = '';
-  List<dynamic> followings = [];
   List<dynamic> cart = [];
   List<String> address = [];
+  String phone = '';
   DocumentReference? reference;
 
   UserModel({
@@ -25,26 +23,22 @@ class UserModel extends ChangeNotifier {
     this.profileImg = '',
     this.email = '',
     List<dynamic>? myPosts,
-    this.followers = 0,
     List<dynamic>? likedPosts,
     this.username = '',
     List<dynamic>? followings,
     List<dynamic>? cart,
     List<String>? address,
+    String phone = '',
     this.reference,
     this.marketId = '',
   })  : myPosts = myPosts ?? [],
-        likedPosts = likedPosts ?? [],
-        followings = followings ?? [],
         cart = cart ?? [];
 
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME] ?? '',
         profileImg = map[KEY_PROFILEIMG] ?? '',
         email = map[KEY_EMAIL] ?? '',
-        followers = map[KEY_FOLLOWERS] ?? 0,
-        likedPosts = List.from(map[KEY_LIKEDPOSTS] ?? []),
-        followings = List.from(map[KEY_FOLLOWINGS] ?? []),
+        phone = map[KEY_PHONE] ?? '',
         myPosts = List.from(map[KEY_MYPOSTS] ?? []),
         cart = List.from(map[KEY_CART] ?? []),
         marketId = (map['marketId'] ?? '').isNotEmpty ? map['marketId'] : null,
@@ -62,11 +56,9 @@ class UserModel extends ChangeNotifier {
       KEY_PROFILEIMG: "",
       KEY_USERNAME: email.split("@")[0],
       KEY_EMAIL: email,
-      KEY_LIKEDPOSTS: [],
-      KEY_FOLLOWERS: 0,
-      KEY_FOLLOWINGS: [],
       KEY_MYPOSTS: [],
       KEY_CART: [],
+      KEY_PHONE: "",
       KEY_USER_MARKETID : [],
       KEY_ADDRESS : []
     };
@@ -208,9 +200,6 @@ class UserModel extends ChangeNotifier {
         username = data[KEY_USERNAME] ?? '';
         profileImg = data[KEY_PROFILEIMG] ?? '';
         email = data[KEY_EMAIL] ?? '';
-        followers = data[KEY_FOLLOWERS] ?? 0;
-        likedPosts = List.from(data[KEY_LIKEDPOSTS] ?? []);
-        followings = List.from(data[KEY_FOLLOWINGS] ?? []);
         myPosts = List.from(data[KEY_MYPOSTS] ?? []);
         cart = List.from(data[KEY_CART] ?? []);
         marketId = data[KEY_USER_MARKETID] ?? '';
@@ -292,3 +281,115 @@ class UserModel extends ChangeNotifier {
   }
 
 }
+
+// 주소 생성
+Future<void> addAddress({
+  required String address,
+  required String detailAddress,
+  required String phone,
+  required String recipient,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션에 새로운 주소 추가
+    await userDoc.collection('Addresses').add({
+      'address': address,
+      'detailAddress': detailAddress,
+      'phone': phone,
+      'recipient': recipient,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    print('Address added successfully');
+  } catch (e) {
+    print('Error adding address: $e');
+  }
+}
+
+
+Stream<List<Map<String, dynamic>>> get addressStream {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    return Stream.value([]); // 유저가 로그인되어 있지 않으면 빈 스트림 반환
+  }
+
+  return FirebaseFirestore.instance
+      .collection('Users')
+      .doc(user.uid)
+      .collection('Addresses')
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'address': data['address'] ?? '',
+        'detailAddress': data['detailAddress'] ?? '',
+        'phone': data['phone'] ?? '',
+        'recipient': data['recipient'] ?? '',
+      };
+    }).toList();
+  });
+}
+
+// 주소 업데이트
+Future<void> updateAddress(String addressId, {
+  required String address,
+  required String detailAddress,
+  required String phone,
+  required String recipient,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션의 특정 문서 업데이트
+    await userDoc.collection('Addresses').doc(addressId).update({
+      'address': address,
+      'detailAddress': detailAddress,
+      'phone': phone,
+      'recipient': recipient,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    print('Address updated successfully');
+  } catch (e) {
+    print('Error updating address: $e');
+  }
+}
+
+// 주소 삭제
+Future<void> deleteAddress(String addressId) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    print('No user is currently logged in');
+    return;
+  }
+
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = firestore.collection('Users').doc(user.uid);
+
+    // Addresses 서브컬렉션의 특정 문서 삭제
+    await userDoc.collection('Addresses').doc(addressId).delete();
+
+    print('Address deleted successfully');
+  } catch (e) {
+    print('Error deleting address: $e');
+  }
+}
+
