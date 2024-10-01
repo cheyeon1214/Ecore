@@ -1,44 +1,80 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 
-class DonaProductForm extends StatefulWidget {
+class EditProductForm extends StatefulWidget {
+  final String productId; // 수정할 상품의 ID
+
+  const EditProductForm({Key? key, required this.productId}) : super(key: key);
+
   @override
-  State<DonaProductForm> createState() => _DonaProductFormState();
+  _EditProductFormState createState() => _EditProductFormState();
 }
 
-class _DonaProductFormState extends State<DonaProductForm> {
+class _EditProductFormState extends State<EditProductForm> {
   final _formKey = GlobalKey<FormState>();
-  List<XFile>? _images = []; // 여러 이미지를 저장할 리스트
+  List<XFile>? _images = [];
+  List<String> _existingImages = [];
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // 현재 로그인된 사용자 정보 가져오기
-  final User? currentUser = FirebaseAuth.instance.currentUser;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController(); // 가격 입력 필드
+  final TextEditingController _bodyController = TextEditingController();
+  String? _categoryValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProductData(); // Firestore에서 기존 상품 데이터를 불러옴
+  }
+
+  // Firestore에서 기존 데이터를 로드하여 필드에 채우는 함수
+  Future<void> _loadProductData() async {
+    DocumentSnapshot productSnapshot =
+    await _firestore.collection('SellPosts').doc(widget.productId).get();
+
+    if (productSnapshot.exists) {
+      Map<String, dynamic>? productData =
+      productSnapshot.data() as Map<String, dynamic>?;
+
+      // 기존 데이터를 각 필드에 할당
+      _titleController.text = productData?['title'] ?? '';
+
+      // 가격을 double에서 int로 변환하여 처리
+      double price = (productData?['price'] ?? 0).toDouble();
+      _priceController.text = price.toInt().toString(); // 가격을 int로 변환하여 표시
+
+      _categoryValue = productData?['category'] ?? '';
+      _bodyController.text = productData?['body'] ?? '';
+
+      _existingImages = List<String>.from(productData?['img'] ?? []);
+      setState(() {}); // UI 업데이트
+    }
+  }
 
   Future<void> getImages() async {
-    if (_images!.length >= 10) {
+    if (_images!.length + _existingImages.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
       );
-      return; // 이미 10개 이상의 이미지가 선택된 경우 추가 선택 불가
+      return;
     }
 
     final pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        // 최대 10개를 초과하지 않도록 리스트에 추가
-        _images = (_images! + pickedFiles).take(10).toList();
+        _images = (_images! + pickedFiles).take(10 - _existingImages.length).toList();
       });
     }
   }
 
   Future<void> captureImage() async {
-    if (_images!.length >= 10) {
+    if (_images!.length + _existingImages.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
       );
@@ -48,7 +84,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
-        _images = (_images! + [pickedFile]).take(10).toList();
+        _images = (_images! + [pickedFile]).take(10 - _existingImages.length).toList();
       });
     }
   }
@@ -75,10 +111,8 @@ class _DonaProductFormState extends State<DonaProductForm> {
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final title = _titleController.text;
+      final price = int.parse(_priceController.text); // 가격을 int형으로 변환
       final category = _categoryValue;
-      final material = _materialController.text;
-      final color = _colorController.text;
-      final condition = _selectedCondition;
       final body = _bodyController.text;
 
       _showLoadingDialog();
@@ -89,44 +123,30 @@ class _DonaProductFormState extends State<DonaProductForm> {
           imageUrls = await uploadImages(_images!);
         }
 
-        // 현재 사용자의 UID를 user 필드로 추가
-        await _firestore.collection('DonaPosts').add({
+        List<String> allImageUrls = [..._existingImages, ...?imageUrls];
+
+        await _firestore.collection('SellPosts').doc(widget.productId).update({
           'title': title,
+          'price': price, // int형으로 저장
           'category': category,
-          'material': material,
-          'color': color,
-          'condition': condition,
           'body': body,
-          'img': imageUrls,
-          'viewCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-          'userId': currentUser?.uid, // Users 컬렉션 속 현재 사용자의 UID 추가
+          'img': allImageUrls,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        Navigator.of(context).pop();
-
+        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('기부 상품이 등록되었습니다.')),
+          SnackBar(content: Text('상품 정보가 수정되었습니다.')),
         );
-
-        Navigator.pop(context);
+        Navigator.pop(context); // 폼 화면 닫기
       } catch (e) {
-        Navigator.of(context).pop();
-
-        print('Error adding document: $e');
+        Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('문서 추가 실패: $e')),
+          SnackBar(content: Text('문서 업데이트 실패: $e')),
         );
       }
     }
   }
-
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _bodyController = TextEditingController();
-  final TextEditingController _materialController = TextEditingController();
-  final TextEditingController _colorController = TextEditingController();
-  String? _categoryValue;
-  String? _selectedCondition = 'S';
 
   void _showLoadingDialog() {
     showDialog(
@@ -141,7 +161,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 16),
-                Text("상품등록 중..."),
+                Text("수정 중..."),
               ],
             ),
           ),
@@ -156,7 +176,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('기부하기'),
+        title: Text('판매 상품 수정'),
         leading: IconButton(
           icon: Icon(Icons.close),
           onPressed: () {
@@ -210,7 +230,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.camera_alt, size: 50), // 항상 카메라 아이콘만 표시
+                      child: Icon(Icons.camera_alt, size: 50),
                     ),
                   ),
                   SizedBox(width: 16),
@@ -219,7 +239,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          '수평에 맞춰서 A4용지와 함께 찍어야 면적 측정이 가능하여 포인트가 지급됩니다.',
+                          '브랜드 이름이나 로고, 상태가 잘 보이도록 찍어주세요!',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
@@ -228,51 +248,93 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 ],
               ),
               SizedBox(height: 16),
-              _images != null && _images!.isNotEmpty
+              _existingImages.isNotEmpty || (_images != null && _images!.isNotEmpty)
                   ? SizedBox(
                 height: 100,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _images!.length,
+                  itemCount: _existingImages.length + (_images?.length ?? 0),
                   itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(_images![index].path),
-                              fit: BoxFit.cover,
-                              width: 100,
-                              height: 100,
+                    if (index < _existingImages.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                _existingImages[index],
+                                fit: BoxFit.cover,
+                                width: 100,
+                                height: 100,
+                              ),
                             ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _images!.removeAt(index);
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: Icon(
-                                  Icons.close,
-                                  color: Colors.grey[800],
-                                  size: 20,
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _existingImages.removeAt(index);
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Colors.grey[800],
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
+                          ],
+                        ),
+                      );
+                    } else {
+                      final localImageIndex = index - _existingImages.length;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(_images![localImageIndex].path),
+                                fit: BoxFit.cover,
+                                width: 100,
+                                height: 100,
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _images!.removeAt(localImageIndex);
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Colors.grey[800],
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
                 ),
               )
@@ -284,6 +346,19 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '제목을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: InputDecoration(labelText: '가격'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // 숫자만 입력 가능
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '가격을 입력해주세요';
                   }
                   return null;
                 },
@@ -311,50 +386,11 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 },
               ),
               SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(
-                    "물품 상태",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 16),
-                  _buildConditionButton('S'),
-                  SizedBox(width: 8),
-                  _buildConditionButton('A'),
-                  SizedBox(width: 8),
-                  _buildConditionButton('B'),
-                  SizedBox(width: 8),
-                  _buildConditionButton('C'),
-                ],
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _materialController,
-                decoration: InputDecoration(labelText: '재질'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '재질을 입력해주세요';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _colorController,
-                decoration: InputDecoration(labelText: '색'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '색을 입력해주세요';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
               TextFormField(
                 controller: _bodyController,
                 decoration: InputDecoration(
                   labelText: '자세한 설명',
-                  hintText: '기부할 상품의 상태를 설명해주세요',
+                  hintText: '재질이나 색 등 옷의 상태를 설명해주세요',
                 ),
                 maxLines: 3,
                 validator: (value) {
@@ -367,24 +403,12 @@ class _DonaProductFormState extends State<DonaProductForm> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: Text('기부하기'),
+                child: Text('수정하기'),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildConditionButton(String condition) {
-    return ChoiceChip(
-      label: Text(condition),
-      selected: _selectedCondition == condition,
-      onSelected: (selected) {
-        setState(() {
-          _selectedCondition = condition;
-        });
-      },
     );
   }
 }

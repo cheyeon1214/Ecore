@@ -170,7 +170,9 @@ class _SellProductFormState extends State<SellProductForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text('판매하기'),
         leading: IconButton(
           icon: Icon(Icons.close),
