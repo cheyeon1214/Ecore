@@ -58,7 +58,7 @@ class CartBtn extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PayPage(
-                        cartItems: cartItems, // 여기에 실제 리스트를 전달해야 합니다.
+                        cartItems: cartItems,
                       ),
                     ),
                   );

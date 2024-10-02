@@ -106,66 +106,85 @@ class _SearchPageState extends State<SearchPage> {
             return Center(child: Text('검색 결과가 없습니다.'));
           }
 
-          // 그리드 형태로 검색 결과 출력
-          return GridView.builder(
-            padding: EdgeInsets.all(8.0),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,  // 한 줄에 3개씩
-              crossAxisSpacing: 8.0,  // 그리드 아이템 간격 (가로)
-              mainAxisSpacing: 8.0,   // 그리드 아이템 간격 (세로)
-              childAspectRatio: 0.6,  // 그리드 아이템 비율 (이미지 + 텍스트)
-            ),
-            itemCount: filteredPosts.length,
-            itemBuilder: (context, index) {
-              var sellPost = SellPostModel.fromSnapshot(filteredPosts[index]);
+          // 필터링된 상품 수
+          int resultCount = filteredPosts.length;
 
-              return GestureDetector(
-                onTap: () {
-                  // 상세 페이지로 이동하는 로직 추가
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 이미지 부분
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10.0),  // 모서리를 둥글게
-                      child: AspectRatio(
-                        aspectRatio: 1.0,  // 1:1 비율로 고정
-                        child: sellPost.img.isNotEmpty
-                            ? Image.network(
-                          sellPost.img[0],  // 첫 번째 이미지 사용
-                          fit: BoxFit.cover,  // 이미지를 컨테이너에 맞춤
-                        )
-                            : Container(
-                          color: Colors.grey[300],  // 이미지가 없을 때 회색 배경
-                          child: Center(
-                            child: Text(
-                              '이미지 없음',
-                              style: TextStyle(color: Colors.grey),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  '상품 $resultCount', // 상품 개수 표시
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: EdgeInsets.all(8.0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,  // 한 줄에 3개씩
+                    crossAxisSpacing: 8.0,  // 그리드 아이템 간격 (가로)
+                    mainAxisSpacing: 8.0,   // 그리드 아이템 간격 (세로)
+                    childAspectRatio: 0.6,  // 그리드 아이템 비율 (이미지 + 텍스트)
+                  ),
+                  itemCount: resultCount, // 필터링된 상품 수만큼 출력
+                  itemBuilder: (context, index) {
+                    var sellPost = SellPostModel.fromSnapshot(filteredPosts[index]);
+
+                    return GestureDetector(
+                      onTap: () {
+                        // 상세 페이지로 이동하는 로직 추가
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 이미지 부분
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10.0),  // 모서리를 둥글게
+                            child: AspectRatio(
+                              aspectRatio: 1.0,  // 1:1 비율로 고정
+                              child: sellPost.img.isNotEmpty
+                                  ? Image.network(
+                                sellPost.img[0],  // 첫 번째 이미지 사용
+                                fit: BoxFit.cover,  // 이미지를 컨테이너에 맞춤
+                              )
+                                  : Container(
+                                color: Colors.grey[300],  // 이미지가 없을 때 회색 배경
+                                child: Center(
+                                  child: Text(
+                                    '이미지 없음',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          SizedBox(height: 8),  // 이미지와 텍스트 간격
+                          Text(
+                            '${sellPost.price}원',  // 가격 정보
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.0,
+                            ),
+                          ),
+                          SizedBox(height: 4),  // 가격과 제목 간격
+                          Text(
+                            sellPost.title,  // 제목 정보
+                            maxLines: 2,  // 두 줄까지만 표시
+                            overflow: TextOverflow.ellipsis,  // 제목이 길면 생략
+                            style: TextStyle(fontSize: 14.0),
+                          ),
+                        ],
                       ),
-                    ),
-                    SizedBox(height: 8),  // 이미지와 텍스트 간격
-                    Text(
-                      '${sellPost.price}원',  // 가격 정보
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                      ),
-                    ),
-                    SizedBox(height: 4),  // 가격과 제목 간격
-                    Text(
-                      sellPost.title,  // 제목 정보
-                      maxLines: 2,  // 두 줄까지만 표시
-                      overflow: TextOverflow.ellipsis,  // 제목이 길면 생략
-                      style: TextStyle(fontSize: 14.0),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       )
