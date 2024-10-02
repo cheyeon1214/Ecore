@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'my_address_list.dart';
+import 'my_dona_page.dart';
 
 class MyPageList extends StatefulWidget {
   const MyPageList({super.key});
@@ -76,7 +77,14 @@ class _MyPageListState extends State<MyPageList> {
         Divider(thickness: 2),
         Text('커뮤니티'),
         TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MyDonaPage(),
+                ),
+              );
+            },
             child: Text('내 기부글 보기', style: TextStyle(fontWeight: FontWeight.bold))),
         SizedBox(height: 40,),
         Divider(thickness: 2),
