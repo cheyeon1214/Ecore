@@ -31,12 +31,13 @@ class _PayPageState extends State<PayPage> {
   bool _isChecked = false;
   int totalProductPrice = 0;
   int? _selectedSavedInfoIndex;
+  int donaQuantity = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchUsername();
-    _fetchLatestOrder();
+    getCartItems();
   }
 
   Future<void> _fetchUsername() async {
@@ -59,62 +60,40 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchOrderItems(String orderId) async {
+  Future<void> getCartItems() async {
     try {
-      final orderItemsSnapshot = await FirebaseFirestore.instance
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(user!.uid)
-          .collection('Orders')
-          .doc(orderId)
-          .collection('items')
           .get();
 
-      return orderItemsSnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
-    } catch (e) {
-      print("Error fetching order items: $e");
-      return [];
-    }
-  }
+      if (userDoc.exists) {
+        List<dynamic> cartItems = userDoc.get('cart');
+        int totalPrice = 0;
+        int donaCount = 0;
+        for (var item in cartItems) {
+          int itemPrice = item['price'] ?? 0;
+          int itemQuantity = item['quantity'] ?? 1;
 
-  Future<void> _fetchLatestOrder() async {
-    if (user != null) {
-      try {
-        QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(user!.uid)
-            .collection('Orders')
-            .orderBy('date', descending: true)
-            .limit(1)
-            .get();
-
-        if (ordersSnapshot.docs.isNotEmpty) {
-          final latestOrderDoc = ordersSnapshot.docs.first;
-          final orderId = latestOrderDoc.id;
-
-          final items = await _fetchOrderItems(orderId);
-          int totalPrice = 0;
-          for (var item in items) {
-            totalPrice += (item['price'] as int) * (item['quantity'] as int? ?? 1); // Considering quantity
+          totalPrice += itemPrice * itemQuantity;
+          if (item['donaId'] != null) {
+            donaCount += 1;
           }
-
-          setState(() {
-            latestOrder = {
-              ...latestOrderDoc.data() as Map<String, dynamic>,
-              'items': items,
-            };
-            totalProductPrice = totalPrice; // Set total product price
-          });
-        } else {
-          setState(() {
-            latestOrder = null;
-            totalProductPrice = 0; // Reset total product price if no orders
-          });
         }
-      } catch (e) {
-        print("Error fetching latest order: $e");
+        setState(() {
+          latestOrder = {
+            ...userDoc.data() as Map<String, dynamic>,
+            'items': cartItems,
+          };
+          totalProductPrice = totalPrice;
+          donaQuantity = donaCount;
+        });
+
+      } else {
+        print("User document does not exist.");
       }
+    } catch (e) {
+      print("Failed to get cart items: $e");
     }
   }
 
@@ -123,7 +102,7 @@ class _PayPageState extends State<PayPage> {
     final sellPosts = widget.cartItems.map((item) {
       final sellPostRef = FirebaseFirestore.instance
           .collection('SellPosts')
-          .doc(item['sellId']); // Generate DocumentReference
+          .doc(item['sellId']);
 
       return SellPostModel(
         sellId: item['sellId'] ?? '',
@@ -135,15 +114,13 @@ class _PayPageState extends State<PayPage> {
         body: item['body'] ?? '내용 없음',
         createdAt: (item['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         viewCount: item['viewCount'] ?? 0,
-        reference: sellPostRef, // Set DocumentReference
+        reference: sellPostRef,
       );
     }).toList();
 
     try {
-      // Create order
       await userModel.createOrder(sellPosts);
 
-      // Clear cart
       await userModel.clearCart();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -334,17 +311,17 @@ class _PayPageState extends State<PayPage> {
     return widget.cartItems.map((item) {
       final imageUrl =
           (item['img'] as List<dynamic>?)?.first ??
-              'https://via.placeholder.com/150';
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
+            'https://via.placeholder.com/150';
+            return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.network(
               imageUrl,
-              height: 100, // Set the desired height
-              width: 100, // Set the desired width
-              fit: BoxFit.cover, // Cover the box, might crop the image
+              height: 100,
+              width: 100,
+              fit: BoxFit.cover,
             ),
             SizedBox(width: 15),
             Expanded(
@@ -360,23 +337,28 @@ class _PayPageState extends State<PayPage> {
   }
 
   Widget _buildPriceSummary() {
+    int deliveryFee = 0;
+    if (donaQuantity != null) {
+      deliveryFee = donaQuantity * 1000;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildPriceRow('상품 금액', '${totalProductPrice}원'),
+        _buildPriceRow('상품 금액', totalProductPrice),
         SizedBox(height: 10),
-        _buildPriceRow('배송비', '0원'),
+        _buildPriceRow('배송비', deliveryFee),
         SizedBox(height: 10),
-        _buildPriceRow('할인 금액', '0원'),
+        _buildPriceRow('할인 금액', 0),
         SizedBox(height: 10),
         Divider(color: Colors.black54, thickness: 1),
         SizedBox(height: 10),
-        _buildPriceRow('총 결제 금액', '${totalProductPrice}원'),
+        _buildPriceRow('총 결제 금액', totalProductPrice + deliveryFee),
       ],
     );
   }
 
-  Widget _buildPriceRow(String label, String amount) {
+  Widget _buildPriceRow(String label, int amount) {
     return Row(
       children: [
         Expanded(
@@ -388,7 +370,7 @@ class _PayPageState extends State<PayPage> {
         Expanded(
           child: Align(
             alignment: Alignment.centerRight,
-            child: Text(amount),
+            child: Text('${amount}원'),
           ),
         ),
       ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/firestore/dona_post_model.dart';
 import '../widgets/view_counter.dart';
 
@@ -101,9 +103,7 @@ class _DonaDetailState extends State<DonaDetail> {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  // 장바구니 추가 기능
-                },
+                onPressed: _addToCart,
                 icon: Icon(Icons.shopping_cart, color: Colors.black54),
                 label: Text('장바구니 담기', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
@@ -115,6 +115,36 @@ class _DonaDetailState extends State<DonaDetail> {
         ),
       ),
     );
+  }
+
+  Future<void> _addToCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('User not logged in');
+      return;
+    }
+
+    final userRef = FirebaseFirestore.instance.collection('Users').doc(user.uid);
+    final userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      print('User document does not exist');
+      return;
+    }
+
+    final cart = userDoc.data()?['cart'] ?? [];
+    final newCartItem = {
+      'donaId': widget.donaPost.donaId,
+      'title': widget.donaPost.title,
+      'img': widget.donaPost.img,
+      'price': 0,
+      'category': widget.donaPost.category,
+      'body': widget.donaPost.body,
+      'reference': widget.donaPost.reference.path,
+    };
+
+    cart.add(newCartItem);
+
+    await userRef.update({'cart': cart});
   }
 
   Widget _buildImageCarousel(List<String> images) {
