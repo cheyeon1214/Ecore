@@ -1,9 +1,9 @@
-import 'package:ecore/my_market/my_market_reviewpage.dart';
 import 'package:ecore/my_page/setting_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cart_page/order_list.dart';
+import '../cosntants/common_color.dart';
 import '../models/firestore/user_model.dart';
 import '../my_market/create_my_market.dart';
 import '../my_market/my_market_banner.dart';
@@ -148,7 +148,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    backgroundColor: baseColor, // 배경색 설정
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
                     ),
@@ -168,6 +168,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                            color: textColor
                           ),
                         ),
                       ],
@@ -186,7 +187,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    backgroundColor: baseColor, // 배경색 설정
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
                     ),
@@ -206,6 +207,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                              color: textColor
                           ),
                         ),
                       ],
@@ -223,7 +225,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    backgroundColor: baseColor, // 배경색 설정
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
                     ),
@@ -243,6 +245,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                              color: textColor
                           ),
                         ),
                       ],
@@ -268,7 +271,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                   },
 
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50], // 배경색 설정
+                    backgroundColor: baseColor, // 배경색 설정
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10), // 모서리 둥글게 설정
                     ),
@@ -288,6 +291,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                              color: textColor
                           ),
                         ),
                       ],
@@ -308,7 +312,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                   Radius.circular(10),
                 ),
               ),
-              backgroundColor: Colors.blue[50],
+              backgroundColor: baseColor,
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             ),
             child: Text(
@@ -327,7 +331,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                   Radius.circular(10),
                 ),
               ),
-              backgroundColor: Colors.blue[50],
+              backgroundColor: baseColor,
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               minimumSize: Size(90, 60),
             ),

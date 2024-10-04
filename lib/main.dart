@@ -35,6 +35,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: ThemeData(scaffoldBackgroundColor: Colors.white),
         // home: SplashScreen(), // 스플래시 스크린을 초기 화면으로 설정
         home: MyAppContent(), // MyAppContent를 초기 화면으로 설정
       ),
