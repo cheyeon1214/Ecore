@@ -1,11 +1,8 @@
 import 'package:ecore/cart_page/pay_page.dart';
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
-import 'order_list.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class CartBtn extends StatelessWidget {
   const CartBtn({super.key});
@@ -69,10 +66,10 @@ class CartBtn extends StatelessWidget {
                 }
               },
               label: Text(
-                '총 금액 : ${totalPrice}원  주문하기',
+                '${totalPrice}원  주문하기',
                 style: TextStyle(fontSize: 15),
               ),
-              backgroundColor: Colors.blue[50],
+              backgroundColor: baseColor,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),

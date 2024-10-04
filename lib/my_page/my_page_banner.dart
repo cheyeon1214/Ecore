@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../cosntants/common_color.dart';
 import 'my_page_button.dart';
 import 'my_page_list.dart';
 
@@ -104,7 +105,7 @@ class _BodyContentsState extends State<BodyContents> {
                                       Radius.circular(10),
                                     ),
                                   ),
-                                  backgroundColor: Colors.blue[50],
+                                  backgroundColor: baseColor,
                                   padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                 ),
                                 child: Text(
