@@ -42,6 +42,9 @@ class CartList extends StatelessWidget {
             itemBuilder: (context, index) {
               final cartItem = cartItems[index];
               String imageUrl;
+              int shippingFee = cartItem['shippingFee'] != null
+                  ? cartItem['shippingFee'] as int
+                  : 0; // 배송비가 null이면 기본값 0 설정
 
               // img 필드가 리스트인지 확인하고 첫 번째 이미지를 사용
               if (cartItem['img'] is List<dynamic> && cartItem['img'].isNotEmpty) {
@@ -60,7 +63,10 @@ class CartList extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
                 title: Text(cartItem['title'] ?? '제목 없음'),
-                subtitle: Text('${cartItem['price']}원'),
+                subtitle: Text(
+                  '${cartItem['price']}원\n배송비: ${shippingFee}원', // 가격과 배송비를 표시
+                  style: TextStyle(fontSize: 14),
+                ),
                 trailing: IconButton(
                   icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
                   onPressed: () {

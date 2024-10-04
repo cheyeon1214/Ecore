@@ -123,7 +123,7 @@ class _PayPageState extends State<PayPage> {
     final sellPosts = widget.cartItems.map((item) {
       final sellPostRef = FirebaseFirestore.instance
           .collection('SellPosts')
-          .doc(item['sellId']); // Generate DocumentReference
+          .doc(item['sellId']);
 
       return SellPostModel(
         sellId: item['sellId'] ?? '',
@@ -135,27 +135,32 @@ class _PayPageState extends State<PayPage> {
         body: item['body'] ?? '내용 없음',
         createdAt: (item['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         viewCount: item['viewCount'] ?? 0,
-        reference: sellPostRef, // Set DocumentReference
+        shippingFee: item['shippingFee'] ?? 0, // 배송비 추가
+        reference: sellPostRef,
       );
     }).toList();
 
-    try {
-      // Just call the createOrder method if it returns void.
-      await userModel.createOrder(sellPosts);
+    // 배송비를 포함한 총 금액 계산
+    int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
+      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // shippingFee가 num일 경우 int로 변환
+    });
+    int totalPriceWithShipping = totalProductPrice + totalShippingFee;
 
-      // If the order was created successfully, save it in the "Orders" collection
+    try {
+      // Orders 컬렉션에 저장
       await FirebaseFirestore.instance.collection('Orders').add({
         'userId': user!.uid,
         'username': username,
         'date': FieldValue.serverTimestamp(),
         'items': widget.cartItems,
-        'totalPrice': totalProductPrice,
+        'totalPrice': totalPriceWithShipping, // 배송비 포함한 총 금액
         'paymentMethod': _selectedPaymentMethod,
         'address': _address ?? '주소 없음',
         'phoneNumber': _phoneNumber ?? '전화번호 없음',
+        'shippingStatus': '배송 준비', // 배송 상태 추가
       });
 
-      // Clear the cart
+      // 카트 초기화
       await userModel.clearCart();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +168,7 @@ class _PayPageState extends State<PayPage> {
       );
     }
   }
+
 
 
   void _saveInfo() {
@@ -373,21 +379,27 @@ class _PayPageState extends State<PayPage> {
   }
 
   Widget _buildPriceSummary() {
+    int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
+      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // shippingFee가 num일 경우 int로 변환
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildPriceRow('상품 금액', '${totalProductPrice}원'),
         SizedBox(height: 10),
-        _buildPriceRow('배송비', '0원'),
+        _buildPriceRow('배송비', '${totalShippingFee}원'), // 배송비 표시
         SizedBox(height: 10),
         _buildPriceRow('할인 금액', '0원'),
         SizedBox(height: 10),
         Divider(color: Colors.black54, thickness: 1),
         SizedBox(height: 10),
-        _buildPriceRow('총 결제 금액', '${totalProductPrice}원'),
+        _buildPriceRow('총 결제 금액', '${totalProductPrice + totalShippingFee}원'), // 배송비 포함 총 금액
       ],
     );
   }
+
+
 
   Widget _buildPriceRow(String label, String amount) {
     return Row(
