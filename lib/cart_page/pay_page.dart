@@ -140,10 +140,22 @@ class _PayPageState extends State<PayPage> {
     }).toList();
 
     try {
-      // Create order
+      // Just call the createOrder method if it returns void.
       await userModel.createOrder(sellPosts);
 
-      // Clear cart
+      // If the order was created successfully, save it in the "Orders" collection
+      await FirebaseFirestore.instance.collection('Orders').add({
+        'userId': user!.uid,
+        'username': username,
+        'date': FieldValue.serverTimestamp(),
+        'items': widget.cartItems,
+        'totalPrice': totalProductPrice,
+        'paymentMethod': _selectedPaymentMethod,
+        'address': _address ?? '주소 없음',
+        'phoneNumber': _phoneNumber ?? '전화번호 없음',
+      });
+
+      // Clear the cart
       await userModel.clearCart();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -151,6 +163,7 @@ class _PayPageState extends State<PayPage> {
       );
     }
   }
+
 
   void _saveInfo() {
     if (_phoneNumber != null &&

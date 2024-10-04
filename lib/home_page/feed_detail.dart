@@ -272,9 +272,22 @@ class _FeedDetailState extends State<FeedDetail> {
               overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: 8),
-            Text(
-              marketName,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  marketName,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                if (businessNumber.isNotEmpty) // 비즈니스 넘버가 존재할 때 체크 아이콘 추가
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4.0), // 아이콘과 텍스트 간격 조절
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.blue, // 체크 아이콘 색상 설정
+                      size: 18, // 아이콘 크기 설정
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -302,7 +315,6 @@ class _FeedDetailState extends State<FeedDetail> {
                 },
               );
             } else {
-              // 조건을 만족하지 않을 때만 채팅 화면으로 이동
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -316,6 +328,7 @@ class _FeedDetailState extends State<FeedDetail> {
       ],
     );
   }
+
 
   Widget _buildImageCarousel(List<String> images) {
     if (images.isEmpty) {

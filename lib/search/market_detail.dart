@@ -5,6 +5,7 @@ import '../models/firestore/market_model.dart';
 import '../my_market/my_market_feedpage.dart';
 import '../my_market/my_market_productpage.dart';
 import '../my_market/my_market_reviewpage.dart';
+import 'market_product_page.dart';
 
 class MarketDetail extends StatefulWidget {
   final MarketModel market;
@@ -141,7 +142,7 @@ class _MarketDetailState extends State<MarketDetail> {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      MyMarketProductpage(marketId: market.marketId),
+                      MarketProductpage(marketId: market.marketId),
                       MarketFeedPageView(marketId: market.marketId),
                       MyMarketReviewPage(marketId: market.marketId,),
                     ],

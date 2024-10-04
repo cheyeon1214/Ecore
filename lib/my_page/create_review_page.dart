@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../home_page/home_page_menu.dart';
 
 class CreateReview extends StatefulWidget {
@@ -39,45 +38,47 @@ class _CreateReviewState extends State<CreateReview> {
       appBar: AppBar(
         title: Text('리뷰 작성'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildItemInfo(), // 상품 정보 표시
-              SizedBox(height: 16),
-              Text('구매하신 상품은 만족하시나요?', style: TextStyle(fontSize: 16)),
-              _buildSatisfactionRadio(), // 만족도 선택
-              SizedBox(height: 16),
-              Text('별점', style: TextStyle(fontSize: 16)),
-              _buildStarRating(), // 별점 선택
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _reviewController,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  labelText: '자세한 리뷰를 작성해주세요',
-                  border: OutlineInputBorder(),
+      body: SingleChildScrollView( // 수정: 스크롤 가능하게 만들기
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildItemInfo(), // 상품 정보 표시
+                SizedBox(height: 16),
+                Text('구매하신 상품은 만족하시나요?', style: TextStyle(fontSize: 16)),
+                _buildSatisfactionRadio(), // 만족도 선택
+                SizedBox(height: 16),
+                Text('별점', style: TextStyle(fontSize: 16)),
+                _buildStarRating(), // 별점 선택
+                SizedBox(height: 16),
+                TextFormField(
+                  controller: _reviewController,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    labelText: '자세한 리뷰를 작성해주세요',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '리뷰를 입력해 주세요';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '리뷰를 입력해 주세요';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    _submitReview();
-                  }
-                },
-                child: Text('제출'),
-              ),
-            ],
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      _submitReview();
+                    }
+                  },
+                  child: Text('제출'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -99,8 +100,7 @@ class _CreateReviewState extends State<CreateReview> {
               return Image.asset('assets/images/placeholder.png'); // 대체 이미지
             },
           ),
-        )
-        ,
+        ),
         SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -233,5 +233,4 @@ class _CreateReviewState extends State<CreateReview> {
       print('Error updating reviewed status: $error');
     }
   }
-
 }
