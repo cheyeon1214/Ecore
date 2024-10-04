@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../cosntants/common_color.dart';
 import 'donation_search.dart';
 import 'sell_posts_search.dart';
 import 'search_result_screen.dart';
@@ -99,30 +100,47 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0, // 그림자 제거
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Colors.black), // 검은색 뒤로 가기 아이콘
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: Text('Search'),
-        actions: [
-          Container(
-            margin: EdgeInsets.only(right: 16.0),
-            width: 290.0,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '검색어를 입력해주세요',
-                fillColor: Colors.white,
-                filled: true,
+        title: Stack(
+          alignment: Alignment.centerRight, // 검색창 오른쪽 끝에 X 버튼 배치
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[200], // 검색창 배경색 설정 (연한 회색)
+                borderRadius: BorderRadius.circular(10), // 모서리를 둥글게
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  border: InputBorder.none, // 테두리 제거
+                  hintText: '상품을 검색해보세요.', // 힌트 텍스트
+                  hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상 설정
+                ),
               ),
             ),
-          ),
+            if (_searchController.text.isNotEmpty) // 검색어가 있을 때만 X 버튼 표시
+              IconButton(
+                icon: Icon(Icons.cancel, color: Colors.grey), // X 아이콘
+                onPressed: () {
+                  _searchController.clear(); // 검색어 삭제
+                  setState(() {}); // 상태 업데이트
+                },
+              ),
+          ],
+        ),
+        centerTitle: true, // 타이틀 중앙 정렬
+        actions: [
           IconButton(
-            icon: Icon(Icons.search),
-            onPressed: _performSearch,
+            icon: Icon(Icons.search_rounded, color: Colors.black), // 검은색 검색 아이콘
+            onPressed: _performSearch, // 검색 실행
           ),
         ],
       ),
@@ -146,9 +164,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                           decoration: BoxDecoration(
-                            color: Colors.blue[100], // 배경색
-                            borderRadius: BorderRadius.circular(20.0), // 동그란 모서리
-                            border: Border.all(color: Colors.blue), // 테두리 색상
+                            color: baseColor, // 배경색
+                            borderRadius: BorderRadius.circular(12), // 동그란 모서리
+                            border: Border.all(color: baseColor), // 테두리 색상
                           ),
                           child: Text(
                             term,
