@@ -31,14 +31,16 @@ class _PayPageState extends State<PayPage> {
   bool _isChecked = false;
   int totalProductPrice = 0;
   int? _selectedSavedInfoIndex;
+  int donaQuantity = 0; // 친구 코드에서 추가된 필드
 
   @override
   void initState() {
     super.initState();
     _fetchUsername();
-    _fetchLatestOrder();
+    getCartItems(); // 친구 코드에서 추가된 호출
   }
 
+  // 유저 이름을 불러오는 함수
   Future<void> _fetchUsername() async {
     if (user != null) {
       try {
@@ -59,65 +61,44 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchOrderItems(String orderId) async {
+  // 친구 코드에서 추가된 장바구니 아이템을 가져오는 함수
+  Future<void> getCartItems() async {
     try {
-      final orderItemsSnapshot = await FirebaseFirestore.instance
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(user!.uid)
-          .collection('Orders')
-          .doc(orderId)
-          .collection('items')
           .get();
 
-      return orderItemsSnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
-    } catch (e) {
-      print("Error fetching order items: $e");
-      return [];
-    }
-  }
+      if (userDoc.exists) {
+        List<dynamic> cartItems = userDoc.get('cart');
+        int totalPrice = 0;
+        int donaCount = 0;
+        for (var item in cartItems) {
+          int itemPrice = item['price'] ?? 0;
+          int itemQuantity = item['quantity'] ?? 1;
 
-  Future<void> _fetchLatestOrder() async {
-    if (user != null) {
-      try {
-        QuerySnapshot ordersSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(user!.uid)
-            .collection('Orders')
-            .orderBy('date', descending: true)
-            .limit(1)
-            .get();
-
-        if (ordersSnapshot.docs.isNotEmpty) {
-          final latestOrderDoc = ordersSnapshot.docs.first;
-          final orderId = latestOrderDoc.id;
-
-          final items = await _fetchOrderItems(orderId);
-          int totalPrice = 0;
-          for (var item in items) {
-            totalPrice += (item['price'] as int) * (item['quantity'] as int? ?? 1); // Considering quantity
+          totalPrice += itemPrice * itemQuantity;
+          if (item['donaId'] != null) {
+            donaCount += 1;
           }
-
-          setState(() {
-            latestOrder = {
-              ...latestOrderDoc.data() as Map<String, dynamic>,
-              'items': items,
-            };
-            totalProductPrice = totalPrice; // Set total product price
-          });
-        } else {
-          setState(() {
-            latestOrder = null;
-            totalProductPrice = 0; // Reset total product price if no orders
-          });
         }
-      } catch (e) {
-        print("Error fetching latest order: $e");
+        setState(() {
+          latestOrder = {
+            ...userDoc.data() as Map<String, dynamic>,
+            'items': cartItems,
+          };
+          totalProductPrice = totalPrice;
+          donaQuantity = donaCount; // 기부 상품 수량을 계산
+        });
+      } else {
+        print("User document does not exist.");
       }
+    } catch (e) {
+      print("Failed to get cart items: $e");
     }
   }
 
+  // 주문을 생성하는 함수
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
     final sellPosts = widget.cartItems.map((item) {
@@ -169,8 +150,7 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-
-
+  // 사용자 정보를 저장하는 함수
   void _saveInfo() {
     if (_phoneNumber != null &&
         _phoneNumber!.isNotEmpty &&
@@ -190,6 +170,7 @@ class _PayPageState extends State<PayPage> {
     setState(() {});
   }
 
+  // 화면 UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,8 +218,8 @@ class _PayPageState extends State<PayPage> {
                 _buildDiscountSection(),
                 SizedBox(height: 10),
                 _buildPaymentSection(),
-                SizedBox(height: 10),
-                _buildAgreementSection(),
+                // SizedBox(height: 10),
+                // _buildAgreementSection(),
                 SizedBox(height: 10),
                 _buildOrderButton(),
               ],
@@ -249,6 +230,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 사용자 이름을 보여주는 위젯
   Widget _buildUserInfo() {
     return Text(
       '${username}',
@@ -259,6 +241,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 저장된 사용자 정보(배송지, 연락처)를 보여주는 위젯
   Widget _buildSavedInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,6 +264,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 연락처 및 배송지 입력 폼
   Widget _buildContactForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,6 +310,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 주문 요약 부분
   Widget _buildOrderSummary() {
     if (latestOrder == null) {
       return Center(child: Text('최신 주문 정보가 없습니다.'));
@@ -349,11 +334,11 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 주문 아이템을 보여주는 리스트
   List<Widget> _buildOrderItems() {
     return widget.cartItems.map((item) {
       final imageUrl =
-          (item['img'] as List<dynamic>?)?.first ??
-              'https://via.placeholder.com/150';
+          (item['img'] as List<dynamic>?)?.first ?? 'https://via.placeholder.com/150';
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
@@ -361,9 +346,9 @@ class _PayPageState extends State<PayPage> {
           children: [
             Image.network(
               imageUrl,
-              height: 100, // Set the desired height
-              width: 100, // Set the desired width
-              fit: BoxFit.cover, // Cover the box, might crop the image
+              height: 100,
+              width: 100,
+              fit: BoxFit.cover,
             ),
             SizedBox(width: 15),
             Expanded(
@@ -378,30 +363,31 @@ class _PayPageState extends State<PayPage> {
     }).toList() ?? [];
   }
 
+  // 가격 요약 부분
   Widget _buildPriceSummary() {
+    // 총 배송비 계산
     int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
-      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // shippingFee가 num일 경우 int로 변환
+      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 배송비 계산
     });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildPriceRow('상품 금액', '${totalProductPrice}원'),
+        _buildPriceRow('상품 금액', totalProductPrice),
         SizedBox(height: 10),
-        _buildPriceRow('배송비', '${totalShippingFee}원'), // 배송비 표시
+        _buildPriceRow('배송비', totalShippingFee), // 배송비 표시
         SizedBox(height: 10),
-        _buildPriceRow('할인 금액', '0원'),
+        _buildPriceRow('할인 금액', 0),
         SizedBox(height: 10),
         Divider(color: Colors.black54, thickness: 1),
         SizedBox(height: 10),
-        _buildPriceRow('총 결제 금액', '${totalProductPrice + totalShippingFee}원'), // 배송비 포함 총 금액
+        _buildPriceRow('총 결제 금액', totalProductPrice + totalShippingFee), // 배송비 포함 총 금액
       ],
     );
   }
 
-
-
-  Widget _buildPriceRow(String label, String amount) {
+  // 가격 항목을 보여주는 행
+  Widget _buildPriceRow(String label, int amount) {
     return Row(
       children: [
         Expanded(
@@ -413,13 +399,14 @@ class _PayPageState extends State<PayPage> {
         Expanded(
           child: Align(
             alignment: Alignment.centerRight,
-            child: Text(amount),
+            child: Text('${amount}원'),
           ),
         ),
       ],
     );
   }
 
+  // 할인 섹션
   Widget _buildDiscountSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,6 +482,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+  // 결제 수단 섹션
   Widget _buildPaymentSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,70 +501,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  Widget _buildAgreementSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        confirmAgree(),
-        SizedBox(height: 5),
-        Divider(color: Colors.black54, thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildOrderButton() {
-    return Container(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: () async {
-          if (_isChecked) {
-            await _createOrder();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => OrderList()),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('주문 내용을 확인하고 동의해야 합니다.')),
-            );
-          }
-        },
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.blue[100],
-          side: BorderSide.none,
-        ),
-        child: Text(
-          '주문',
-          style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-  Column confirmAgree() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Checkbox(
-              value: _isChecked,
-              onChanged: (bool? value) {
-                setState(() {
-                  _isChecked = value ?? false;
-                });
-              },
-            ),
-            Text("주문내용 확인 및 동의", style: TextStyle(fontSize: 17)),
-          ],
-        ),
-        Text("(필수) 개인정보 수집-이용 동의", style: TextStyle(fontSize: 10)),
-        Text("(필수) 개인정보 제3자 정보 제공 동의", style: TextStyle(fontSize: 10)),
-      ],
-    );
-  }
-
+  // 결제 수단 선택 라디오 버튼
   Column payType() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,6 +532,61 @@ class _PayPageState extends State<PayPage> {
         ),
         Divider(color: Colors.blue[100], thickness: 3),
       ],
+    );
+  }
+
+  // 동의 섹션
+  Column confirmAgree() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Checkbox(
+              value: _isChecked,
+              onChanged: (bool? value) {
+                setState(() {
+                  _isChecked = value ?? false;
+                });
+              },
+            ),
+            Text("주문내용 확인 및 동의", style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        Text("(필수) 개인정보 수집-이용 동의", style: TextStyle(fontSize: 10)),
+        Text("(필수) 개인정보 제3자 정보 제공 동의", style: TextStyle(fontSize: 10)),
+      ],
+    );
+  }
+
+  // 주문 버튼
+  Widget _buildOrderButton() {
+    return Container(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () async {
+          if (_isChecked) {
+            await _createOrder();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => OrderList()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('주문 내용을 확인하고 동의해야 합니다.')),
+            );
+          }
+        },
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.blue[100],
+          side: BorderSide.none,
+        ),
+        child: Text(
+          '주문',
+          style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 

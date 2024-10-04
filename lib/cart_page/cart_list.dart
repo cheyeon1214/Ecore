@@ -70,7 +70,7 @@ class CartList extends StatelessWidget {
                 trailing: IconButton(
                   icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
                   onPressed: () {
-                    userModel.removeCartItem(cartItem['sellId']);
+                    userModel.removeCartItem((cartItem['sellId'] ?? cartItem['donaId']) as String);
                   },
                 ),
               );

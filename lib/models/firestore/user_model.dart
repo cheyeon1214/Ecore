@@ -237,6 +237,7 @@ class UserModel extends ChangeNotifier {
       final cartList = List<Map<String, dynamic>>.from(userSnapshot.data()?['cart'] ?? []);
 
       cartList.removeWhere((item) => item['sellId'] == itemId);
+      cartList.removeWhere((item) => item['donaId'] == itemId);
 
       await userDoc.update({'cart': cartList});
 
