@@ -23,6 +23,7 @@ class _FeedDetailState extends State<FeedDetail> {
   int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
   bool _isFavorite = false;
   String? marketUserId;
+  String? marketName; // 추가: 마켓 이름을 저장할 변수
   String? currentUserId;
 
   @override
@@ -44,6 +45,7 @@ class _FeedDetailState extends State<FeedDetail> {
       final marketData = marketDoc.data();
       setState(() {
         marketUserId = marketData?['userId'];
+        marketName = marketData?['name']; // 추가: 마켓 이름 가져오기
       });
     } catch (e) {
       print('Error fetching market userId: $e');
@@ -83,8 +85,9 @@ class _FeedDetailState extends State<FeedDetail> {
       'price': widget.sellPost.price,
       'category': widget.sellPost.category,
       'body': widget.sellPost.body,
-      'marketId' : widget.sellPost.marketId,
-      'shippingFee' : widget.sellPost.shippingFee,
+      'marketId': widget.sellPost.marketId,
+      'marketName': marketName, // 추가: 마켓 이름 추가
+      'shippingFee': widget.sellPost.shippingFee,
       'reference': widget.sellPost.reference.path,
     };
 
@@ -254,7 +257,6 @@ class _FeedDetailState extends State<FeedDetail> {
     );
   }
 
-
   Row _marketView(String marketImage, String marketName, String businessNumber) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +331,6 @@ class _FeedDetailState extends State<FeedDetail> {
       ],
     );
   }
-
 
   Widget _buildImageCarousel(List<String> images) {
     if (images.isEmpty) {

@@ -17,6 +17,8 @@ class PayPage extends StatefulWidget {
 }
 
 class _PayPageState extends State<PayPage> {
+  int? _selectedSavedInfoIndex; // 추가: 변수를 선언하고 초기화
+
   final user = FirebaseAuth.instance.currentUser;
   String? username;
   Map<String, dynamic>? latestOrder;
@@ -30,17 +32,16 @@ class _PayPageState extends State<PayPage> {
   String _selectedPaymentMethod = '계좌 간편결제';
   bool _isChecked = false;
   int totalProductPrice = 0;
-  int? _selectedSavedInfoIndex;
-  int donaQuantity = 0; // 친구 코드에서 추가된 필드
+  int donaQuantity = 0; // 기부글 수량
+  Set<String> processedMarkets = {}; // 이미 처리된 마켓을 저장하는 Set
 
   @override
   void initState() {
     super.initState();
     _fetchUsername();
-    getCartItems(); // 친구 코드에서 추가된 호출
+    getCartItems();
   }
 
-  // 유저 이름을 불러오는 함수
   Future<void> _fetchUsername() async {
     if (user != null) {
       try {
@@ -61,7 +62,6 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-  // 친구 코드에서 추가된 장바구니 아이템을 가져오는 함수
   Future<void> getCartItems() async {
     try {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
@@ -88,7 +88,7 @@ class _PayPageState extends State<PayPage> {
             'items': cartItems,
           };
           totalProductPrice = totalPrice;
-          donaQuantity = donaCount; // 기부 상품 수량을 계산
+          donaQuantity = donaCount; // 기부 상품 수량
         });
       } else {
         print("User document does not exist.");
@@ -98,7 +98,6 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-  // 주문을 생성하는 함수
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
     final sellPosts = widget.cartItems.map((item) {
@@ -116,15 +115,31 @@ class _PayPageState extends State<PayPage> {
         body: item['body'] ?? '내용 없음',
         createdAt: (item['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         viewCount: item['viewCount'] ?? 0,
-        shippingFee: item['shippingFee'] ?? 0, // 배송비 추가
+        shippingFee: item['shippingFee'] ?? 0, // 배송비
         reference: sellPostRef,
       );
     }).toList();
 
+    // 이미 처리된 마켓을 추적하여 중복 배송비 방지
+    Set<String> processedMarkets = {}; // 마켓 ID를 저장할 Set
+
     // 배송비를 포함한 총 금액 계산
     int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
-      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // shippingFee가 num일 경우 int로 변환
+      final marketId = item['marketId'] ?? '';
+
+      if (processedMarkets.contains(marketId)) {
+        return sum; // 이미 처리된 마켓은 배송비 추가하지 않음
+      }
+
+      processedMarkets.add(marketId); // 마켓 ID 추가
+
+      if (item['donaId'] != null) {
+        return sum + 1000; // 기부글은 배송비 1000원
+      } else {
+        return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 일반 상품의 배송비 계산
+      }
     });
+
     int totalPriceWithShipping = totalProductPrice + totalShippingFee;
 
     try {
@@ -150,7 +165,6 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-  // 사용자 정보를 저장하는 함수
   void _saveInfo() {
     if (_phoneNumber != null &&
         _phoneNumber!.isNotEmpty &&
@@ -170,7 +184,6 @@ class _PayPageState extends State<PayPage> {
     setState(() {});
   }
 
-  // 화면 UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,8 +231,8 @@ class _PayPageState extends State<PayPage> {
                 _buildDiscountSection(),
                 SizedBox(height: 10),
                 _buildPaymentSection(),
-                // SizedBox(height: 10),
-                // _buildAgreementSection(),
+                SizedBox(height: 10),
+                _buildAgreementSection(),
                 SizedBox(height: 10),
                 _buildOrderButton(),
               ],
@@ -230,7 +243,41 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 사용자 이름을 보여주는 위젯
+  Widget _buildAgreementSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        confirmAgree(),
+        SizedBox(height: 5),
+        Divider(color: Colors.black54, thickness: 1),
+      ],
+    );
+  }
+
+  Column confirmAgree() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Checkbox(
+              value: _isChecked,
+              onChanged: (bool? value) {
+                setState(() {
+                  _isChecked = value ?? false;
+                });
+              },
+            ),
+            Text("주문내용 확인 및 동의", style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        Text("(필수) 개인정보 수집-이용 동의", style: TextStyle(fontSize: 10)),
+        Text("(필수) 개인정보 제3자 정보 제공 동의", style: TextStyle(fontSize: 10)),
+      ],
+    );
+  }
+
   Widget _buildUserInfo() {
     return Text(
       '${username}',
@@ -241,7 +288,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 저장된 사용자 정보(배송지, 연락처)를 보여주는 위젯
   Widget _buildSavedInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,10 +295,10 @@ class _PayPageState extends State<PayPage> {
         final info = _savedInfo[index];
         return RadioListTile<int>(
           value: index,
-          groupValue: _selectedSavedInfoIndex,
+          groupValue: _selectedSavedInfoIndex, // 선택된 인덱스와 비교
           onChanged: (int? value) {
             setState(() {
-              _selectedSavedInfoIndex = value;
+              _selectedSavedInfoIndex = value; // 인덱스 업데이트
             });
           },
           title: Text(
@@ -264,7 +310,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 연락처 및 배송지 입력 폼
+
   Widget _buildContactForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +356,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 주문 요약 부분
   Widget _buildOrderSummary() {
     if (latestOrder == null) {
       return Center(child: Text('최신 주문 정보가 없습니다.'));
@@ -334,11 +379,11 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 주문 아이템을 보여주는 리스트
   List<Widget> _buildOrderItems() {
     return widget.cartItems.map((item) {
       final imageUrl =
-          (item['img'] as List<dynamic>?)?.first ?? 'https://via.placeholder.com/150';
+          (item['img'] as List<dynamic>?)?.first ??
+              'https://via.placeholder.com/150';
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
@@ -363,11 +408,25 @@ class _PayPageState extends State<PayPage> {
     }).toList() ?? [];
   }
 
-  // 가격 요약 부분
   Widget _buildPriceSummary() {
+    // 이미 처리된 마켓을 추적하여 중복 배송비 방지
+    Set<String> processedMarkets = {};
+
     // 총 배송비 계산
     int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
-      return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 배송비 계산
+      final marketId = item['marketId'] ?? '';
+
+      if (processedMarkets.contains(marketId)) {
+        return sum; // 이미 처리된 마켓은 배송비 추가하지 않음
+      }
+
+      processedMarkets.add(marketId); // 마켓 ID 추가
+
+      if (item['donaId'] != null) {
+        return sum + 1000; // 기부글은 1000원
+      } else {
+        return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 일반 배송비 계산
+      }
     });
 
     return Column(
@@ -386,7 +445,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 가격 항목을 보여주는 행
   Widget _buildPriceRow(String label, int amount) {
     return Row(
       children: [
@@ -406,7 +464,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 할인 섹션
   Widget _buildDiscountSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,7 +539,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 결제 수단 섹션
   Widget _buildPaymentSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,7 +557,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 결제 수단 선택 라디오 버튼
   Column payType() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,32 +590,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  // 동의 섹션
-  Column confirmAgree() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Checkbox(
-              value: _isChecked,
-              onChanged: (bool? value) {
-                setState(() {
-                  _isChecked = value ?? false;
-                });
-              },
-            ),
-            Text("주문내용 확인 및 동의", style: TextStyle(fontSize: 17)),
-          ],
-        ),
-        Text("(필수) 개인정보 수집-이용 동의", style: TextStyle(fontSize: 10)),
-        Text("(필수) 개인정보 제3자 정보 제공 동의", style: TextStyle(fontSize: 10)),
-      ],
-    );
-  }
-
-  // 주문 버튼
   Widget _buildOrderButton() {
     return Container(
       width: double.infinity,
