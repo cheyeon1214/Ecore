@@ -121,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   border: InputBorder.none, // 테두리 제거
-                  hintText: '상품을 검색해보세요.', // 힌트 텍스트
+                  hintText: '검색어를 입력해주세요.', // 힌트 텍스트
                   hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상 설정
                 ),
               ),
