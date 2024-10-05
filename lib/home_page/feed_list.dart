@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import 'category_button.dart';
@@ -121,15 +122,39 @@ class _SellListState extends State<SellList> {
                   errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
               ),
-              Positioned(
-                top: -1,
-                right: -4,
-                child: IconButton(
-                  icon: Icon(Icons.favorite_border, color: Colors.white),
-                  onPressed: () {
-                    // 하트 버튼 클릭 시 동작
-                  },
-                ),
+              // 실시간으로 즐겨찾기 상태를 확인하는 StreamBuilder 추가
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .collection('FavoriteList')
+                    .doc(sellPost.sellId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Positioned(
+                      top: -1,
+                      right: -4,
+                      child: IconButton(
+                        icon: Icon(Icons.favorite_border, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                    );
+                  }
+                  bool isFavorite = snapshot.data != null && snapshot.data!.exists;
+
+                  return Positioned(
+                    top: -1,
+                    right: -4,
+                    child: IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.white,
+                      ),
+                      onPressed: () => _toggleFavorite(sellPost, isFavorite),
+                    ),
+                  );
+                },
               ),
               Positioned(
                 top: 160, // 세로 버튼 위치를 더 아래로 이동
@@ -147,7 +172,7 @@ class _SellListState extends State<SellList> {
           Text(
             '${sellPost.price}원',
             style: TextStyle(
-              fontSize: 14, // 텍스트 크기를 줄여서 오버플로우 방지
+              fontSize: 15, // 텍스트 크기를 줄여서 오버플로우 방지
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -157,12 +182,35 @@ class _SellListState extends State<SellList> {
           Text(
             sellPost.title,
             style: TextStyle(
-              fontSize: 12, // 가격 텍스트 크기 축소
+              fontSize: 12, //
               color: Colors.grey[700],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _toggleFavorite(SellPostModel sellPost, bool isFavorite) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('User not logged in');
+      return;
+    }
+
+    final favoriteRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user.uid)
+        .collection('FavoriteList')
+        .doc(sellPost.sellId);
+
+    if (isFavorite) {
+      // 즐겨찾기에서 제거
+      await favoriteRef.delete();
+    } else {
+      // 즐겨찾기에 추가
+      await favoriteRef.set(sellPost.toMap());
+    }
   }
 }
