@@ -165,7 +165,7 @@ class _FeedDetailState extends State<FeedDetail> {
                   // 재고 정보 출력 추가 (재고 0일 때 '재고 없음'으로 출력)
                   Text(
                     widget.sellPost.stock > 0
-                        ? '재고: ${widget.sellPost.stock} 개' // 재고가 있으면 수량 출력
+                        ? '재고 : ${widget.sellPost.stock}개' // 재고가 있으면 수량 출력
                         : '재고 없음', // 재고가 0일 경우
                     style: TextStyle(
                       fontSize: 16,
@@ -349,12 +349,12 @@ class _FeedDetailState extends State<FeedDetail> {
       return Text('이미지가 없습니다.');
     }
 
-    return SizedBox(
-      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
-      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
-      child: Stack(
-        children: [
-          PageView.builder(
+    return Stack(
+      children: [
+        SizedBox(
+          width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+          height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
+          child: PageView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: images.length,
             onPageChanged: (index) {
@@ -371,20 +371,46 @@ class _FeedDetailState extends State<FeedDetail> {
               );
             },
           ),
-          Positioned(
-            bottom: 10,
-            right: 10,
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: Colors.black54,
+            child: Text(
+              '${_currentIndex + 1}/${images.length}',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ),
+        // 재고가 0이면 "판매 완료" 이미지를 겹치기
+        if (widget.sellPost.stock == 0)
+          Positioned.fill(
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              color: Colors.black54,
-              child: Text(
-                '${_currentIndex + 1}/${images.length}',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+              color: Colors.black.withOpacity(0.6),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white.withOpacity(0.8),
+                      child: Text(
+                        '판매 완료',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
