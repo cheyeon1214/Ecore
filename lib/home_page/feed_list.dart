@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
-import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
@@ -17,7 +17,6 @@ class SellList extends StatefulWidget {
 
 class _SellListState extends State<SellList> {
   final UserModel userModel = UserModel(); // UserModel 인스턴스 생성
-
   String _selectedCategory = '';
 
   @override
@@ -51,8 +50,14 @@ class _SellListState extends State<SellList> {
 
               final data = snapshot.data!;
 
-              return ListView.builder(
-                shrinkWrap: true,
+              return GridView.builder(
+                padding: EdgeInsets.all(8.0), // 그리드의 패딩 조정
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 한 줄에 3개의 아이템을 배치
+                  crossAxisSpacing: 8.0, // 아이템 사이의 가로 간격
+                  mainAxisSpacing: 0.0, // 아이템 사이의 세로 간격
+                  childAspectRatio: 0.55, // 아이템의 비율 조정
+                ),
                 itemCount: data.size,
                 itemBuilder: (context, index) {
                   final sellPost = SellPostModel.fromSnapshot(data.docs[index]);
@@ -90,11 +95,10 @@ class _SellListState extends State<SellList> {
   }
 
   Widget _postHeader(SellPostModel sellPost) {
-    // Use the first image in the list or a placeholder
     final String firstImageUrl = sellPost.img.isNotEmpty ? sellPost.img[0] : 'https://via.placeholder.com/100';
 
-    return OutlinedButton(
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         userModel.addRecentlyViewed(sellPost);  // Function call directly
         Navigator.push(
           context,
@@ -103,70 +107,111 @@ class _SellListState extends State<SellList> {
           ),
         );
       },
-      style: OutlinedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-        backgroundColor: Colors.white,
-        side: BorderSide(color: Colors.grey[300]!, width: 1), // Light gray border color
-        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Increased vertical padding
-      ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10.0), // Adjust radius as needed
-              child: CachedNetworkImage(
-                imageUrl: firstImageUrl,
-                width: 110,
-                height: 110,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Icon(Icons.error),
-              ),
-            ),
-          ),
-          SizedBox(width: 10.0),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sellPost.title,
-                  style: TextStyle(
-                    fontSize: 20, // Increase font size
-                    fontWeight: FontWeight.bold, // Make the font bold
-                    color: Colors.black87,
-                  ),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10.0), // 이미지의 둥근 모서리
+                child: CachedNetworkImage(
+                  imageUrl: firstImageUrl,
+                  width: double.infinity,
+                  height: 150, // 이미지의 높이 설정
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
-                Text(
+              ),
+              // 실시간으로 즐겨찾기 상태를 확인하는 StreamBuilder 추가
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .collection('FavoriteList')
+                    .doc(sellPost.sellId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Positioned(
+                      top: -1,
+                      right: -4,
+                      child: IconButton(
+                        icon: Icon(Icons.favorite_border, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                    );
+                  }
+                  bool isFavorite = snapshot.data != null && snapshot.data!.exists;
+
+                  return Positioned(
+                    top: -1,
+                    right: -4,
+                    child: IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.white,
+                      ),
+                      onPressed: () => _toggleFavorite(sellPost, isFavorite),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 10), // 이미지와 텍스트 간의 간격 조정
+          Row(
+            children: [
+              Expanded(
+                child: Text(
                   '${sellPost.price}원',
                   style: TextStyle(
-                    fontSize: 20, // Adjust font size for price
-                    color: Colors.grey[700], // Change color to gray
+                    fontSize: 15, // 텍스트 크기를 줄여서 오버플로우 방지
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (String value) {
+                  if (value == 'report') {
+                    _showReportDialog();  // 신고 다이얼로그 호출
+                  } else if (value == 'hide') {
+                    // 숨기기 로직 구현 (추후 추가 가능)
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      value: 'report',
+                      child: Text('신고'),
+                    ),
+                    PopupMenuItem(
+                      value: 'hide',
+                      child: Text('숨기기'),
+                    ),
+                  ];
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    '...',
+                    style: TextStyle(
+                      fontSize: 20, // 가격과 비슷한 크기
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          PopupMenuButton<String>(
-            onSelected: (String value) {
-              if (value == 'report') {
-                _showReportDialog();  // Show report dialog
-              } else if (value == 'hide') {
-                // Hide logic
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 'report',
-                  child: Text('신고'),
-                ),
-                PopupMenuItem(
-                  value: 'hide',
-                  child: Text('숨기기'),
-                ),
-              ];
-            },
+          Text(
+            sellPost.title,
+            style: TextStyle(
+              fontSize: 12, //
+              color: Colors.grey[700],
+            ),
           ),
         ],
       ),
@@ -205,11 +250,32 @@ class _SellListState extends State<SellList> {
     return ListTile(
       title: Text(reason),
       onTap: () {
-        // Handle the selection of the reason here
         Navigator.of(context).pop();
-        // You could add additional logic to process the report
+        // 신고 처리 로직 추가
       },
     );
   }
 
+  Future<void> _toggleFavorite(SellPostModel sellPost, bool isFavorite) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      print('User not logged in');
+      return;
+    }
+
+    final favoriteRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(user.uid)
+        .collection('FavoriteList')
+        .doc(sellPost.sellId);
+
+    if (isFavorite) {
+      // 즐겨찾기에서 제거
+      await favoriteRef.delete();
+    } else {
+      // 즐겨찾기에 추가
+      await favoriteRef.set(sellPost.toMap());
+    }
+  }
 }
