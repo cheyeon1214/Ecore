@@ -156,6 +156,32 @@ class _PayPageState extends State<PayPage> {
         'shippingStatus': '배송 준비', // 배송 상태 추가
       });
 
+      // 포인트 시스템 처리
+      for (var item in widget.cartItems) {
+        if (item['donaId'] != null) {
+          // donaPost의 userId 및 point 가져오기
+          final donaPostRef = FirebaseFirestore.instance.collection('DonaPosts').doc(item['donaId']);
+          final donaPostDoc = await donaPostRef.get();
+
+          if (donaPostDoc.exists) {
+            final donaUserId = donaPostDoc['userId'];
+            final point = donaPostDoc['point'] ?? 0;
+
+            // donaUser에게 포인트 추가
+            final userRef = FirebaseFirestore.instance.collection('Users').doc(donaUserId);
+            await userRef.update({
+              'points': FieldValue.increment(point), // 포인트 증가
+            });
+
+            // 사용자 서브컬렉션에 포인트 기록 저장
+            await userRef.collection('PointHistory').add({
+              'point': point,
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+          }
+        }
+      }
+
       // 카트 초기화
       await userModel.clearCart();
     } catch (e) {
@@ -164,6 +190,8 @@ class _PayPageState extends State<PayPage> {
       );
     }
   }
+
+
 
   void _saveInfo() {
     if (_phoneNumber != null &&
