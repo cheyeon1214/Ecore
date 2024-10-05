@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import '../widgets/sold_out.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
@@ -122,6 +123,8 @@ class _SellListState extends State<SellList> {
                   errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
               ),
+              // SoldOutOverlay를 추가하여 재고가 0일 때 판매 완료를 표시
+              SoldOutOverlay(isSoldOut: sellPost.stock == 0, radius: 30,), // 판매 완료 오버레이 추가
               // 실시간으로 즐겨찾기 상태를 확인하는 StreamBuilder 추가
               StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance

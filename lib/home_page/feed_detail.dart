@@ -8,6 +8,7 @@ import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 import '../search/market_detail.dart';
 import '../chat_page/chat_banner.dart';
+import '../widgets/sold_out.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -384,32 +385,8 @@ class _FeedDetailState extends State<FeedDetail> {
             ),
           ),
         ),
-        // 재고가 0이면 "판매 완료" 이미지를 겹치기
-        if (widget.sellPost.stock == 0)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.6),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white.withOpacity(0.8),
-                      child: Text(
-                        '판매 완료',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        // 판매 완료 이미지 표시
+        SoldOutOverlay(isSoldOut: widget.sellPost.stock == 0),
       ],
     );
   }
