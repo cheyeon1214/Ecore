@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
-import 'carousel_slider.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
@@ -17,7 +16,6 @@ class SellList extends StatefulWidget {
 
 class _SellListState extends State<SellList> {
   final UserModel userModel = UserModel(); // UserModel 인스턴스 생성
-
   String _selectedCategory = '';
 
   @override
@@ -51,8 +49,14 @@ class _SellListState extends State<SellList> {
 
               final data = snapshot.data!;
 
-              return ListView.builder(
-                shrinkWrap: true,
+              return GridView.builder(
+                padding: EdgeInsets.all(8.0), // 그리드의 패딩 조정
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 한 줄에 3개의 아이템을 배치
+                  crossAxisSpacing: 8.0, // 아이템 사이의 가로 간격
+                  mainAxisSpacing: 0.0, // 아이템 사이의 세로 간격
+                  childAspectRatio: 0.55, // 아이템의 비율 조정
+                ),
                 itemCount: data.size,
                 itemBuilder: (context, index) {
                   final sellPost = SellPostModel.fromSnapshot(data.docs[index]);
@@ -90,11 +94,10 @@ class _SellListState extends State<SellList> {
   }
 
   Widget _postHeader(SellPostModel sellPost) {
-    // Use the first image in the list or a placeholder
     final String firstImageUrl = sellPost.img.isNotEmpty ? sellPost.img[0] : 'https://via.placeholder.com/100';
 
-    return OutlinedButton(
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         userModel.addRecentlyViewed(sellPost);  // Function call directly
         Navigator.push(
           context,
@@ -103,113 +106,63 @@ class _SellListState extends State<SellList> {
           ),
         );
       },
-      style: OutlinedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-        backgroundColor: Colors.white,
-        side: BorderSide(color: Colors.grey[300]!, width: 1), // Light gray border color
-        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Increased vertical padding
-      ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10.0), // Adjust radius as needed
-              child: CachedNetworkImage(
-                imageUrl: firstImageUrl,
-                width: 110,
-                height: 110,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Icon(Icons.error),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10.0), // 이미지의 둥근 모서리
+                child: CachedNetworkImage(
+                  imageUrl: firstImageUrl,
+                  width: double.infinity,
+                  height: 150, // 이미지의 높이 설정
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Icon(Icons.error),
+                ),
               ),
-            ),
+              Positioned(
+                top: -1,
+                right: -4,
+                child: IconButton(
+                  icon: Icon(Icons.favorite_border, color: Colors.white),
+                  onPressed: () {
+                    // 하트 버튼 클릭 시 동작
+                  },
+                ),
+              ),
+              Positioned(
+                top: 160, // 세로 버튼 위치를 더 아래로 이동
+                right: -6,
+                child: IconButton(
+                  icon: Icon(Icons.more_vert, color: Colors.grey[700]),
+                  onPressed: () {
+                    // 세로 버튼 클릭 시 동작
+                  },
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 10.0),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sellPost.title,
-                  style: TextStyle(
-                    fontSize: 20, // Increase font size
-                    fontWeight: FontWeight.bold, // Make the font bold
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  '${sellPost.price}원',
-                  style: TextStyle(
-                    fontSize: 20, // Adjust font size for price
-                    color: Colors.grey[700], // Change color to gray
-                  ),
-                ),
-              ],
+          SizedBox(height: 10), // 이미지와 텍스트 간의 간격 조정
+          Text(
+            '${sellPost.price}원',
+            style: TextStyle(
+              fontSize: 14, // 텍스트 크기를 줄여서 오버플로우 방지
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          PopupMenuButton<String>(
-            onSelected: (String value) {
-              if (value == 'report') {
-                _showReportDialog();  // Show report dialog
-              } else if (value == 'hide') {
-                // Hide logic
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 'report',
-                  child: Text('신고'),
-                ),
-                PopupMenuItem(
-                  value: 'hide',
-                  child: Text('숨기기'),
-                ),
-              ];
-            },
+          Text(
+            sellPost.title,
+            style: TextStyle(
+              fontSize: 12, // 가격 텍스트 크기 축소
+              color: Colors.grey[700],
+            ),
           ),
         ],
       ),
     );
   }
-
-  void _showReportDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('신고 이유를 선택해주세요'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                _buildReportOption('부적절한 내용'),
-                _buildReportOption('스팸'),
-                _buildReportOption('기타'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('취소'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildReportOption(String reason) {
-    return ListTile(
-      title: Text(reason),
-      onTap: () {
-        // Handle the selection of the reason here
-        Navigator.of(context).pop();
-        // You could add additional logic to process the report
-      },
-    );
-  }
-
 }
