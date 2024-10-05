@@ -16,14 +16,19 @@ class ChatList extends StatefulWidget {
 }
 
 class _ChatListState extends State<ChatList> {
-  final StreamController<List<ChatModel>> _chatController = StreamController<List<ChatModel>>.broadcast();
-  final Map<String, String> _usernameCache = {};
+  final StreamController<List<ChatModel>> _chatController =
+      StreamController<List<ChatModel>>.broadcast();
+  Map<String, Map<String, String>> _userCache = {};
   final Map<String, String> _userIdCache = {};
 
-  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _sendSubscription;
-  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _receiveSubscription;
-  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _marketSendSubscription;
-  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>> _marketReceiveSubscription;
+  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+      _sendSubscription;
+  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+      _receiveSubscription;
+  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+      _marketSendSubscription;
+  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+      _marketReceiveSubscription;
 
   @override
   void initState() {
@@ -38,7 +43,7 @@ class _ChatListState extends State<ChatList> {
 
     try {
       final marketId = await _getMarketIdForUser(userId);
-      
+
       // 현재유저 = 유저 id 경우
       final messageStream = FirebaseFirestore.instance
           .collection(COLLECTION_CHATS)
@@ -66,12 +71,15 @@ class _ChatListState extends State<ChatList> {
         receivedStream,
         marketMessageStream,
         marketReceivedStream,
-            (QuerySnapshot<Map<String, dynamic>> sendSnapshot,
+        (QuerySnapshot<Map<String, dynamic>> sendSnapshot,
             QuerySnapshot<Map<String, dynamic>> receiveSnapshot,
             QuerySnapshot<Map<String, dynamic>> marketSendSnapshot,
             QuerySnapshot<Map<String, dynamic>> marketReceiveSnapshot) {
           final userMessages = [...sendSnapshot.docs, ...receiveSnapshot.docs];
-          final marketMessages = [...marketSendSnapshot.docs, ...marketReceiveSnapshot.docs];
+          final marketMessages = [
+            ...marketSendSnapshot.docs,
+            ...marketReceiveSnapshot.docs
+          ];
           _processChatUpdates(userMessages, marketMessages, userId, marketId!);
         },
       ).listen(null);
@@ -112,16 +120,15 @@ class _ChatListState extends State<ChatList> {
           recentChatsMap[otherUserId] = chat;
         }
       }
-      
+
       List<ChatModel> recentChats = recentChatsMap.values.toList();
       recentChats.sort((a, b) => b.date.compareTo(a.date));
-      
+
       _chatController.add(recentChats); //채팅 리스트 스트림에 추가
     } catch (e) {
       print('Error processing chats: $e');
     }
   }
-
 
   Future<String?> _getMarketIdForUser(String userId) async {
     try {
@@ -142,33 +149,54 @@ class _ChatListState extends State<ChatList> {
     return null; //마켓 id 없는 경우
   }
 
-  Future<String> _getOrFetchUsername(String userId) async {
-    if (_usernameCache.containsKey(userId)) {
-      return _usernameCache[userId]!;
+  Future<Map<String, String>> _getOrFetchUserData(String userId) async {
+    if (_userIdCache.containsKey(userId)) {
+      return _userCache[userId]!; // 캐시된 데이터 반환
     }
 
-    // 캐시에 없으면 Firestore에서 가져와 캐시에 저장
-    final username = await _getUsernameOrMarketName(userId);
-    _usernameCache[userId] = username;
-    return username;
+    // Firestore에서 username과 profileImage를 가져옴
+    final userData = await _getUsernameAndProfileImage(userId);
+
+    // 캐시에 저장 (username과 profileImage)
+    _userCache[userId] = userData;
+
+    return userData;
   }
 
-  Future<String> _getUsernameOrMarketName(String userId) async {
-    if (_usernameCache.containsKey(userId)) {
-      return _usernameCache[userId]!;
+// 실제 Firestore에서 username과 profileImage를 가져오는 함수
+  Future<Map<String, String>> _getUsernameAndProfileImage(String userId) async {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+    final username = userDoc.data()?['username'] ?? 'Unknown';
+    final profileImage = userDoc.data()?['profile_img'] ?? '';
+
+    return {
+      'username': username,
+      'profile_img': profileImage,
+    };
+  }
+
+  Future _getUsernameOrMarketName(String userId) async {
+    if (_userCache.containsKey(userId)) {
+      return _userCache[userId]!;
     }
 
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
     if (userDoc.exists) {
       final username = userDoc.data()?[KEY_USERNAME] ?? 'Unknown';
-      _usernameCache[userId] = username;
+      _userCache[userId] = username;
       return username;
     }
 
-    final marketDoc = await FirebaseFirestore.instance.collection('Markets').doc(userId).get();
+    final marketDoc = await FirebaseFirestore.instance
+        .collection('Markets')
+        .doc(userId)
+        .get();
     if (marketDoc.exists) {
       final marketName = marketDoc.data()?[KEY_MARKET_NAME] ?? 'Unknown';
-      _usernameCache[userId] = marketName;
+      _userCache[userId] = marketName;
       return marketName;
     }
 
@@ -208,8 +236,8 @@ class _ChatListState extends State<ChatList> {
               final chat = chats[index];
               final otherUserId = _userIdCache[chat.chatId]!;
 
-              return FutureBuilder<String>(
-                future: _getOrFetchUsername(otherUserId),
+              return FutureBuilder<Map<String, String>>(
+                future: _getOrFetchUserData(otherUserId),
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
                     return ListTile(
@@ -225,23 +253,49 @@ class _ChatListState extends State<ChatList> {
                     );
                   }
 
-                  final username = userSnapshot.data ?? 'Unknown';
+                  final username = userSnapshot.data?['username'] ?? 'Unknown';
+                  final profileImageUrl =
+                      userSnapshot.data?['profile_img'] ?? '';
 
-                  return ListTile(
-                    title: Text(username),
-                    subtitle: Text(chat.text),
-                    trailing: Text(
-                      _formatDate(chat.date),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  return Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: ListTile(
+                      title: Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(right: 12.0),
+                            child: CircleAvatar(
+                              backgroundImage: profileImageUrl.isNotEmpty
+                                  ? NetworkImage(profileImageUrl)
+                                  : AssetImage(
+                                          'assets/images/defualt_profile.jpg')
+                                      as ImageProvider,
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(username,
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text(chat.text),
+                            ],
+                          ),
+                        ],
+                      ),
+                      trailing: Text(
+                        _formatDate(chat.date),
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SelectChatRoom(otherUserId: otherUserId),
+                          ),
+                        );
+                      },
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SelectChatRoom(otherUserId: otherUserId),
-                        ),
-                      );
-                    },
                   );
                 },
               );
