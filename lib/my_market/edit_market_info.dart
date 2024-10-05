@@ -2,13 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 임포트
-import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage를 위한 임포트
-
-import '../models/firestore/market_model.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditMarketInfoPage extends StatefulWidget {
   final String marketId;
@@ -28,7 +23,10 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
 
   String? _businessNumber;
   String? _profileImageUrl;
-  XFile? _image;
+  String? _bannerImageUrl;
+
+  File? _profileImage;
+  File? _bannerImage;
 
   @override
   void initState() {
@@ -55,70 +53,84 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
         _csemailController.text = marketData?['cs_email'] ?? '';
         _businessNumber = marketData?['business_number'];
         _profileImageUrl = marketData?['img'];
+        _bannerImageUrl = marketData?['bannerImg'];
+        setState(() {});  // 이전 이미지를 UI에 반영
       }
     } catch (e) {
       print('Failed to load market data: $e');
     }
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickProfileImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
 
-    if (image != null) {
+    if (pickedFile != null) {
       setState(() {
-        _image = image;
+        _profileImage = File(pickedFile.path);
       });
     }
   }
 
-  Future<void> _uploadImage(String marketId) async {
-    if (_image != null) {
-      try {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('market_images')
-            .child('$marketId.jpg');
+  Future<void> _pickBannerImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
 
-        await ref.putFile(File(_image!.path));
-        String imageUrl = await ref.getDownloadURL();
+    if (pickedFile != null) {
+      setState(() {
+        _bannerImage = File(pickedFile.path);
+      });
+    }
+  }
 
-        setState(() {
-          _profileImageUrl = imageUrl;
-        });
-      } catch (e) {
-        print('이미지 업로드 오류: $e');
-      }
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      final fileName = 'market_images/${DateTime.now().millisecondsSinceEpoch.toString()}.jpg';
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+      final uploadTask = ref.putFile(imageFile);
+      final snapshot = await uploadTask.whenComplete(() {});
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      print('Failed to upload image: $e');
+      return null;
     }
   }
 
   Future<void> _updateMarketInfo() async {
     if (_formKey.currentState?.validate() ?? false) {
       String marketName = _marketNameController.text;
-      List<String> marketDescription = _marketDescriptionController.text.split('\n');
+      List<String> marketDescription =
+      _marketDescriptionController.text.split('\n');
       String csPhone = _csPhoneController.text;
       String csemail = _csemailController.text;
 
+      Map<String, dynamic> updateData = {
+        'name': marketName,
+        'feedPosts': marketDescription,
+        'cs_phone': csPhone,
+        'cs_email': csemail,
+        'business_number': _businessNumber ?? '',
+      };
+
       try {
-        await FirebaseFirestore.instance.collection('Markets').doc(widget.marketId).update({
-          'name': marketName,
-          'feedPosts': marketDescription,
-          'cs_phone': csPhone,
-          'cs_email': csemail,
-          'business_number': _businessNumber ?? '',
-          'img': _profileImageUrl ?? '',
-        });
-
-        if (_image != null) {
-          await _uploadImage(widget.marketId);
-
-          await FirebaseFirestore.instance
-              .collection('Markets')
-              .doc(widget.marketId)
-              .update({
-            'img': _profileImageUrl,
-          });
+        // 프로필 이미지 업데이트
+        if (_profileImage != null) {
+          String? profileImageUrl = await _uploadImage(_profileImage!);
+          if (profileImageUrl != null) {
+            updateData['img'] = profileImageUrl;
+          }
         }
+
+        // 배너 이미지 업데이트
+        if (_bannerImage != null) {
+          String? bannerImageUrl = await _uploadImage(_bannerImage!);
+          if (bannerImageUrl != null) {
+            updateData['bannerImg'] = bannerImageUrl;
+          }
+        }
+
+        await FirebaseFirestore.instance
+            .collection('Markets')
+            .doc(widget.marketId)
+            .update(updateData);
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,34 +145,93 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
     }
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildProfileImagePicker({
+    required String label,
+    File? imageFile,
+    String? imageUrl,
+    required Function() pickImage,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '프로필 사진',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Center(
+          child: GestureDetector(
+            onTap: pickImage,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: imageFile != null
+                      ? FileImage(imageFile)
+                      : (imageUrl != null ? NetworkImage(imageUrl) as ImageProvider : null),
+                  child: imageFile == null && imageUrl == null
+                      ? Icon(Icons.add_a_photo, size: 50, color: Colors.grey)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.grey[200],
+                    child: Icon(Icons.camera_alt, color: Colors.black54),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildBannerImagePicker({
+    required String label,
+    File? imageFile,
+    String? imageUrl,
+    required Function() pickImage,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
         GestureDetector(
-          onTap: _pickImage,
-          child: CircleAvatar(
-            radius: 50,
-            backgroundImage: _image != null
-                ? FileImage(File(_image!.path))
-                : (_profileImageUrl != null
-                ? NetworkImage(_profileImageUrl!) as ImageProvider
-                : null),
-            child: _image == null && _profileImageUrl == null
-                ? Icon(
-              Icons.add_a_photo,
-              size: 50,
-              color: Colors.grey,
-            )
-                : null,
+          onTap: pickImage,
+          child: Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(8),
+              image: imageFile != null
+                  ? DecorationImage(
+                image: FileImage(imageFile),
+                fit: BoxFit.cover,
+              )
+                  : imageUrl != null
+                  ? DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+              )
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                if (imageFile == null && imageUrl == null)
+                  Center(child: Icon(Icons.add_a_photo, color: Colors.grey[700], size: 50)),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: Icon(Icons.camera_alt, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         SizedBox(height: 16),
@@ -182,55 +253,63 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildImagePicker(),
-                _buildTextField(
+                _buildProfileImagePicker(
+                  label: '프로필 이미지',
+                  imageFile: _profileImage,
+                  imageUrl: _profileImageUrl,
+                  pickImage: _pickProfileImage,
+                ),
+                _buildBannerImagePicker(
+                  label: '배너 이미지',
+                  imageFile: _bannerImage,
+                  imageUrl: _bannerImageUrl,
+                  pickImage: _pickBannerImage,
+                ),
+                Text('마켓이름', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                TextField(
                   controller: _marketNameController,
-                  label: '마켓 이름',
-                  isRequired: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '마켓 이름을 입력해 주세요.';
-                    }
-                    return null;
-                  },
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                  ),
                 ),
-                _buildTextField(
+                SizedBox(height: 16),
+                Text('소개글', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                TextField(
                   controller: _marketDescriptionController,
-                  label: '소개글',
-                  isRequired: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '소개글을 입력해 주세요.';
-                    }
-                    return null;
-                  },
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  keyboardType: TextInputType.multiline,
+                  minLines: 1,
+                  maxLines: null,
                 ),
-                _buildTextField(
+                SizedBox(height: 16),
+                Text('CS 전화번호', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                TextField(
                   controller: _csPhoneController,
-                  label: 'CS 전화번호',
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                  ),
                   keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'CS 전화번호를 입력해 주세요.';
-                    }
-                    return null;
-                  },
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                _buildTextField(
+                SizedBox(height: 16),
+                Text('CS 이메일', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                TextField(
                   controller: _csemailController,
-                  label: 'CS 이메일',
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                  ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '이메일을 입력해 주세요.';
-                    } else if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                      return '유효한 이메일 주소를 입력해 주세요.';
-                    }
-                    return null;
-                  },
                 ),
                 SizedBox(height: 20),
                 Text(
@@ -248,33 +327,6 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    bool isRequired = false,
-    bool readOnly = false,
-    Widget? suffixIcon,
-    TextInputType keyboardType = TextInputType.text,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: isRequired ? '$label *' : label,
-          border: OutlineInputBorder(),
-          suffixIcon: suffixIcon,
-        ),
-        readOnly: readOnly,
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        validator: validator,
       ),
     );
   }
