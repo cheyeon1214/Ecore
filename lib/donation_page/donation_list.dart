@@ -90,7 +90,7 @@ class _DonationListState extends State<DonationList> {
   }
 
   Widget _postHeader(DonaPostModel donaPost) {
-    // Use the first image in the list or a placeholder
+    // 이미지 크기 조정 (1.5배 확대)
     final String firstImageUrl = donaPost.img.isNotEmpty ? donaPost.img[0] : 'https://via.placeholder.com/100';
 
     return OutlinedButton(
@@ -106,24 +106,25 @@ class _DonationListState extends State<DonationList> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
         backgroundColor: Colors.white,
         side: BorderSide(color: Colors.grey[300]!, width: 1), // Light gray border color
-        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Increased vertical padding
+        padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0), // 패딩 약간 늘림
       ),
       child: Row(
         children: [
+          // 이미지 크기 조정 (1.5배 확대)
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(6.0), // 패딩 약간 늘림
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10.0), // Adjust radius as needed
               child: CachedNetworkImage(
                 imageUrl: firstImageUrl,
-                width: 110,
-                height: 110,
+                width: 105, // 이미지 너비 증가
+                height: 105, // 이미지 높이 증가
                 fit: BoxFit.cover,
                 errorWidget: (context, url, error) => Icon(Icons.error),
               ),
             ),
           ),
-          SizedBox(width: 10.0),
+          SizedBox(width: 12.0), // 텍스트와 이미지 간의 간격 약간 증가
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,18 +132,11 @@ class _DonationListState extends State<DonationList> {
                 Text(
                   donaPost.title,
                   style: TextStyle(
-                    fontSize: 20, // Increase font size
-                    fontWeight: FontWeight.bold, // Make the font bold
+                    fontSize: 18, // 텍스트 크기 약간 증가
+                    fontWeight: FontWeight.normal, // Make the font bold
                     color: Colors.black87,
                   ),
                 ),
-                // Text(
-                //   '${donaPost.price}원',
-                //   style: TextStyle(
-                //     fontSize: 20, // Adjust font size for price
-                //     color: Colors.grey[700], // Change color to gray
-                //   ),
-                // ),
               ],
             ),
           ),

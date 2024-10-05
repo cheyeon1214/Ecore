@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'edit_market_info.dart';
 import 'edit_my_market.dart';
+import 'edit_seller_info.dart';
 
 class MyMarketSettings extends StatelessWidget {
   final String marketId;
@@ -22,13 +24,13 @@ class MyMarketSettings extends StatelessWidget {
             _buildSettingsButton(
               context,
               icon: Icons.edit,
-              text: '프로필 편집',
+              text: '마켓 정보 편집',
               onTap: () {
                 // 프로필 편집 페이지로 이동
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditMarketProfilePage(marketId: marketId), // 예시: 프로필 편집 페이지
+                    builder: (context) => EditMarketInfoPage(marketId: marketId), // 예시: 프로필 편집 페이지
                   ),
                 );
               },
@@ -64,13 +66,13 @@ class MyMarketSettings extends StatelessWidget {
             _buildSettingsButton(
               context,
               icon: Icons.info,
-              text: '마켓 정보 편집',
+              text: '판매자 정보 편집',
               onTap: () {
                 // 마켓 정보 편집 페이지로 이동
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MyMarketSettings(marketId: marketId), // 마켓 정보 편집 페이지
+                    builder: (context) => EditSellerInfoForm(marketId: marketId), // 마켓 정보 편집 페이지
                   ),
                 );
               },
