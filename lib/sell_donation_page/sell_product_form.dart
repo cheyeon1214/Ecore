@@ -149,12 +149,12 @@ class _SellProductFormState extends State<SellProductForm> {
       }
     }
   }
-
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _bodyController = TextEditingController();
+  //
+  // final TextEditingController _titleController = TextEditingController();
+  // final TextEditingController _priceController = TextEditingController();
+  // final TextEditingController _bodyController = TextEditingController();
   final TextEditingController _stockController = TextEditingController(); // 재고 컨트롤러 추가
-  String? _categoryValue;
+  // String? _categoryValue;
 
   void _showLoadingDialog() {
     showDialog(

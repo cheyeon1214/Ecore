@@ -1,3 +1,4 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:ecore/search/market_feedpage_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -125,6 +126,14 @@ class _MarketDetailState extends State<MarketDetail> {
                           ),
                         ],
                       ),
+                      Spacer(), // 오른쪽 정렬을 위해 Spacer 추가
+                      IconButton(
+                        icon: Icon(Icons.info, color: Colors.green[500]), // info 아이콘 추가
+                        onPressed: () {
+                          // info 버튼 동작 (팝업을 띄우거나 새로운 페이지로 이동)
+                          _showMarketInfo(context, market);
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -153,6 +162,55 @@ class _MarketDetailState extends State<MarketDetail> {
           ),
         );
       },
+    );
+  }
+
+  // 마켓 정보 팝업
+  void _showMarketInfo(BuildContext context, MarketModel market) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text('마켓 정보'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _infoRow('상호명', market.name),
+              _infoRow('대표자명', market.seller_name ?? 'N/A'),
+              _infoRow('사업자등록번호', market.business_number ?? 'N/A'),
+              _infoRow('문의메일', market.email ?? 'N/A'),
+              _infoRow('문의전화', market.cs_phone ?? 'N/A'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 팝업 닫기
+              },
+              child: Text('닫기'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _infoRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Text(
+            '$title: ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
     );
   }
 }
