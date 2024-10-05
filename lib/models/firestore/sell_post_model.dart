@@ -13,6 +13,7 @@ class SellPostModel {
   final DateTime createdAt;
   final int viewCount;
   final int shippingFee;
+  final int stock; // 재고 필드 추가
   final DocumentReference reference;
 
   SellPostModel({
@@ -25,8 +26,9 @@ class SellPostModel {
     required this.marketId,
     required this.createdAt,
     required this.viewCount,
-    required this.reference,
     required this.shippingFee,
+    required this.stock, // 재고 필드 추가
+    required this.reference,
   });
 
   // Map<String, dynamic>으로 변환
@@ -42,13 +44,14 @@ class SellPostModel {
       KEY_SHIPPINGFEE : shippingFee,
       KEY_SELL_CREATED_AT: Timestamp.fromDate(createdAt),
       KEY_SELL_VIEW_COUNT: viewCount,
+      KEY_SELL_STOCK: stock,
     };
   }
 
   // Firestore의 Map 데이터를 객체로 변환
   SellPostModel.fromMap(Map<String, dynamic> map, this.sellId, {required this.reference})
       : title = map[KEY_SELLTITLE] ?? '',
-        shippingFee = (map[KEY_SHIPPINGFEE] as num).toInt() ?? 0,
+        shippingFee = (map[KEY_SHIPPINGFEE] as num?)?.toInt() ?? 0, // Null 처리
         marketId = map[KEY_SELL_MARKETID] ?? '',
         img = (map[KEY_SELLIMG] is String)
             ? [map[KEY_SELLIMG]] // String일 경우 리스트로 변환
@@ -57,14 +60,15 @@ class SellPostModel {
         category = map[KEY_SELLCATEGORY] ?? '기타',
         body = map[KEY_SELLBODY] ?? '내용 없음',
         createdAt = (map[KEY_SELL_CREATED_AT] as Timestamp?)?.toDate() ?? DateTime.now(),
-        viewCount = map[KEY_SELL_VIEW_COUNT] ?? 0;
+        viewCount = map[KEY_SELL_VIEW_COUNT] ?? 0,
+        stock = (map['stock'] as num?)?.toInt() ?? 0; // Null 처리
 
   // DocumentSnapshot에서 객체 생성
   SellPostModel.fromSnapshot(DocumentSnapshot snapshot)
       : this.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id, reference: snapshot.reference);
 }
 
-
+// 사용자 마켓 매칭 여부 확인 함수
 Future<bool> isUserMarketMatched(SellPostModel sellPost) async {
   try {
     final user = FirebaseAuth.instance.currentUser;
