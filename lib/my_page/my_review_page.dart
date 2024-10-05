@@ -169,7 +169,7 @@ class _MyReviewPageState extends State<MyReviewPage> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Divider(color: Colors.black, thickness: 1.5),
+                          Divider(color: Colors.grey, thickness: 1),
                           // 날짜 구분 선
                           SizedBox(height: 8.0),
                           Text(
@@ -276,7 +276,7 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.edit, color: Colors.blue),
+                                    icon: Icon(Icons.edit, color: Colors.grey),
                                     onPressed: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
@@ -292,7 +292,7 @@ class _MyReviewPageState extends State<MyReviewPage> {
                                     },
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    icon: Icon(Icons.delete, color: Colors.grey),
                                     onPressed: () async {
                                       final confirm = await showDialog<bool>(
                                         context: context,

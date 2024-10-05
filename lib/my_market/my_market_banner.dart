@@ -7,7 +7,8 @@ import 'edit_my_market.dart';
 import 'my_market_feedpage.dart';
 import 'my_market_productpage.dart';
 import 'my_market_reviewpage.dart';
-import 'my_market_search.dart';  // 새로운 MyMarketProductpage 위젯을 import
+import 'my_market_search.dart';
+import 'my_market_settings.dart';  // 새로운 MyMarketProductpage 위젯을 import
 
 class MyMarketBanner extends StatefulWidget {
   final MarketModel market; // MarketModel을 필수 인자로 받음
@@ -156,7 +157,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => EditMarketProfilePage(marketId: market.marketId),
+                              builder: (context) => MyMarketSettings(marketId: market.marketId),
                             ),
                           );
                         },

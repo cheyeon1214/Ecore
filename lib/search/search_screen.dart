@@ -40,7 +40,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _loadPopularSearches() async {
     final popularSearches = await _searchService.getPopularSearches();
     setState(() {
-      _popularSearches = popularSearches;
+      _popularSearches = popularSearches.take(6).toList(); // 6위까지만 표시
     });
   }
 
@@ -126,59 +126,61 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 최근 검색어가 있는 경우에만 표시
-            if (_recentSearches.isNotEmpty) ...[
-              Text('최근 검색어', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _recentSearches.map((term) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: GestureDetector(
-                        onTap: () => _onRecentSearchTap(term),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[100], // 배경색
-                            borderRadius: BorderRadius.circular(20.0), // 동그란 모서리
-                            border: Border.all(color: Colors.blue), // 테두리 색상
-                          ),
-                          child: Text(
-                            term,
-                            style: TextStyle(fontSize: 16, color: Colors.black),
+      body: SingleChildScrollView(  // 스크롤이 가능하도록 수정
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 최근 검색어가 있는 경우에만 표시
+              if (_recentSearches.isNotEmpty) ...[
+                Text('최근 검색어', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _recentSearches.map((term) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: GestureDetector(
+                          onTap: () => _onRecentSearchTap(term),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100], // 배경색
+                              borderRadius: BorderRadius.circular(20.0), // 동그란 모서리
+                              border: Border.all(color: Colors.blue), // 테두리 색상
+                            ),
+                            child: Text(
+                              term,
+                              style: TextStyle(fontSize: 16, color: Colors.black),
+                            ),
                           ),
                         ),
-                      ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                SizedBox(height: 20),
+              ],
+
+              // 인기 검색어가 있는 경우에만 표시
+              if (_popularSearches.isNotEmpty) ...[
+                Text('인기 검색어', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 10),
+                Column(
+                  children: _popularSearches.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    String term = entry.value['term'];
+                    return ListTile(
+                      title: Text('${index + 1}. $term'),
+                      onTap: () => _onPopularSearchTap(term),
                     );
                   }).toList(),
                 ),
-              ),
-              SizedBox(height: 20),
+              ],
             ],
-
-            // 인기 검색어가 있는 경우에만 표시
-            if (_popularSearches.isNotEmpty) ...[
-              Text('인기 검색어', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              Column(
-                children: _popularSearches.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  String term = entry.value['term'];
-                  return ListTile(
-                    title: Text('${index + 1}. $term'),
-                    onTap: () => _onPopularSearchTap(term),
-                  );
-                }).toList(),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

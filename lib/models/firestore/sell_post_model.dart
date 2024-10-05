@@ -12,6 +12,7 @@ class SellPostModel {
   final String body;
   final DateTime createdAt;
   final int viewCount;
+  final int shippingFee;
   final DocumentReference reference;
 
   SellPostModel({
@@ -25,6 +26,7 @@ class SellPostModel {
     required this.createdAt,
     required this.viewCount,
     required this.reference,
+    required this.shippingFee,
   });
 
   // Map<String, dynamic>으로 변환
@@ -37,6 +39,7 @@ class SellPostModel {
       KEY_SELLPRICE: price,
       KEY_SELLCATEGORY: category,
       KEY_SELLBODY: body,
+      KEY_SHIPPINGFEE : shippingFee,
       KEY_SELL_CREATED_AT: Timestamp.fromDate(createdAt),
       KEY_SELL_VIEW_COUNT: viewCount,
     };
@@ -45,6 +48,7 @@ class SellPostModel {
   // Firestore의 Map 데이터를 객체로 변환
   SellPostModel.fromMap(Map<String, dynamic> map, this.sellId, {required this.reference})
       : title = map[KEY_SELLTITLE] ?? '',
+        shippingFee = (map[KEY_SHIPPINGFEE] as num).toInt() ?? 0,
         marketId = map[KEY_SELL_MARKETID] ?? '',
         img = (map[KEY_SELLIMG] is String)
             ? [map[KEY_SELLIMG]] // String일 경우 리스트로 변환
