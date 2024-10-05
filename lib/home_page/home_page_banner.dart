@@ -66,17 +66,20 @@ class _TitleBannerState extends State<TitleBanner> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Row(
           children: [
-            Expanded(
-              child: Text('ecore'),
+            Image.asset(
+              'assets/images/ecore_logo.png', // 로고 이미지 경로
+              height: 40, // 로고의 높이를 설정 (필요에 따라 크기 조정)
             ),
+            Spacer(), // 텍스트와 검색 아이콘 사이의 공간 확보
             IconButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SearchScreen(isDonationSearch:null),
+                    builder: (context) => SearchScreen(isDonationSearch: null),
                   ),
                 );
               },
