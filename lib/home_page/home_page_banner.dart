@@ -66,7 +66,6 @@ class _TitleBannerState extends State<TitleBanner> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
         title: Row(
           children: [
             Image.asset(
@@ -85,7 +84,7 @@ class _TitleBannerState extends State<TitleBanner> {
               },
               icon: Icon(
                 CupertinoIcons.search,
-                color: Colors.blueGrey,
+                color: Colors.blue[900],
               ),
             ),
           ],

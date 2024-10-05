@@ -1,3 +1,4 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:ecore/home_page/home_page_banner.dart';
 import 'package:ecore/my_page/my_page_banner.dart';
 import 'package:flutter/material.dart';
@@ -39,11 +40,13 @@ class _HomePageState extends State<HomePage> {
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: baseColor,
+        type: BottomNavigationBarType.fixed,
         showSelectedLabels: false, // 눌렀을 때 안움직이게
         showUnselectedLabels: false,
         items: btmNavItems,
-        unselectedItemColor: Colors.grey,
-        selectedItemColor: Colors.black87,
+        unselectedItemColor: iconColor,
+        selectedItemColor: Colors.blue[900],
         currentIndex: _selctedIndex, // 현재 인덱스는 선택된 인덱스
         onTap: _onBtmItemClick, // 눌렀을 때 인덱스 값을 전달함 -> 함수 실행
       ),
