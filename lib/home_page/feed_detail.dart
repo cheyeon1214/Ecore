@@ -162,6 +162,18 @@ class _FeedDetailState extends State<FeedDetail> {
                 children: [
                   _marketInfoBuild(context),
                   SizedBox(height: 16),
+                  // 재고 정보 출력 추가 (재고 0일 때 '재고 없음'으로 출력)
+                  Text(
+                    widget.sellPost.stock > 0
+                        ? '재고: ${widget.sellPost.stock} 개' // 재고가 있으면 수량 출력
+                        : '재고 없음', // 재고가 0일 경우
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: widget.sellPost.stock > 0 ? Colors.black : Colors.red,
+                    ),
+                  ),
+                  SizedBox(height: 16),
                   Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
                 ],
               ),
