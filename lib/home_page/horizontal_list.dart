@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/firestore/sell_post_model.dart'; // SellPostModel 경로에 맞게 조정
-import 'feed_detail.dart'; // FeedDetail 경로에 맞게 조정
+import '../donation_page/donation_page_banner.dart';
+import '../models/firestore/sell_post_model.dart';
+import 'feed_detail.dart';
+import 'feed_list.dart';
 
 class HorizontalListSection extends StatelessWidget {
   final Stream<List<SellPostModel>> stream;
@@ -49,7 +51,23 @@ class HorizontalListSection extends StatelessWidget {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No items found'));
+                  return Center(
+                    child: TextButton(
+                      onPressed: () {
+                        // 상품 보러가기 버튼 클릭 시 SellList로 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DonationBanner(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        '상품 보러가기 🤣',
+                        style: TextStyle(fontSize: 16, color: Colors.blue),
+                      ),
+                    ),
+                  );
                 }
 
                 final items = snapshot.data!.take(6).toList(); // Limit to 6 items

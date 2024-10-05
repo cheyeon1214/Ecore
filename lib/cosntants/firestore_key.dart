@@ -25,6 +25,7 @@ const KEY_SELLIMG = 'img';
 const KEY_SELLPRICE = 'price';
 const KEY_SELLCATEGORY = 'category';
 const KEY_SELLBODY = 'body';
+const KEY_SHIPPINGFEE = 'shippingFee';
 const KEY_SELL_CREATED_AT = 'createdAt';
 const KEY_SELL_VIEW_COUNT = 'viewCount';
 

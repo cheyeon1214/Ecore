@@ -96,6 +96,18 @@ class _TitleBannerState extends State<TitleBanner> {
               child: Center(child: CareouselSlider()),
             ),
             HorizontalListSection(
+              stream: businessSellPostsStream(), // Stream 설정
+              title: '사업자 등록된 마켓의 상품',
+              onMorePressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BusinessMarketPost(), // 실제 페이지로 변경
+                  ),
+                );
+              },
+            ),
+            HorizontalListSection(
               stream: userModel.recentlyViewedStream,
               title: '최근 본 상품',
               onMorePressed: () {
@@ -115,18 +127,6 @@ class _TitleBannerState extends State<TitleBanner> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => FavoriteListPage(), // 실제 페이지로 변경
-                  ),
-                );
-              },
-            ),
-            HorizontalListSection(
-              stream: businessSellPostsStream(), // Stream 설정
-              title: '사업자 등록된 마켓의 상품',
-              onMorePressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BusinessMarketPost(), // 실제 페이지로 변경
                   ),
                 );
               },

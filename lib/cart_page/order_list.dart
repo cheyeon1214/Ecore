@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../my_page/create_review_page.dart';
+import 'order_detail_page.dart';
 
 class OrderList extends StatefulWidget {
   const OrderList({super.key});
@@ -98,7 +99,6 @@ class _OrderListState extends State<OrderList> {
 
                     final filteredOrders = itemsSnapshot.data!.where((order) {
                       final items = order['items'] as List<dynamic>?;
-                      // items가 null이 아니고 검색어와 일치하는 경우 필터링
                       return items != null && items.any((item) {
                         return item['title']
                             .toString()
@@ -130,7 +130,10 @@ class _OrderListState extends State<OrderList> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _viewDate(date),
+                              _viewDate(
+                                date,
+                                groupedOrders[date]!, // 해당 날짜의 모든 주문 항목 전달
+                              ),
                               ...groupedOrders[date]!.map((order) {
                                 return Column(
                                   children: (order['items'] as List<dynamic>?)
@@ -139,7 +142,8 @@ class _OrderListState extends State<OrderList> {
                                       .map((entry) {
                                     final item = entry.value;
                                     final index = entry.key;
-                                    final List<String> imageList = (item['img'] is List)
+                                    final List<String> imageList =
+                                    (item['img'] is List)
                                         ? (item['img'] as List<dynamic>)
                                         .cast<String>()
                                         : [
@@ -152,7 +156,7 @@ class _OrderListState extends State<OrderList> {
                                       item,
                                       order['id'], // 주문 ID 전달
                                       index, // 아이템 인덱스 전달
-                                      item['marketId'] ?? 'unknown_store', // 가게 ID 전달
+                                      item['marketId'] ?? 'unknown_store',
                                     );
                                   }).toList() ??
                                       [],
@@ -173,7 +177,8 @@ class _OrderListState extends State<OrderList> {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _fetchOrdersWithItems(List<QueryDocumentSnapshot> orders) async {
+  Future<List<Map<String, dynamic>>> _fetchOrdersWithItems(
+      List<QueryDocumentSnapshot> orders) async {
     List<Map<String, dynamic>> ordersWithItems = [];
 
     for (var orderDoc in orders) {
@@ -201,7 +206,8 @@ class _OrderListState extends State<OrderList> {
     return ordersWithItems;
   }
 
-  Padding _buildCard(List<String> imageList, item, String orderId, int itemIndex, String marketId) {
+  Padding _buildCard(
+      List<String> imageList, item, String orderId, int itemIndex, String marketId) {
     bool isReviewed = item['reviewed'] ?? false;
 
     return Padding(
@@ -210,7 +216,6 @@ class _OrderListState extends State<OrderList> {
         color: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey, width: 1),
         ),
         elevation: 3,
         child: Padding(
@@ -242,8 +247,7 @@ class _OrderListState extends State<OrderList> {
                     child: Text('리뷰 작성'),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.black,
-                      backgroundColor: Colors.white,
-                      side: BorderSide(color: Colors.grey, width: 2),
+                      backgroundColor: Color.fromRGBO(230, 245, 220, 1.0), // 버튼 색상 변경
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -258,8 +262,7 @@ class _OrderListState extends State<OrderList> {
     );
   }
 
-
-  Padding _viewDate(String date) {
+  Padding _viewDate(String date, List<Map<String, dynamic>> ordersForDate) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -286,7 +289,13 @@ class _OrderListState extends State<OrderList> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: TextButton(
                   onPressed: () {
-                    // 주문 상세로 이동하는 로직 추가
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            OrderDetailPage(ordersForDate: ordersForDate),
+                      ),
+                    );
                   },
                   child: Text(
                     '주문상세 >',

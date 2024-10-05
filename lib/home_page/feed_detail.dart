@@ -23,6 +23,7 @@ class _FeedDetailState extends State<FeedDetail> {
   int _currentIndex = 0; // 현재 사진의 인덱스를 저장할 변수
   bool _isFavorite = false;
   String? marketUserId;
+  String? marketName; // 추가: 마켓 이름을 저장할 변수
   String? currentUserId;
 
   @override
@@ -44,6 +45,7 @@ class _FeedDetailState extends State<FeedDetail> {
       final marketData = marketDoc.data();
       setState(() {
         marketUserId = marketData?['userId'];
+        marketName = marketData?['name']; // 추가: 마켓 이름 가져오기
       });
     } catch (e) {
       print('Error fetching market userId: $e');
@@ -83,7 +85,9 @@ class _FeedDetailState extends State<FeedDetail> {
       'price': widget.sellPost.price,
       'category': widget.sellPost.category,
       'body': widget.sellPost.body,
-      'marketId' : widget.sellPost.marketId,
+      'marketId': widget.sellPost.marketId,
+      'marketName': marketName, // 추가: 마켓 이름 추가
+      'shippingFee': widget.sellPost.shippingFee,
       'reference': widget.sellPost.reference.path,
     };
 
@@ -253,7 +257,6 @@ class _FeedDetailState extends State<FeedDetail> {
     );
   }
 
-
   Row _marketView(String marketImage, String marketName, String businessNumber) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,9 +275,22 @@ class _FeedDetailState extends State<FeedDetail> {
               overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: 8),
-            Text(
-              marketName,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  marketName,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                if (businessNumber.isNotEmpty) // 비즈니스 넘버가 존재할 때 체크 아이콘 추가
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4.0), // 아이콘과 텍스트 간격 조절
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.blue, // 체크 아이콘 색상 설정
+                      size: 18, // 아이콘 크기 설정
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -302,7 +318,6 @@ class _FeedDetailState extends State<FeedDetail> {
                 },
               );
             } else {
-              // 조건을 만족하지 않을 때만 채팅 화면으로 이동
               Navigator.push(
                 context,
                 MaterialPageRoute(
