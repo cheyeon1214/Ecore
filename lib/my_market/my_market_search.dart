@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../home_page/feed_detail.dart';
 import '../models/firestore/sell_post_model.dart';
 
 class SearchPage extends StatefulWidget {
@@ -137,7 +138,12 @@ class _SearchPageState extends State<SearchPage> {
 
                     return GestureDetector(
                       onTap: () {
-                        // 상세 페이지로 이동하는 로직 추가
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FeedDetail(sellPost: sellPost),
+                          ),
+                        );
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
