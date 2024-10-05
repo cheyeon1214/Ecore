@@ -1,3 +1,4 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:ecore/sell_donation_page/sell_product_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -74,8 +75,7 @@ class _DonationBannerState extends State<DonationBanner> {
           if (_selectedCategory == 'donation')
             Positioned(
               bottom: 15,
-              left: 135,
-              right: 135,
+              right: 20, // 오른쪽으로 이동
               child: ElevatedButton(
                 onPressed: () {
                   // 기부하기 버튼을 눌렀을 때
@@ -83,13 +83,13 @@ class _DonationBannerState extends State<DonationBanner> {
                       builder: (context) => DonaProductForm()));
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black, // 버튼 색상
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  backgroundColor: baseColor, // 버튼 색상
+                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 12), // 가로 세로 길이를 조금 줄임
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8), // 모서리 둥근 정도 조절
+                    borderRadius: BorderRadius.circular(20), // 둥근 정도 유지
                   ),
                 ),
-                child: Text('기부하기', style: TextStyle(fontSize: 18, color: Colors.white)),
+                child: Text('+ 기부하기', style: TextStyle(fontSize: 18, color: Colors.grey[800])),
               ),
             ),
         ],

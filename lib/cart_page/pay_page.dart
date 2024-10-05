@@ -139,6 +139,7 @@ class _PayPageState extends State<PayPage> {
         viewCount: item['viewCount'] ?? 0,
         shippingFee: item['shippingFee'] ?? 0, // 배송비
         reference: sellPostRef,
+        stock: item['sellId'] ?? '',
       );
     }).toList();
 

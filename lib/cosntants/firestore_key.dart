@@ -29,6 +29,7 @@ const KEY_SELLBODY = 'body';
 const KEY_SHIPPINGFEE = 'shippingFee';
 const KEY_SELL_CREATED_AT = 'createdAt';
 const KEY_SELL_VIEW_COUNT = 'viewCount';
+const KEY_SELL_STOCK = 'stock';
 
 // Keys for DONA_PRODUCTS collection
 const KEY_DONA_USERKEY = 'userId'; // 외래키

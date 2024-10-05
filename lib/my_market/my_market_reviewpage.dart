@@ -157,6 +157,27 @@ class MyMarketReviewPage extends StatelessWidget {
                                   review['rating'].toString(),
                                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16), // 평점 굵게
                                 ),
+                                Spacer(),
+                                // 세로로 ... 버튼
+                                PopupMenuButton<String>(
+                                  onSelected: (String value) {
+                                    if (value == 'report') {
+                                      // 신고 처리 로직 추가
+                                      _showReportDialog(context);
+                                    } else if (value == 'hide') {
+                                      // 숨기기 로직 추가
+                                    }
+                                  },
+                                  icon: Icon(Icons.more_vert, color: Colors.grey),
+                                  itemBuilder: (BuildContext context) {
+                                    return [
+                                      PopupMenuItem(
+                                        value: 'report',
+                                        child: Text('신고'),
+                                      ),
+                                    ];
+                                  },
+                                ),
                               ],
                             ),
                             SizedBox(height: 4),
@@ -217,6 +238,44 @@ class MyMarketReviewPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('신고 이유를 선택해주세요'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                _buildReportOption(context, '부적절한 내용'),
+                _buildReportOption(context, '스팸'),
+                _buildReportOption(context, '기타'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('취소'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReportOption(BuildContext context, String reason) {
+    return ListTile(
+      title: Text(reason),
+      onTap: () {
+        // 신고 로직 추가
+        Navigator.of(context).pop();
+      },
     );
   }
 }
