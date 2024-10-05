@@ -133,9 +133,11 @@ class _DonaDetailState extends State<DonaDetail> {
 
     final cart = userDoc.data()?['cart'] ?? [];
     final newCartItem = {
+      'donaUser' : widget.donaPost.userId,
       'donaId': widget.donaPost.donaId,
       'title': widget.donaPost.title,
       'img': widget.donaPost.img,
+      'point' : widget.donaPost.point,
       'price': 0,
       'category': widget.donaPost.category,
       'body': widget.donaPost.body,

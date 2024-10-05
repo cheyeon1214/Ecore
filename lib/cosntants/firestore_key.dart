@@ -6,6 +6,7 @@ const COLLECTION_MARKETS = 'Markets';
 
 // Keys for USERS collection
 const KEY_USERKEY = 'user_key';
+const KEY_USER_POINT = 'point';
 const KEY_PHONE = 'phone';
 const KEY_EMAIL = 'email';
 const KEY_NAME = 'username';
@@ -39,6 +40,7 @@ const KEY_DONAPRICE = 'price';
 const KEY_DONACATEGORY = 'category';
 const KEY_DONACOLOR = 'color';
 const KEY_DONAMATERIAL = 'material';
+const KEY_DONA_POINT = 'point';
 const KEY_DONACONDITION = 'condition';
 const KEY_DONABODY = 'body';
 const KEY_DONA_CREATED_AT = 'createdAt';

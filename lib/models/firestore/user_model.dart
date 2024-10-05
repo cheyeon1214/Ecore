@@ -16,12 +16,14 @@ class UserModel extends ChangeNotifier {
   List<dynamic> cart = [];
   List<String> address = [];
   String phone = '';
+  int points = 0;
   DocumentReference? reference;
 
   UserModel({
     this.userKey = '',
     this.profileImg = '',
     this.email = '',
+    this.points = 0,
     List<String>? myPosts,
     List<dynamic>? likedPosts,
     this.username = '',
@@ -37,6 +39,7 @@ class UserModel extends ChangeNotifier {
   UserModel.fromMap(Map<String, dynamic> map, this.userKey, {this.reference})
       : username = map[KEY_USERNAME] ?? '',
         profileImg = map[KEY_PROFILEIMG] ?? '',
+        points = map[KEY_USER_POINT] ?? 0,
         email = map[KEY_EMAIL] ?? '',
         phone = map[KEY_PHONE] ?? '',
         myPosts = List.from(map[KEY_MYPOSTS] ?? []),
@@ -58,6 +61,7 @@ class UserModel extends ChangeNotifier {
       KEY_EMAIL: email,
       KEY_MYPOSTS: [],
       KEY_CART: [],
+      KEY_USER_POINT : 0,
       KEY_PHONE: "",
       KEY_USER_MARKETID : [],
       KEY_ADDRESS : []

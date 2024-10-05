@@ -57,7 +57,8 @@ class _CartListState extends State<CartList> {
                   itemBuilder: (context, index) {
                     final cartItem = cartItems[index];
                     String imageUrl;
-                    String marketName = cartItem['marketName'] ?? 'Unknown Market';
+                    String marketName = cartItem['donaId'] != null ? '기부글' : cartItem['marketName'] ?? 'Unknown Market';
+
                     int shippingFee;
 
                     // 기부글이면 배송비 1000원, 아니면 해당 상품의 배송비를 사용

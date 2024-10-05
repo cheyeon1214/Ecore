@@ -20,6 +20,14 @@ class _DonaProductFormState extends State<DonaProductForm> {
   // 현재 로그인된 사용자 정보 가져오기
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _bodyController = TextEditingController();
+  final TextEditingController _materialController = TextEditingController();
+  final TextEditingController _colorController = TextEditingController();
+  final TextEditingController _pointController = TextEditingController(); // 포인트 입력 필드
+  String? _categoryValue;
+  String? _selectedCondition = 'S';
+
   Future<void> getImages() async {
     if (_images!.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -80,6 +88,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
       final color = _colorController.text;
       final condition = _selectedCondition;
       final body = _bodyController.text;
+      final point = int.tryParse(_pointController.text) ?? 0; // 포인트 입력 값
 
       _showLoadingDialog();
 
@@ -100,7 +109,8 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'img': imageUrls,
           'viewCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
-          'userId': currentUser?.uid, // Users 컬렉션 속 현재 사용자의 UID 추가
+          'userId': currentUser?.uid, // 현재 사용자의 UID 추가
+          'point': point, // 포인트 필드 추가
         });
 
         Navigator.of(context).pop();
@@ -120,13 +130,6 @@ class _DonaProductFormState extends State<DonaProductForm> {
       }
     }
   }
-
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _bodyController = TextEditingController();
-  final TextEditingController _materialController = TextEditingController();
-  final TextEditingController _colorController = TextEditingController();
-  String? _categoryValue;
-  String? _selectedCondition = 'S';
 
   void _showLoadingDialog() {
     showDialog(
@@ -360,6 +363,18 @@ class _DonaProductFormState extends State<DonaProductForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '자세한 설명을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _pointController,
+                decoration: InputDecoration(labelText: '포인트'),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '포인트를 입력해주세요';
                   }
                   return null;
                 },

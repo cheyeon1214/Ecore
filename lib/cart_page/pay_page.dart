@@ -17,6 +17,7 @@ class PayPage extends StatefulWidget {
 }
 
 class _PayPageState extends State<PayPage> {
+  int totalShippingFee = 0; // 배송비 변수 추가
   int? _selectedSavedInfoIndex; // 추가: 변수를 선언하고 초기화
 
   final user = FirebaseAuth.instance.currentUser;
@@ -25,6 +26,7 @@ class _PayPageState extends State<PayPage> {
 
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _pointController = TextEditingController(); // 포인트 입력용 컨트롤러
 
   String? _phoneNumber;
   String? _address;
@@ -34,11 +36,16 @@ class _PayPageState extends State<PayPage> {
   int totalProductPrice = 0;
   int donaQuantity = 0; // 기부글 수량
   Set<String> processedMarkets = {}; // 이미 처리된 마켓을 저장하는 Set
+  int usedPoints = 0; // 사용된 포인트
+  int userPoints = 0; // 유저가 보유한 포인트
+  int remainingPrice = 0; // 포인트 적용 후 남은 결제 금액
+  int discount = 0; // 할인 금액
 
   @override
   void initState() {
     super.initState();
     _fetchUsername();
+    _fetchUserPoints();
     getCartItems();
   }
 
@@ -52,13 +59,27 @@ class _PayPageState extends State<PayPage> {
 
         setState(() {
           username = userDoc['username'] ?? "No username";
+          userPoints = userDoc['points'] ?? 0; // 보유 포인트 가져오기
         });
+
       } catch (e) {
         print("Error fetching username: $e");
         setState(() {
           username = "Error loading username";
         });
       }
+    }
+  }
+
+  Future<void> _fetchUserPoints() async {
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user!.uid)
+          .get();
+      setState(() {
+        userPoints = userDoc['points'] ?? 0; // 유저의 보유 포인트 가져오기
+      });
     }
   }
 
@@ -89,6 +110,7 @@ class _PayPageState extends State<PayPage> {
           };
           totalProductPrice = totalPrice;
           donaQuantity = donaCount; // 기부 상품 수량
+          remainingPrice = totalPrice; // 포인트 적용 전 결제 금액
         });
       } else {
         print("User document does not exist.");
@@ -144,25 +166,105 @@ class _PayPageState extends State<PayPage> {
     int totalPriceWithShipping = totalProductPrice + totalShippingFee;
 
     try {
-      // Orders 컬렉션에 저장
-      await FirebaseFirestore.instance.collection('Orders').add({
+      // 주문 정보를 Orders 컬렉션에 저장
+      DocumentReference orderRef = await FirebaseFirestore.instance.collection('Orders').add({
         'userId': user!.uid,
         'username': username,
         'date': FieldValue.serverTimestamp(),
-        'items': widget.cartItems,
-        'totalPrice': totalPriceWithShipping, // 배송비 포함한 총 금액
+        'totalPrice': totalPriceWithShipping - usedPoints, // 포인트 차감 후 총 결제 금액
         'paymentMethod': _selectedPaymentMethod,
         'address': _address ?? '주소 없음',
         'phoneNumber': _phoneNumber ?? '전화번호 없음',
         'shippingStatus': '배송 준비', // 배송 상태 추가
       });
 
+      // 주문 정보를 Users 컬렉션의 orders 서브컬렉션에 저장
+      DocumentReference userOrderRef = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user!.uid)
+          .collection('Orders')
+          .add({
+        'orderId': orderRef.id, // Orders 컬렉션의 주문 ID
+        'totalPrice': totalPriceWithShipping - usedPoints,
+        'paymentMethod': _selectedPaymentMethod,
+        'date': FieldValue.serverTimestamp(),
+        'shippingStatus': '배송 준비',
+      });
+
+      // 각 orderId 아래 items 서브컬렉션에 아이템 추가
+      for (var item in widget.cartItems) {
+        await orderRef.collection('items').add(item); // Orders 컬렉션 안에 items 서브컬렉션 추가
+        await userOrderRef.collection('items').add(item); // Users 컬렉션 안에 orders -> items 서브컬렉션 추가
+      }
+
+      // 포인트 사용 처리 (사용된 포인트 차감 및 기록)
+      if (usedPoints > 0) {
+        await FirebaseFirestore.instance.collection('Users').doc(user!.uid).update({
+          'points': FieldValue.increment(-usedPoints), // 사용된 포인트 차감
+        });
+
+        // 포인트 사용 내역 기록
+        await FirebaseFirestore.instance.collection('Users').doc(user!.uid).collection('PointHistory').add({
+          'point': usedPoints,
+          'timestamp': FieldValue.serverTimestamp(),
+          'type': 'use', // 포인트 사용 기록
+        });
+      }
+
+      // 포인트 적립 처리 (기부글 구매 시)
+      for (var item in widget.cartItems) {
+        if (item['donaId'] != null) {
+          final donaPostRef = FirebaseFirestore.instance.collection('DonaPosts').doc(item['donaId']);
+          final donaPostDoc = await donaPostRef.get();
+
+          if (donaPostDoc.exists) {
+            final donaUserId = donaPostDoc['userId'];
+            final point = donaPostDoc['point'] ?? 0;
+
+            // donaUser에게 포인트 추가
+            final userRef = FirebaseFirestore.instance.collection('Users').doc(donaUserId);
+            await userRef.update({
+              'points': FieldValue.increment(point), // 포인트 증가
+            });
+
+            // 사용자 서브컬렉션에 포인트 기록 저장
+            await userRef.collection('PointHistory').add({
+              'point': point,
+              'timestamp': FieldValue.serverTimestamp(),
+              'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
+            });
+          }
+        }
+      }
+
       // 카트 초기화
       await userModel.clearCart();
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
+    }
+  }
+
+
+  void _applyPoints() {
+    int inputPoints = int.tryParse(_pointController.text) ?? 0;
+
+    if (inputPoints > userPoints) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('사용할 수 있는 포인트를 초과했습니다.')),
+      );
+    } else if (inputPoints > remainingPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('결제 금액을 초과하는 포인트를 사용할 수 없습니다.')),
+      );
+    } else {
+      setState(() {
+        usedPoints = inputPoints;
+        discount = usedPoints; // 할인 금액에 사용한 포인트를 적용
+        remainingPrice = totalProductPrice + totalShippingFee - usedPoints; // 포인트 적용 후 남은 금액
+      });
     }
   }
 
@@ -311,7 +413,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-
   Widget _buildContactForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,26 +511,6 @@ class _PayPageState extends State<PayPage> {
   }
 
   Widget _buildPriceSummary() {
-    // 이미 처리된 마켓을 추적하여 중복 배송비 방지
-    Set<String> processedMarkets = {};
-
-    // 총 배송비 계산
-    int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
-      final marketId = item['marketId'] ?? '';
-
-      if (processedMarkets.contains(marketId)) {
-        return sum; // 이미 처리된 마켓은 배송비 추가하지 않음
-      }
-
-      processedMarkets.add(marketId); // 마켓 ID 추가
-
-      if (item['donaId'] != null) {
-        return sum + 1000; // 기부글은 1000원
-      } else {
-        return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 일반 배송비 계산
-      }
-    });
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -437,11 +518,11 @@ class _PayPageState extends State<PayPage> {
         SizedBox(height: 10),
         _buildPriceRow('배송비', totalShippingFee), // 배송비 표시
         SizedBox(height: 10),
-        _buildPriceRow('할인 금액', 0),
+        _buildPriceRow('할인 금액', discount), // 할인 금액 (포인트 적용 후)
         SizedBox(height: 10),
         Divider(color: Colors.black54, thickness: 1),
         SizedBox(height: 10),
-        _buildPriceRow('총 결제 금액', totalProductPrice + totalShippingFee), // 배송비 포함 총 금액
+        _buildPriceRow('총 결제 금액', remainingPrice), // 포인트 적용 후 총 결제 금액
       ],
     );
   }
@@ -480,23 +561,6 @@ class _PayPageState extends State<PayPage> {
         SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('쿠폰'),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text('사용 가능한 쿠폰 3장'),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10),
-        Row(
-          children: [
             Text('포인트'),
             Expanded(
               child: Center(
@@ -504,6 +568,7 @@ class _PayPageState extends State<PayPage> {
                   width: 150,
                   height: 30,
                   child: TextField(
+                    controller: _pointController, // 포인트 입력 필드 컨트롤러
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                     ),
@@ -517,16 +582,16 @@ class _PayPageState extends State<PayPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 OutlinedButton(
-                  onPressed: () {},
+                  onPressed: _applyPoints, // 포인트 적용 버튼
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
                       color: Colors.black,
                     ),
                   ),
-                  child: Text('전액사용'),
+                  child: Text('적용'),
                 ),
                 Text(
-                  '보유: 0P',
+                  '보유: ${userPoints}P', // 보유 포인트 표시
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[700],
@@ -624,6 +689,7 @@ class _PayPageState extends State<PayPage> {
   void dispose() {
     _phoneController.dispose();
     _addressController.dispose();
+    _pointController.dispose(); // 포인트 입력 컨트롤러 dispose
     super.dispose();
   }
 }
