@@ -20,6 +20,12 @@ class _SellProductFormState extends State<SellProductForm> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _bodyController = TextEditingController();
+  final TextEditingController _shippingFeeController = TextEditingController(); // 배송비 입력 필드 컨트롤러 추가
+  String? _categoryValue;
+
   Future<void> getImages() async {
     if (_images!.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +84,7 @@ class _SellProductFormState extends State<SellProductForm> {
       final price = double.parse(_priceController.text);
       final category = _categoryValue;
       final body = _bodyController.text;
+      final shippingFee = double.parse(_shippingFeeController.text); // 배송비 추가
       final stock = int.parse(_stockController.text); // 재고를 정수로 파싱하여 저장
 
       // 로딩 다이얼로그 표시
@@ -108,6 +115,7 @@ class _SellProductFormState extends State<SellProductForm> {
             'marketId': marketDocumentId, // marketId 필드에 문서 ID를 저장
             'viewCount': 0, // 초기 조회수 0
             'createdAt': FieldValue.serverTimestamp(), // 생성 시간
+            'shippingFee': shippingFee, // 배송비 추가
             'stock': stock, // 재고 필드 추가
           });
 
@@ -317,6 +325,20 @@ class _SellProductFormState extends State<SellProductForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '가격을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              // 배송비 입력 필드 추가
+              TextFormField(
+                controller: _shippingFeeController,
+                decoration: InputDecoration(labelText: '배송비'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '배송비를 입력해주세요';
                   }
                   return null;
                 },
