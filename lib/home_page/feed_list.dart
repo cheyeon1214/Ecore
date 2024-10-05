@@ -156,28 +156,55 @@ class _SellListState extends State<SellList> {
                   );
                 },
               ),
-              Positioned(
-                top: 160, // 세로 버튼 위치를 더 아래로 이동
-                right: -6,
-                child: IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.grey[700]),
-                  onPressed: () {
-                    // 세로 버튼 클릭 시 동작
-                  },
-                ),
-              ),
             ],
           ),
           SizedBox(height: 10), // 이미지와 텍스트 간의 간격 조정
-          Text(
-            '${sellPost.price}원',
-            style: TextStyle(
-              fontSize: 15, // 텍스트 크기를 줄여서 오버플로우 방지
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${sellPost.price}원',
+                  style: TextStyle(
+                    fontSize: 15, // 텍스트 크기를 줄여서 오버플로우 방지
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (String value) {
+                  if (value == 'report') {
+                    _showReportDialog();  // 신고 다이얼로그 호출
+                  } else if (value == 'hide') {
+                    // 숨기기 로직 구현 (추후 추가 가능)
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      value: 'report',
+                      child: Text('신고'),
+                    ),
+                    PopupMenuItem(
+                      value: 'hide',
+                      child: Text('숨기기'),
+                    ),
+                  ];
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    '...',
+                    style: TextStyle(
+                      fontSize: 20, // 가격과 비슷한 크기
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           Text(
             sellPost.title,
@@ -188,6 +215,44 @@ class _SellListState extends State<SellList> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('신고 이유를 선택해주세요'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                _buildReportOption('부적절한 내용'),
+                _buildReportOption('스팸'),
+                _buildReportOption('기타'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('취소'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReportOption(String reason) {
+    return ListTile(
+      title: Text(reason),
+      onTap: () {
+        Navigator.of(context).pop();
+        // 신고 처리 로직 추가
+      },
     );
   }
 
