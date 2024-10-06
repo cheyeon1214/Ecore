@@ -19,6 +19,9 @@ class _AddressEditFormState extends State<AddressEditForm> {
   final TextEditingController _recipientController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
+  bool _isDefaultAddress = false; // 기본 배송지 여부
+  bool _isEditingDefault = false; // 기본 배송지를 수정할 때 체크박스 비활성화 여부
+
   @override
   void dispose() {
     _addressController.dispose();
@@ -55,6 +58,8 @@ class _AddressEditFormState extends State<AddressEditForm> {
           _detailAddressController.text = data['detailAddress'] ?? ''; // 상세주소 필드
           _recipientController.text = data['recipient'] ?? '';
           _phoneController.text = data['phone'] ?? '';
+          _isDefaultAddress = data['isDefault'] ?? false; // 기본 배송지 여부 설정
+          _isEditingDefault = _isDefaultAddress; // 수정할 때 기본 배송지인 경우 체크박스 비활성화
         });
       }
     }
@@ -93,11 +98,37 @@ class _AddressEditFormState extends State<AddressEditForm> {
           'detailAddress': _detailAddressController.text, // 상세주소 필드
           'recipient': _recipientController.text,
           'phone': _phoneController.text,
+          'isDefault': _isDefaultAddress, // 기본 배송지 여부 저장
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
+        // 기본 배송지로 설정되었을 경우, 다른 주소의 기본 배송지 여부를 false로 업데이트
+        if (_isDefaultAddress) {
+          await _updateOtherAddresses();
+        }
+
         // 수정 완료 팝업
         _showSuccessDialog();
+      }
+    }
+  }
+
+  // 기본 배송지로 설정된 다른 주소의 'isDefault' 필드를 false로 업데이트
+  Future<void> _updateOtherAddresses() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.uid)
+          .collection('Addresses')
+          .where('isDefault', isEqualTo: true)
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        if (doc.id != widget.addressId) {
+          await doc.reference.update({'isDefault': false});
+        }
       }
     }
   }
@@ -266,6 +297,23 @@ class _AddressEditFormState extends State<AddressEditForm> {
                 ],
               ),
               SizedBox(height: 16),
+
+              // 기본 배송지 체크 박스
+              Row(
+                children: [
+                  Checkbox(
+                    value: _isDefaultAddress,
+                    onChanged: _isEditingDefault
+                        ? null // 기본 배송지일 때 체크박스를 비활성화
+                        : (bool? value) {
+                      setState(() {
+                        _isDefaultAddress = value ?? false; // 체크 상태 업데이트
+                      });
+                    },
+                  ),
+                  Text('기본 배송지로 설정'),
+                ],
+              ),
 
               // 수정하기 버튼
               ElevatedButton(
