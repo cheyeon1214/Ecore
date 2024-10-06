@@ -26,7 +26,7 @@ class _EditProductFormState extends State<EditProductForm> {
   final TextEditingController _priceController = TextEditingController(); // 가격 입력 필드
   final TextEditingController _bodyController = TextEditingController();
   final TextEditingController _stockController = TextEditingController(); // 재고 입력 필드
-  final TextEditingController _shippingFeeController = TextEditingController(); // 배송비 입력 필드 추가
+  final TextEditingController _shippingFeeController = TextEditingController(); // 배송비 입력 필드
   String? _categoryValue;
 
   @override
@@ -121,7 +121,7 @@ class _EditProductFormState extends State<EditProductForm> {
       final category = _categoryValue;
       final body = _bodyController.text;
       final stock = int.parse(_stockController.text); // 재고 필드를 정수로 변환하여 저장
-      final shippingFee = double.parse(_shippingFeeController.text); // 배송비 필드 추가
+      final shippingFee = int.parse(_shippingFeeController.text); // 배송비 필드를 int로 변환
 
       _showLoadingDialog();
 
@@ -140,7 +140,7 @@ class _EditProductFormState extends State<EditProductForm> {
           'body': body,
           'img': allImageUrls,
           'stock': stock, // 재고 필드를 업데이트
-          'shippingFee': shippingFee, // 배송비 필드 추가
+          'shippingFee': shippingFee, // 배송비 필드를 업데이트
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -393,7 +393,7 @@ class _EditProductFormState extends State<EditProductForm> {
                 controller: _shippingFeeController,
                 decoration: InputDecoration(labelText: '배송비'),
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // 숫자만 입력 가능
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '배송비를 입력해주세요';
