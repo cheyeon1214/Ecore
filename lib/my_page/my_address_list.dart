@@ -36,7 +36,20 @@ class _AddressListPageState extends State<AddressListPage> {
 
           final addressDocs = snapshot.data?.docs ?? [];
 
-          if (addressDocs.isEmpty) {
+          // 기본 배송지와 일반 배송지 분리
+          List<QueryDocumentSnapshot> defaultAddresses = [];
+          List<QueryDocumentSnapshot> normalAddresses = [];
+
+          for (var doc in addressDocs) {
+            final data = doc.data() as Map<String, dynamic>;
+            if (data['isDefault'] == true) {
+              defaultAddresses.add(doc);
+            } else {
+              normalAddresses.add(doc);
+            }
+          }
+
+          if (defaultAddresses.isEmpty && normalAddresses.isEmpty) {
             // 배송지가 없을 때 배송지 추가 버튼을 화면 중앙에 배치
             return Center(
               child: Column(
@@ -121,9 +134,12 @@ class _AddressListPageState extends State<AddressListPage> {
               ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: addressDocs.length,
+                  itemCount: defaultAddresses.length + normalAddresses.length,
                   itemBuilder: (context, index) {
-                    final doc = addressDocs[index];
+                    // 기본 배송지와 일반 배송지를 순서대로 나열
+                    final doc = index < defaultAddresses.length
+                        ? defaultAddresses[index]
+                        : normalAddresses[index - defaultAddresses.length];
                     final addressData = doc.data() as Map<String, dynamic>;
                     final addressId = doc.id; // 문서 ID 가져오기
 
@@ -137,12 +153,30 @@ class _AddressListPageState extends State<AddressListPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                addressData['recipient'] ?? '이름 없음',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black, // 이름 검정색
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    addressData['recipient'] ?? '이름 없음',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black, // 이름 검정색
+                                    ),
+                                  ),
+                                  // 기본 배송지 여부 표시
+                                  if (addressData['isDefault'] == true)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[100],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '기본 배송지',
+                                        style: TextStyle(color: Colors.blue[800], fontSize: 12),
+                                      ),
+                                    ),
+                                ],
                               ),
                               SizedBox(height: 4),
                               Text(addressData['phone'] ?? '전화번호 없음'),
