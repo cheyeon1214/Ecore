@@ -2,20 +2,28 @@ import 'package:flutter/material.dart';
 
 class SoldOutOverlay extends StatelessWidget {
   final bool isSoldOut;
-  final double radius; // 원 크기를 설정할 수 있는 파라미터 추가
+  final double radius; // 원의 크기를 설정할 수 있는 파라미터
+  final double borderRadius; // 외곽 반투명 배경의 둥글기 설정을 위한 파라미터 추가
 
-  const SoldOutOverlay({Key? key, required this.isSoldOut, this.radius = 50}) // 기본 radius 값을 50으로 설정
-      : super(key: key);
+  const SoldOutOverlay({
+    Key? key,
+    required this.isSoldOut,
+    this.radius = 50, // 기본 radius 값
+    this.borderRadius = 0.0, // 기본 borderRadius 값 추가
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return isSoldOut
         ? Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.6), // 배경을 원 안과 동일한 색으로 설정
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6), // 반투명 검정 배경
+          borderRadius: BorderRadius.circular(borderRadius), // 외곽의 둥글기 적용
+        ),
         child: Center(
           child: CircleAvatar(
-            radius: radius, // 페이지에서 전달받은 radius 값을 사용
+            radius: radius, // 전달받은 radius 값 사용
             backgroundColor: Colors.transparent, // 원형 배경 투명 처리
             child: Container(
               width: radius * 2, // 원의 크기를 radius에 맞게 설정
