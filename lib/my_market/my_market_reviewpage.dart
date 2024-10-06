@@ -246,6 +246,7 @@ class MyMarketReviewPage extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: Text('신고 이유를 선택해주세요'),
           content: SingleChildScrollView(
             child: Column(

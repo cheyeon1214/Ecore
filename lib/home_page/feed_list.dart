@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import '../widgets/sold_out.dart';
 import 'category_button.dart';
 import 'feed_detail.dart';
 
@@ -81,7 +82,7 @@ class _SellListState extends State<SellList> {
     } else if (widget.selectedSort == '1') {
       query = query.orderBy('createdAt', descending: true);
     } else if (widget.selectedSort == '2') {
-      query = query.orderBy('createdAt', descending: false);
+      query = query.orderBy('createdAt', descending: true);
     } else {
       query = query.orderBy('createdAt', descending: true);
     }
@@ -122,6 +123,8 @@ class _SellListState extends State<SellList> {
                   errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
               ),
+              // SoldOutOverlay를 추가하여 재고가 0일 때 판매 완료를 표시
+              SoldOutOverlay(isSoldOut: sellPost.stock == 0, radius: 30,), // 판매 완료 오버레이 추가
               // 실시간으로 즐겨찾기 상태를 확인하는 StreamBuilder 추가
               StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
@@ -137,7 +140,7 @@ class _SellListState extends State<SellList> {
                       right: -4,
                       child: IconButton(
                         icon: Icon(Icons.favorite_border, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () {}, // 로딩 중에는 아무 동작하지 않음
                       ),
                     );
                   }
@@ -151,7 +154,7 @@ class _SellListState extends State<SellList> {
                         isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: isFavorite ? Colors.red : Colors.white,
                       ),
-                      onPressed: () => _toggleFavorite(sellPost, isFavorite),
+                      onPressed: () => _toggleFavorite(sellPost, isFavorite), // 하트 클릭 시 동작 추가
                     ),
                   );
                 },
@@ -256,6 +259,7 @@ class _SellListState extends State<SellList> {
     );
   }
 
+  // 하트를 클릭했을 때 찜 목록에 추가하거나 제거하는 로직
   Future<void> _toggleFavorite(SellPostModel sellPost, bool isFavorite) async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -271,11 +275,13 @@ class _SellListState extends State<SellList> {
         .doc(sellPost.sellId);
 
     if (isFavorite) {
-      // 즐겨찾기에서 제거
+      // 찜 목록에서 제거
       await favoriteRef.delete();
     } else {
-      // 즐겨찾기에 추가
-      await favoriteRef.set(sellPost.toMap());
+      // 찜 목록에 추가
+      final favoriteData = sellPost.toMap();
+      favoriteData['selectedAt'] = Timestamp.now(); // 선택한 시간을 추가
+      await favoriteRef.set(favoriteData); // 데이터를 정확하게 추가
     }
   }
 }

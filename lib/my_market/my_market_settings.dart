@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import 'edit_market_info.dart';
-import 'edit_my_market.dart';
 import 'edit_seller_info.dart';
 
 class MyMarketSettings extends StatelessWidget {

@@ -149,33 +149,7 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
-                // 판매자 정보 박스
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue, width: 1.0),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('판매자 정보 확인', style: TextStyle(fontWeight: FontWeight.bold)),
-                      SizedBox(height: 8),
-                      _infoRow('대표자명', marketData['seller_name'] ?? 'N/A'),
-                      _infoRow('상호명', marketData['name'] ?? 'N/A'),
-                      _infoRow('문의전화', marketData['cs_phone'] ?? 'N/A'),
-                      _infoRow('문의메일', marketData['email'] ?? 'N/A'),
-                      _infoRow('사업자주소', marketData['address'] ?? 'N/A'),
-                      SizedBox(height: 8),
-                      // 사업자 등록 번호가 있을 경우에만 표시
-                      if (marketData['business_number'] != null &&
-                          marketData['business_number'].isNotEmpty)
-                        _infoRow('사업자등록번호', marketData['business_number']),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16), // 파란 네모와 공지사항 리스트 사이 간격
+                SizedBox(height: 16), // 공지사항 리스트와의 간격
                 // 공지사항 리스트
                 ..._feedPosts.asMap().entries.map((entry) {
                   int index = entry.key;
@@ -217,26 +191,6 @@ class _MyMarketFeedpageState extends State<MyMarketFeedpage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _infoRow(String title, String value) {
-    return Row(
-      children: [
-        Text(
-          '$title  ',
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[800],
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(color: Colors.black),
-          ),
-        ),
-      ],
     );
   }
 }
