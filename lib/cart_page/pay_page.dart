@@ -85,116 +85,121 @@ class _PayPageState extends State<PayPage> {
 
   Future<void> getCartItems() async {
     try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user!.uid)
-          .get();
+      // 선택된 cartItems를 그대로 사용하여 불러옵니다.
+      List<Map<String, dynamic>> selectedCartItems = widget.cartItems;
 
-      if (userDoc.exists) {
-        List<dynamic> cartItems = userDoc.get('cart');
-        int totalPrice = 0;
-        int donaCount = 0;
-        for (var item in cartItems) {
-          int itemPrice = item['price'] ?? 0;
-          int itemQuantity = item['quantity'] ?? 1;
+      int totalPrice = 0;
+      int donaCount = 0;
+      int totalShippingFee = 0;
+      Set<String> processedMarkets = {}; // 중복 마켓을 처리하기 위한 Set
 
-          totalPrice += itemPrice * itemQuantity;
+      // 선택된 아이템들에 대해 총 상품 금액과 배송비를 계산
+      for (var item in selectedCartItems) {
+        int itemPrice = item['price'] ?? 0;
+
+        totalPrice += itemPrice;
+        if (item['donaId'] != null) {
+          donaCount += 1;
+        }
+
+        // 배송비 계산
+        final marketId = item['marketId'] ?? '';
+        if (!processedMarkets.contains(marketId)) {
+          processedMarkets.add(marketId);
           if (item['donaId'] != null) {
-            donaCount += 1;
+            totalShippingFee += 1000; // 기부글은 고정 배송비 1000원
+          } else {
+            totalShippingFee += (item['shippingFee'] as num).toInt() ?? 0;
           }
         }
-        setState(() {
-          latestOrder = {
-            ...userDoc.data() as Map<String, dynamic>,
-            'items': cartItems,
-          };
-          totalProductPrice = totalPrice;
-          donaQuantity = donaCount; // 기부 상품 수량
-          remainingPrice = totalPrice; // 포인트 적용 전 결제 금액
-        });
-      } else {
-        print("User document does not exist.");
       }
+
+      setState(() {
+        totalProductPrice = totalPrice; // 총 상품 가격
+        donaQuantity = donaCount; // 기부 상품 수량
+        remainingPrice = totalPrice + totalShippingFee; // 포인트 적용 전 결제 금액
+        this.totalShippingFee = totalShippingFee; // 총 배송비 설정
+      });
     } catch (e) {
-      print("Failed to get cart items: $e");
+      print("Failed to get selected cart items: $e");
     }
   }
 
+
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
-    final sellPosts = widget.cartItems.map((item) {
-      final sellPostRef = FirebaseFirestore.instance
-          .collection('SellPosts')
-          .doc(item['sellId']);
 
-      return SellPostModel(
-        sellId: item['sellId'] ?? '',
-        marketId: item['marketId'] ?? '',
-        title: item['title'] ?? 'Untitled',
-        img: (item['img'] as List<dynamic>?)?.cast<String>() ?? ['https://via.placeholder.com/150'],
-        price: item['price'] ?? 0,
-        category: item['category'] ?? '기타',
-        body: item['body'] ?? '내용 없음',
-        createdAt: (item['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        viewCount: item['viewCount'] ?? 0,
-        shippingFee: item['shippingFee'] ?? 0, // 배송비
-        reference: sellPostRef,
-        stock: item['sellId'] ?? '',
-      );
-    }).toList();
-
-    // 이미 처리된 마켓을 추적하여 중복 배송비 방지
-    Set<String> processedMarkets = {}; // 마켓 ID를 저장할 Set
-
-    // 배송비를 포함한 총 금액 계산
-    int totalShippingFee = widget.cartItems.fold<int>(0, (int sum, item) {
-      final marketId = item['marketId'] ?? '';
-
-      if (processedMarkets.contains(marketId)) {
-        return sum; // 이미 처리된 마켓은 배송비 추가하지 않음
-      }
-
-      processedMarkets.add(marketId); // 마켓 ID 추가
-
-      if (item['donaId'] != null) {
-        return sum + 1000; // 기부글은 배송비 1000원
-      } else {
-        return sum + ((item['shippingFee'] ?? 0) as num).toInt(); // 일반 상품의 배송비 계산
-      }
-    });
-
-    int totalPriceWithShipping = totalProductPrice + totalShippingFee;
+    Set<String> processedMarkets = {}; // 중복된 마켓에 대한 처리 방지
 
     try {
-      // 주문 정보를 Orders 컬렉션에 저장
-      DocumentReference orderRef = await FirebaseFirestore.instance.collection('Orders').add({
-        'userId': user!.uid,
-        'username': username,
-        'date': FieldValue.serverTimestamp(),
-        'totalPrice': totalPriceWithShipping - usedPoints, // 포인트 차감 후 총 결제 금액
-        'paymentMethod': _selectedPaymentMethod,
-        'address': _address ?? '주소 없음',
-        'phoneNumber': _phoneNumber ?? '전화번호 없음',
-        'shippingStatus': '배송 준비', // 배송 상태 추가
-      });
-
-      // 주문 정보를 Users 컬렉션의 orders 서브컬렉션에 저장
-      DocumentReference userOrderRef = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user!.uid)
-          .collection('Orders')
-          .add({
-        'orderId': orderRef.id, // Orders 컬렉션의 주문 ID
-        'totalPrice': totalPriceWithShipping - usedPoints,
-        'paymentMethod': _selectedPaymentMethod,
-        'date': FieldValue.serverTimestamp(),
-        'shippingStatus': '배송 준비',
-      });
-
-      // 각 orderId 아래 items 서브컬렉션에 아이템 추가
+      // 기부글 및 판매글을 분리하여 처리
       for (var item in widget.cartItems) {
-        await orderRef.collection('items').add(item); // Orders 컬렉션 안에 items 서브컬렉션 추가
-        await userOrderRef.collection('items').add(item); // Users 컬렉션 안에 orders -> items 서브컬렉션 추가
+        final marketId = item['marketId'] ?? '';
+
+        // 기부글 구매 시 DonaOrders에 추가
+        if (item['donaId'] != null) {
+          // 구매하는 사람의 marketId를 Users 컬렉션에서 가져옵니다.
+          final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(user!.uid)  // 구매자의 uid를 사용
+              .get();
+
+          final String buyerMarketId = userDoc['marketId'];  // 구매자의 marketId
+
+          if (buyerMarketId.isNotEmpty) {
+            final donaPostRef = FirebaseFirestore.instance
+                .collection('Markets')
+                .doc(buyerMarketId)  // 구매자의 marketId 사용
+                .collection('DonaOrders');
+
+            await donaPostRef.add({
+              'userId': user!.uid,
+              'username': username,
+              'donaId': item['donaId'],
+              'title': item['title'],
+              'price': item['price'],
+              'date': FieldValue.serverTimestamp(),
+              'paymentMethod': _selectedPaymentMethod,
+            });
+          }
+        }
+
+
+        // 판매글 구매 시
+        if (item['sellId'] != null && marketId.isNotEmpty) {
+          // Users/{userId}/Orders에 판매글 구매 내역 저장
+          DocumentReference userOrderRef = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(user!.uid)
+              .collection('Orders')
+              .add({
+            'orderId': item['sellId'],
+            'totalPrice': totalProductPrice + totalShippingFee - usedPoints,
+            'paymentMethod': _selectedPaymentMethod,
+            'date': FieldValue.serverTimestamp(),
+            'shippingStatus': '배송 준비',
+          });
+
+          await userOrderRef.collection('items').add(item); // Users/{userId}/Orders/{orderId}/items에 아이템 추가
+
+          // 마켓의 SellOrders에 추가
+          if (!processedMarkets.contains(marketId)) {
+            final sellOrderRef = FirebaseFirestore.instance.collection('Markets').doc(marketId).collection('SellOrders');
+
+            await sellOrderRef.add({
+              'buyerId': user!.uid,
+              'username': username,
+              'sellId': item['sellId'],
+              'title': item['title'],
+              'price': item['price'],
+              'date': FieldValue.serverTimestamp(),
+              'shippingStatus': '배송 준비',
+              'paymentMethod': _selectedPaymentMethod,
+            });
+
+            processedMarkets.add(marketId); // 이미 처리된 마켓은 다시 추가하지 않음
+          }
+        }
       }
 
       // 포인트 사용 처리 (사용된 포인트 차감 및 기록)
@@ -246,6 +251,7 @@ class _PayPageState extends State<PayPage> {
       );
     }
   }
+
 
 
   void _applyPoints() {
@@ -459,9 +465,10 @@ class _PayPageState extends State<PayPage> {
   }
 
   Widget _buildOrderSummary() {
-    if (latestOrder == null) {
-      return Center(child: Text('최신 주문 정보가 없습니다.'));
+    if (widget.cartItems.isEmpty) {
+      return Center(child: Text('주문할 상품이 없습니다.'));
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -481,7 +488,16 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
+
   List<Widget> _buildOrderItems() {
+    if (widget.cartItems.isEmpty) {
+      return [
+        Center(
+          child: Text('주문할 상품이 없습니다.'),
+        ),
+      ];
+    }
+
     return widget.cartItems.map((item) {
       final imageUrl =
           (item['img'] as List<dynamic>?)?.first ??
@@ -507,8 +523,9 @@ class _PayPageState extends State<PayPage> {
           ],
         ),
       );
-    }).toList() ?? [];
+    }).toList();
   }
+
 
   Widget _buildPriceSummary() {
     return Column(

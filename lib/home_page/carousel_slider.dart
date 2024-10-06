@@ -1,5 +1,4 @@
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class CareouselSlider extends StatefulWidget {
@@ -11,9 +10,9 @@ class CareouselSlider extends StatefulWidget {
 
 class _CareouselSliderState extends State<CareouselSlider> {
   final List<String> imgList = [
-    'https://via.placeholder.com/600x400/8f8e94/FFFFFF?text=1',
-    'https://via.placeholder.com/600x400/8f8e94/FFFFFF?text=2',
-    'https://via.placeholder.com/600x400/8f8e94/FFFFFF?text=3',
+    'assets/images/메인배너1.jpeg',
+    'assets/images/메인배너2.jpeg',
+    'assets/images/메인배너3.jpeg',
   ];
 
   @override
@@ -22,7 +21,7 @@ class _CareouselSliderState extends State<CareouselSlider> {
       itemCount: imgList.length,
       itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
           Container(
-            child: Image.network(imgList[itemIndex], fit: BoxFit.cover),
+            child: Image.asset(imgList[itemIndex], fit: BoxFit.cover), // Image.asset로 변경
           ),
       options: CarouselOptions(
         height: 200,
@@ -31,10 +30,8 @@ class _CareouselSliderState extends State<CareouselSlider> {
         reverse: false,
         autoPlay: true,
         autoPlayInterval: Duration(seconds: 4),
-        // enlargeCenterPage: true, //중앙 화면만 뜨도록 해줌
+        // enlargeCenterPage: true, // 중앙 화면만 뜨도록 해줌
       ),
     );
   }
 }
-
-

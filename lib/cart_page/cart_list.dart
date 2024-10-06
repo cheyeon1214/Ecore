@@ -240,6 +240,11 @@ class _CartListState extends State<CartList> {
         .where((item) => _selectedItems[item['sellId'] ?? item['donaId']] ?? false)
         .toList();
 
+    // 선택된 아이템과 배송비를 확인하는 print
+    selectedItems.forEach((item) {
+      print('Selected item: ${item['title']}, ShippingFee: ${item['shippingFee']}');
+    });
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -247,4 +252,5 @@ class _CartListState extends State<CartList> {
       ),
     );
   }
+
 }
