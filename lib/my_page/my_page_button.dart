@@ -303,43 +303,42 @@ class _MyPageBtnState extends State<MyPageBtn> {
           ),
           SizedBox(height: 10),
           TextButton(
-            onPressed: () {
-              // 포인트 내역 확인
-            },
             style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0), // 위아래 여백을 좀 더 추가
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
-                ),
+                borderRadius: BorderRadius.zero, // 둥근 모서리 없앰
               ),
-              backgroundColor: baseColor,
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             ),
-            child: Text(
-              '이벤트 문구',
-              style: TextStyle(color: Colors.black),
+            onPressed: () {
+              // 버튼 클릭 시 동작
+            },
+            child: Image.asset(
+              'assets/images/마이페이지배너1.jpeg', // 배너 이미지 경로
+              fit: BoxFit.cover, // 이미지가 버튼 크기에 맞게 조절되도록 함
+              width: double.infinity, // 가로로 화면 전체를 채우도록 설정
             ),
           ),
+
+
           SizedBox(height: 5),
           TextButton(
-            onPressed: () {
-              // 포인트 내역 확인
-            },
             style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0), // 위아래 여백을 좀 더 추가
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
-                ),
+                borderRadius: BorderRadius.zero, // 둥근 모서리 없앰
               ),
-              backgroundColor: baseColor,
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              minimumSize: Size(90, 60),
             ),
-            child: Text(
-              '배너',
-              style: TextStyle(color: Colors.black),
+            onPressed: () {
+              // 버튼 클릭 시 동작
+            },
+            child: Image.asset(
+              'assets/images/마이페이지배너2.jpeg', // 배너 이미지 경로
+              fit: BoxFit.cover, // 이미지가 버튼 크기에 맞게 조절되도록 함
+              width: double.infinity, // 가로로 화면 전체를 채우도록 설정
             ),
           ),
+
+
         ],
       ),
     );
