@@ -25,7 +25,8 @@ class _EditProductFormState extends State<EditProductForm> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController(); // 가격 입력 필드
   final TextEditingController _bodyController = TextEditingController();
-  final TextEditingController _stockController = TextEditingController(); // 재고 입력 필드 추가
+  final TextEditingController _stockController = TextEditingController(); // 재고 입력 필드
+  final TextEditingController _shippingFeeController = TextEditingController(); // 배송비 입력 필드 추가
   String? _categoryValue;
 
   @override
@@ -36,12 +37,10 @@ class _EditProductFormState extends State<EditProductForm> {
 
   // Firestore에서 기존 데이터를 로드하여 필드에 채우는 함수
   Future<void> _loadProductData() async {
-    DocumentSnapshot productSnapshot =
-    await _firestore.collection('SellPosts').doc(widget.productId).get();
+    DocumentSnapshot productSnapshot = await _firestore.collection('SellPosts').doc(widget.productId).get();
 
     if (productSnapshot.exists) {
-      Map<String, dynamic>? productData =
-      productSnapshot.data() as Map<String, dynamic>?;
+      Map<String, dynamic>? productData = productSnapshot.data() as Map<String, dynamic>?;
 
       // 기존 데이터를 각 필드에 할당
       _titleController.text = productData?['title'] ?? '';
@@ -55,6 +54,9 @@ class _EditProductFormState extends State<EditProductForm> {
 
       // 재고 정보를 필드에 할당
       _stockController.text = productData?['stock']?.toString() ?? ''; // 재고 필드
+
+      // 배송비 정보를 필드에 할당
+      _shippingFeeController.text = productData?['shippingFee']?.toString() ?? ''; // 배송비 필드
 
       _existingImages = List<String>.from(productData?['img'] ?? []);
       setState(() {}); // UI 업데이트
@@ -119,6 +121,7 @@ class _EditProductFormState extends State<EditProductForm> {
       final category = _categoryValue;
       final body = _bodyController.text;
       final stock = int.parse(_stockController.text); // 재고 필드를 정수로 변환하여 저장
+      final shippingFee = double.parse(_shippingFeeController.text); // 배송비 필드 추가
 
       _showLoadingDialog();
 
@@ -137,6 +140,7 @@ class _EditProductFormState extends State<EditProductForm> {
           'body': body,
           'img': allImageUrls,
           'stock': stock, // 재고 필드를 업데이트
+          'shippingFee': shippingFee, // 배송비 필드 추가
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -379,6 +383,20 @@ class _EditProductFormState extends State<EditProductForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '재고를 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              // 배송비 입력 필드 추가
+              TextFormField(
+                controller: _shippingFeeController,
+                decoration: InputDecoration(labelText: '배송비'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '배송비를 입력해주세요';
                   }
                   return null;
                 },
