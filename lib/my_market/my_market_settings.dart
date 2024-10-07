@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'edit_market_info.dart';
 import 'edit_seller_info.dart';
+import 'ordered_dona_page.dart';
 
 class MyMarketSettings extends StatelessWidget {
   final String marketId;
@@ -84,7 +85,7 @@ class MyMarketSettings extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MyMarketSettings(marketId: marketId), // 예시: 구매한 기부글 페이지
+                    builder: (context) => OrderedDonaPage(marketId: marketId),
                   ),
                 );
               },

@@ -160,6 +160,7 @@ class _PayPageState extends State<PayPage> {
               'price': item['price'],
               'date': FieldValue.serverTimestamp(),
               'paymentMethod': _selectedPaymentMethod,
+              'donaImg' : item['img'],
             });
           }
         }
