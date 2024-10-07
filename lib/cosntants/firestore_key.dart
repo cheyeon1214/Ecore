@@ -103,13 +103,15 @@ const KEY_ITEMQUANTITY = 'quantity';
 
 //////////////////
 const COLLECTION_CHATS = 'Chats';
+const COLLECTION_MESSAGES = 'Messages';
 
 const KEY_CHATID = 'chatId';
+const KEY_MESSAGE = 'messageId';
 const KEY_SEND_USERID = 'sendId';
 const KEY_RECEIVE_USERID = 'receiveId';
 const KEY_DATE = 'date';
 const KEY_TEXT = 'text';
-
+const KEY_READBY = 'readBy';
 
 //////////////////
 const COLLECTION_ADDRESSES = 'Addresses';

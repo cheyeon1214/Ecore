@@ -44,89 +44,81 @@ class _ChatListState extends State<ChatList> {
     try {
       final marketId = await _getMarketIdForUser(userId);
 
-      // 현재유저 = 유저 id 경우
-      final messageStream = FirebaseFirestore.instance
+      final userChatsQuery = FirebaseFirestore.instance
           .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: userId)
+          .where('users', arrayContains: userId)
           .snapshots();
 
-      final receivedStream = FirebaseFirestore.instance
+      final marketChatsQuery = FirebaseFirestore.instance
           .collection(COLLECTION_CHATS)
-          .where(KEY_RECEIVE_USERID, isEqualTo: userId)
+          .where('users', arrayContains: marketId)
           .snapshots();
 
-      // 현재유저 = 마켓 id 경우
-      final marketMessageStream = FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: marketId)
-          .snapshots();
+      CombineLatestStream.list([userChatsQuery, marketChatsQuery])
+          .listen((snapshots) {
+        final userChatsSnapshot = snapshots[0];
+        final marketChatsSnapshot = snapshots[1];
 
-      final marketReceivedStream = FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_RECEIVE_USERID, isEqualTo: marketId)
-          .snapshots();
+        List<Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>>>
+            messageStreams = [];
 
-      Rx.combineLatest4(
-        messageStream,
-        receivedStream,
-        marketMessageStream,
-        marketReceivedStream,
-        (QuerySnapshot<Map<String, dynamic>> sendSnapshot,
-            QuerySnapshot<Map<String, dynamic>> receiveSnapshot,
-            QuerySnapshot<Map<String, dynamic>> marketSendSnapshot,
-            QuerySnapshot<Map<String, dynamic>> marketReceiveSnapshot) {
-          final userMessages = [...sendSnapshot.docs, ...receiveSnapshot.docs];
-          final marketMessages = [
-            ...marketSendSnapshot.docs,
-            ...marketReceiveSnapshot.docs
-          ];
-          _processChatUpdates(userMessages, marketMessages, userId, marketId!);
-        },
-      ).listen(null);
+        for (var chatDoc in userChatsSnapshot.docs) {
+          final chatId = chatDoc.id;
+
+          final sentMessagesStream = FirebaseFirestore.instance
+              .collection(COLLECTION_CHATS)
+              .doc(chatId)
+              .collection(COLLECTION_MESSAGES)
+              .where(KEY_SEND_USERID, isEqualTo: userId)
+              .snapshots()
+              .map((snapshot) => snapshot.docs);
+
+          final receivedMessagesStream = FirebaseFirestore.instance
+              .collection(COLLECTION_CHATS)
+              .doc(chatId)
+              .collection(COLLECTION_MESSAGES)
+              .where(KEY_RECEIVE_USERID, isEqualTo: userId)
+              .snapshots()
+              .map((snapshot) => snapshot.docs);
+
+          messageStreams.add(sentMessagesStream);
+          messageStreams.add(receivedMessagesStream);
+        }
+
+        for (var chatDoc in marketChatsSnapshot.docs) {
+          final chatId = chatDoc.id;
+
+          final marketSentMessagesStream = FirebaseFirestore.instance
+              .collection(COLLECTION_CHATS)
+              .doc(chatId)
+              .collection(COLLECTION_MESSAGES)
+              .where(KEY_SEND_USERID, isEqualTo: marketId)
+              .snapshots()
+              .map((snapshot) => snapshot.docs);
+
+          final marketReceivedMessagesStream = FirebaseFirestore.instance
+              .collection(COLLECTION_CHATS)
+              .doc(chatId)
+              .collection(COLLECTION_MESSAGES)
+              .where(KEY_RECEIVE_USERID, isEqualTo: marketId)
+              .snapshots()
+              .map((snapshot) => snapshot.docs);
+
+          messageStreams.add(marketSentMessagesStream);
+          messageStreams.add(marketReceivedMessagesStream);
+        }
+
+        CombineLatestStream.list(messageStreams).listen((snapshots) {
+          final allMessages = snapshots
+              .expand((snapshot) =>
+                  snapshot as List<QueryDocumentSnapshot<Map<String, dynamic>>>)
+              .toList();
+
+          _processChatUpdates(allMessages, allMessages, userId, marketId!);
+        });
+      });
     } catch (error) {
       print('Error setting up streams: $error');
-    }
-  }
-
-  void _processChatUpdates(
-      List<QueryDocumentSnapshot<Map<String, dynamic>>> userMessages,
-      List<QueryDocumentSnapshot<Map<String, dynamic>>> marketMessages,
-      String userId,
-      String marketId) async {
-    try {
-      List<ChatModel> allChats = [
-        ...userMessages.map((doc) => ChatModel.fromSnapshot(doc)),
-        ...marketMessages.map((doc) => ChatModel.fromSnapshot(doc)),
-      ];
-
-      // 상대방 유저 기준으로 메시지 그룹화
-      Map<String, ChatModel> recentChatsMap = {};
-      for (var chat in allChats) {
-        if (chat.sendId == marketId && chat.receiveId == marketId) {
-          continue; // 자신의 마켓과 주고받은 메시지는 제외
-        }
-
-        final otherUserId = chat.sendId == userId || chat.sendId == marketId
-            ? chat.receiveId
-            : chat.sendId;
-
-        // 상대방 id를 캐시에 저장해 고정된 값으로 사용
-        if (!_userIdCache.containsKey(chat.chatId)) {
-          _userIdCache[chat.chatId] = otherUserId;
-        }
-
-        if (!recentChatsMap.containsKey(otherUserId) ||
-            chat.date.isAfter(recentChatsMap[otherUserId]!.date)) {
-          recentChatsMap[otherUserId] = chat;
-        }
-      }
-
-      List<ChatModel> recentChats = recentChatsMap.values.toList();
-      recentChats.sort((a, b) => b.date.compareTo(a.date));
-
-      _chatController.add(recentChats); //채팅 리스트 스트림에 추가
-    } catch (e) {
-      print('Error processing chats: $e');
     }
   }
 
@@ -146,61 +138,216 @@ class _ChatListState extends State<ChatList> {
       print('Error fetching market ID: $e');
     }
 
-    return null; //마켓 id 없는 경우
+    return null;
   }
 
   Future<Map<String, String>> _getOrFetchUserData(String userId) async {
     if (_userIdCache.containsKey(userId)) {
-      return _userCache[userId]!; // 캐시된 데이터 반환
+      return _userCache[userId]!;
     }
 
-    // Firestore에서 username과 profileImage를 가져옴
     final userData = await _getUsernameAndProfileImage(userId);
 
-    // 캐시에 저장 (username과 profileImage)
     _userCache[userId] = userData;
 
     return userData;
   }
 
-// 실제 Firestore에서 username과 profileImage를 가져오는 함수
+  Future<String?> getUserChatId(String userId, String otherUserId) async {
+    try {
+      final userMarketId = await _getMarketIdForUser(userId);
+
+      final otherUserMarketId = await _getMarketIdForUser(otherUserId);
+
+      final userCheckId = userMarketId ?? userId;
+
+      final otherUserCheckId = otherUserMarketId ?? otherUserId;
+
+      final userChatsSnapshot = await FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .where('users',
+              arrayContainsAny: [userCheckId, otherUserCheckId]).get();
+
+      if (userChatsSnapshot.docs.isNotEmpty) {
+        final chatId = userChatsSnapshot.docs.first.id;
+        return chatId;
+      } else {
+        print('No chat rooms found for user: $userId or market: $userMarketId');
+
+        final newChatRef =
+            FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
+        await newChatRef.set({
+          'users': [userCheckId, otherUserCheckId].toList(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        return newChatRef.id;
+      }
+    } catch (e) {
+      print('Error getting chat ID: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getChatId(String loggedInUserId, String otherUserId) async {
+    try {
+      final userMarketId = await _getMarketIdForUser(loggedInUserId);
+
+      List<String> userIdsToCheck = [loggedInUserId, otherUserId];
+      if (userMarketId != null) {
+        userIdsToCheck.add(userMarketId);
+      }
+
+      final chatQuerySnapshot = await FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .where('users', arrayContainsAny: userIdsToCheck)
+          .get();
+
+      final filteredChats = chatQuerySnapshot.docs.where((doc) {
+        final users = List<String>.from(doc['users']);
+        return (users.contains(loggedInUserId) ||
+                (userMarketId != null && users.contains(userMarketId))) &&
+            users.contains(otherUserId);
+      }).toList();
+
+      if (filteredChats.isEmpty) {
+        print('No chat room found between users.');
+        return null;
+      }
+
+      return filteredChats.first.id;
+    } catch (e) {
+      print('Error getting chatId: $e');
+      return null;
+    }
+  }
+
+  Future<int> getUnreadMessageCountForChat(String chatId, String userId) async {
+    try {
+      final messagesRef = FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .doc(chatId)
+          .collection(COLLECTION_MESSAGES);
+
+      final allMessagesSnapshot = await messagesRef.get();
+
+      final unreadMessages = allMessagesSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final List<dynamic> readBy = data[KEY_READBY] ?? [];
+        print("Read by: $readBy, User ID: $userId");
+        return !readBy.contains(userId);
+      }).toList();
+
+      return unreadMessages.length;
+    } catch (e) {
+      print('Error getting unread messages: $e');
+      return 0;
+    }
+  }
+
+  Future<void> markMessageAsRead(
+      String chatId, String messageId, String sendId) async {
+    final messageRef = FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .collection(COLLECTION_MESSAGES)
+        .doc(messageId);
+
+    await messageRef.update({
+      KEY_READBY: FieldValue.arrayUnion([sendId])
+    });
+  }
+
+  void _processChatUpdates(
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> userMessages,
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> marketMessages,
+      String userId,
+      String marketId) async {
+    try {
+      List<ChatModel> allChats = [
+        ...userMessages.map((doc) => ChatModel.fromSnapshot(doc)),
+        ...marketMessages.map((doc) => ChatModel.fromSnapshot(doc)),
+      ];
+
+      Map<String, ChatModel> recentChatsMap = {};
+      for (var chat in allChats) {
+        if (chat.sendId == marketId && chat.receiveId == marketId) {
+          continue;
+        }
+
+        final otherUserId = chat.sendId == userId || chat.sendId == marketId
+            ? chat.receiveId
+            : chat.sendId;
+
+        if (!_userIdCache.containsKey(chat.chatId)) {
+          _userIdCache[chat.chatId] = otherUserId;
+        }
+
+        if (!recentChatsMap.containsKey(otherUserId) ||
+            chat.date.isAfter(recentChatsMap[otherUserId]!.date)) {
+          recentChatsMap[otherUserId] = chat;
+        }
+      }
+
+      List<ChatModel> recentChats = recentChatsMap.values.toList();
+      recentChats.sort((a, b) => b.date.compareTo(a.date));
+
+      _chatController.add(recentChats);
+    } catch (e) {
+      print('Error processing chats: $e');
+    }
+  }
+
   Future<Map<String, String>> _getUsernameAndProfileImage(String userId) async {
     final userDoc =
         await FirebaseFirestore.instance.collection('Users').doc(userId).get();
 
-    final username = userDoc.data()?['username'] ?? 'Unknown';
-    final profileImage = userDoc.data()?['profile_img'] ?? '';
-
-    return {
-      'username': username,
-      'profile_img': profileImage,
-    };
-  }
-
-  Future _getUsernameOrMarketName(String userId) async {
-    if (_userCache.containsKey(userId)) {
-      return _userCache[userId]!;
-    }
-
-    final userDoc =
-        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
     if (userDoc.exists) {
-      final username = userDoc.data()?[KEY_USERNAME] ?? 'Unknown';
-      _userCache[userId] = username;
-      return username;
+      final username = userDoc.data()?['username'] ?? 'Unknown';
+      final profileImage = userDoc.data()?['profile_img'] ?? '';
+      return {
+        'username': username,
+        'profile_img': profileImage,
+      };
     }
 
     final marketDoc = await FirebaseFirestore.instance
         .collection('Markets')
         .doc(userId)
         .get();
+
     if (marketDoc.exists) {
-      final marketName = marketDoc.data()?[KEY_MARKET_NAME] ?? 'Unknown';
-      _userCache[userId] = marketName;
-      return marketName;
+      final marketName = marketDoc.data()?['name'] ?? 'Unknown';
+      return {
+        'username': marketName,
+        'profile_img': '',
+      };
     }
 
-    return 'Unknown';
+    return {
+      'username': 'Unknown',
+      'profile_img': '',
+    };
+  }
+
+  Future<String?> getChatIdFromMessage(String messageId) async {
+    try {
+      final messageSnapshot = await FirebaseFirestore.instance
+          .collectionGroup(COLLECTION_MESSAGES)
+          .where('messageId', isEqualTo: messageId)
+          .get();
+
+      if (messageSnapshot.docs.isNotEmpty) {
+        final chatId = messageSnapshot.docs.first.reference.parent.parent!.id;
+        return chatId;
+      } else {
+        print("해당 메시지를 포함하는 채팅방이 없습니다.");
+        return null;
+      }
+    } catch (e) {
+      print("채팅방 조회 중 에러 발생: $e");
+      return null;
+    }
   }
 
   @override
@@ -218,14 +365,14 @@ class _ChatListState extends State<ChatList> {
         title: const Text('채팅'),
       ),
       body: StreamBuilder<List<ChatModel>>(
-        stream: _chatController.stream, // 채팅 리스트를 스트림에서 가져옴
+        stream: _chatController.stream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error loading chats'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No chats found'));
+            return const Center(child: Text('채팅방이 없습니다.'));
           }
 
           final chats = snapshot.data!;
@@ -235,6 +382,7 @@ class _ChatListState extends State<ChatList> {
             itemBuilder: (context, index) {
               final chat = chats[index];
               final otherUserId = _userIdCache[chat.chatId]!;
+              print(otherUserId);
 
               return FutureBuilder<Map<String, String>>(
                 future: _getOrFetchUserData(otherUserId),
@@ -256,46 +404,136 @@ class _ChatListState extends State<ChatList> {
                   final username = userSnapshot.data?['username'] ?? 'Unknown';
                   final profileImageUrl =
                       userSnapshot.data?['profile_img'] ?? '';
+                  final user = FirebaseAuth.instance.currentUser;
 
-                  return Padding(
-                    padding: const EdgeInsets.all(5.0),
-                    child: ListTile(
-                      title: Row(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(right: 12.0),
-                            child: CircleAvatar(
-                              backgroundImage: profileImageUrl.isNotEmpty
-                                  ? NetworkImage(profileImageUrl)
-                                  : AssetImage(
-                                          'assets/images/defualt_profile.jpg')
-                                      as ImageProvider,
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(username,
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text(chat.text),
-                            ],
-                          ),
-                        ],
-                      ),
-                      trailing: Text(
-                        _formatDate(chat.date),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                SelectChatRoom(otherUserId: otherUserId),
-                          ),
+                  return FutureBuilder<int>(
+                    future: () async {
+                      final currentUserId =
+                          FirebaseAuth.instance.currentUser!.uid;
+                      final userMarketId =
+                          await _getMarketIdForUser(currentUserId);
+
+                      final chatId = await getChatIdFromMessage(chat.chatId);
+                      if (chatId != null) {
+                        final chatDoc = await FirebaseFirestore.instance
+                            .collection(COLLECTION_CHATS)
+                            .doc(chatId)
+                            .get();
+
+                        final List<dynamic> users =
+                            chatDoc.data()?['users'] ?? [];
+
+                        String userId;
+                        if (users.contains(userMarketId)) {
+                          userId = userMarketId!;
+                        } else {
+                          userId = currentUserId;
+                        }
+
+                        return getUnreadMessageCountForChat(chatId, userId);
+                      }
+                      return 0;
+                    }(),
+                    builder: (context, unreadSnapshot) {
+                      if (unreadSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return ListTile(
+                          title: Text('Loading...'),
+                          subtitle: Text(chat.text),
                         );
-                      },
-                    ),
+                      }
+
+                      final unreadCount = unreadSnapshot.data ?? 0;
+                      print('Unread Count: $unreadCount');
+
+                      return ListTile(
+                        title: Row(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(right: 12.0),
+                              child: CircleAvatar(
+                                backgroundImage: profileImageUrl.isNotEmpty
+                                    ? NetworkImage(profileImageUrl)
+                                    : AssetImage(
+                                            'assets/images/defualt_profile.jpg')
+                                        as ImageProvider,
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(username,
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                Text(chat.text),
+                              ],
+                            ),
+                          ],
+                        ),
+                        trailing: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatDate(chat.date),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            if (unreadCount > 0)
+                              Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$unreadCount',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
+                        onTap: () async {
+                          final currentUserId =
+                              FirebaseAuth.instance.currentUser!.uid;
+                          final userMarketId =
+                              await _getMarketIdForUser(currentUserId);
+                          final sendId = userMarketId ?? currentUserId;
+
+                          final chatId =
+                              await getChatIdFromMessage(chat.chatId);
+
+                          if (chatId == null) {
+                            print("채팅방을 찾을 수 없습니다.");
+                            return;
+                          }
+
+                          final messageSnapshots = await FirebaseFirestore
+                              .instance
+                              .collection(COLLECTION_CHATS)
+                              .doc(chatId)
+                              .collection(COLLECTION_MESSAGES)
+                              .get();
+
+                          for (var messageDoc in messageSnapshots.docs) {
+                            final messageId = messageDoc.id;
+                            await markMessageAsRead(chatId, messageId, sendId);
+                          }
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SelectChatRoom(
+                                chatId: chatId,
+                                otherUserId: otherUserId,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   );
                 },
               );
