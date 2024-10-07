@@ -15,6 +15,7 @@ class DonaPostModel {
   final String color;
   final String material;
   final String condition;
+  final int point;
   final DocumentReference reference;
 
   // Named constructor for creating an instance from a map
@@ -22,6 +23,7 @@ class DonaPostModel {
       {required this.reference})
       : title = map[KEY_DONATITLE] ?? '',
         userId = map[KEY_DONA_USERKEY] ?? '',
+        point = map[KEY_DONA_POINT] ?? 0,
         img = (map[KEY_SELLIMG] is String)
             ? [map[KEY_SELLIMG]] // String일 경우 리스트로 변환
             : (map[KEY_SELLIMG] as List<dynamic>?)?.cast<String>() ?? ['https://via.placeholder.com/150'], // List일 경우 그대로 사용

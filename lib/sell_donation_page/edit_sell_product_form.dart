@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -25,6 +25,7 @@ class _EditProductFormState extends State<EditProductForm> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController(); // 가격 입력 필드
   final TextEditingController _bodyController = TextEditingController();
+  final TextEditingController _stockController = TextEditingController(); // 재고 입력 필드 추가
   String? _categoryValue;
 
   @override
@@ -51,6 +52,9 @@ class _EditProductFormState extends State<EditProductForm> {
 
       _categoryValue = productData?['category'] ?? '';
       _bodyController.text = productData?['body'] ?? '';
+
+      // 재고 정보를 필드에 할당
+      _stockController.text = productData?['stock']?.toString() ?? ''; // 재고 필드
 
       _existingImages = List<String>.from(productData?['img'] ?? []);
       setState(() {}); // UI 업데이트
@@ -114,6 +118,7 @@ class _EditProductFormState extends State<EditProductForm> {
       final price = int.parse(_priceController.text); // 가격을 int형으로 변환
       final category = _categoryValue;
       final body = _bodyController.text;
+      final stock = int.parse(_stockController.text); // 재고 필드를 정수로 변환하여 저장
 
       _showLoadingDialog();
 
@@ -131,6 +136,7 @@ class _EditProductFormState extends State<EditProductForm> {
           'category': category,
           'body': body,
           'img': allImageUrls,
+          'stock': stock, // 재고 필드를 업데이트
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -359,6 +365,20 @@ class _EditProductFormState extends State<EditProductForm> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return '가격을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              // 재고 수정 필드 추가
+              TextFormField(
+                controller: _stockController,
+                decoration: InputDecoration(labelText: '재고 수량'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '재고를 입력해주세요';
                   }
                   return null;
                 },

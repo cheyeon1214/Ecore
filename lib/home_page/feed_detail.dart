@@ -8,6 +8,7 @@ import '../models/firestore/user_model.dart';
 import 'package:provider/provider.dart';
 import '../search/market_detail.dart';
 import '../chat_page/chat_banner.dart';
+import '../widgets/sold_out.dart';
 import '../widgets/view_counter.dart';
 
 class FeedDetail extends StatefulWidget {
@@ -161,6 +162,18 @@ class _FeedDetailState extends State<FeedDetail> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _marketInfoBuild(context),
+                  SizedBox(height: 16),
+                  // 재고 정보 출력 추가 (재고 0일 때 '재고 없음'으로 출력)
+                  Text(
+                    widget.sellPost.stock > 0
+                        ? '재고 : ${widget.sellPost.stock}개' // 재고가 있으면 수량 출력
+                        : '재고 없음', // 재고가 0일 경우
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: widget.sellPost.stock > 0 ? Colors.black : Colors.red,
+                    ),
+                  ),
                   SizedBox(height: 16),
                   Text(widget.sellPost.body, style: TextStyle(fontSize: 16)),
                 ],
@@ -337,12 +350,12 @@ class _FeedDetailState extends State<FeedDetail> {
       return Text('이미지가 없습니다.');
     }
 
-    return SizedBox(
-      width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
-      height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
-      child: Stack(
-        children: [
-          PageView.builder(
+    return Stack(
+      children: [
+        SizedBox(
+          width: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 너비 설정
+          height: MediaQuery.of(context).size.width, // 화면의 가로 크기와 동일한 높이 설정
+          child: PageView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: images.length,
             onPageChanged: (index) {
@@ -359,20 +372,22 @@ class _FeedDetailState extends State<FeedDetail> {
               );
             },
           ),
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              color: Colors.black54,
-              child: Text(
-                '${_currentIndex + 1}/${images.length}',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: Colors.black54,
+            child: Text(
+              '${_currentIndex + 1}/${images.length}',
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
-        ],
-      ),
+        ),
+        // 판매 완료 이미지 표시
+        SoldOutOverlay(isSoldOut: widget.sellPost.stock == 0),
+      ],
     );
   }
 }

@@ -57,7 +57,8 @@ class _CartListState extends State<CartList> {
                   itemBuilder: (context, index) {
                     final cartItem = cartItems[index];
                     String imageUrl;
-                    String marketName = cartItem['marketName'] ?? 'Unknown Market';
+                    String marketName = cartItem['donaId'] != null ? '기부글' : cartItem['marketName'] ?? 'Unknown Market';
+
                     int shippingFee;
 
                     // 기부글이면 배송비 1000원, 아니면 해당 상품의 배송비를 사용
@@ -239,6 +240,11 @@ class _CartListState extends State<CartList> {
         .where((item) => _selectedItems[item['sellId'] ?? item['donaId']] ?? false)
         .toList();
 
+    // 선택된 아이템과 배송비를 확인하는 print
+    selectedItems.forEach((item) {
+      print('Selected item: ${item['title']}, ShippingFee: ${item['shippingFee']}');
+    });
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -246,4 +252,5 @@ class _CartListState extends State<CartList> {
       ),
     );
   }
+
 }

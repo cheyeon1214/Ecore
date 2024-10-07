@@ -1,3 +1,4 @@
+import 'package:ecore/my_page/point_history_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,7 +98,12 @@ class _BodyContentsState extends State<BodyContents> {
                               Text('포인트 보유 현황 : $userPoints', style: TextStyle(fontWeight: FontWeight.bold)),
                               TextButton(
                                 onPressed: () {
-                                  // 포인트 내역 확인
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PointHistoryPage(), // 포인트 내역 페이지로 이동
+                                    ),
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   shape: RoundedRectangleBorder(
