@@ -1,3 +1,4 @@
+import 'package:ecore/my_market/settlement_page.dart';
 import 'package:flutter/material.dart';
 import 'edit_market_info.dart';
 import 'edit_seller_info.dart';
@@ -57,7 +58,7 @@ class MyMarketSettings extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MyMarketSettings(marketId: marketId), // 예시: 정산 관리 페이지
+                    builder: (context) => SettlementPage(marketId: marketId), // 예시: 정산 관리 페이지
                   ),
                 );
               },
