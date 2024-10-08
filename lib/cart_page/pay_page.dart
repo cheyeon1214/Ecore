@@ -154,45 +154,69 @@ class _PayPageState extends State<PayPage> {
 
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
-
     Set<String> processedMarkets = {}; // 중복된 마켓에 대한 처리 방지
 
     try {
       // 기부글 및 판매글을 분리하여 처리
       for (var item in widget.cartItems) {
-        final marketId = item['marketId'] ?? '';
+        // 구매자의 marketId 가져오기
+        final buyerDoc = await FirebaseFirestore.instance.collection('Users').doc(user!.uid).get();
+        final String buyerMarketId = buyerDoc['marketId']; // 구매자의 marketId
 
         // 기부글 구매 시 DonaOrders에 추가
         if (item['donaId'] != null) {
-          // 구매하는 사람의 marketId를 Users 컬렉션에서 가져옵니다.
-          final DocumentSnapshot userDoc = await FirebaseFirestore.instance
-              .collection('Users')
-              .doc(user!.uid)  // 구매자의 uid를 사용
-              .get();
+          print("donaId: " + item['donaId']);
+          // 기부글 정보를 가져오기 위해 DonaPosts에서 userId를 가져옵니다.
+          final donaPostRef = FirebaseFirestore.instance.collection('DonaPosts').doc(item['donaId']);
+          final donaPostDoc = await donaPostRef.get();
 
-          final String buyerMarketId = userDoc['marketId'];  // 구매자의 marketId
+          if (donaPostDoc.exists) {
+            final String donorUserId = donaPostDoc['userId']; // 기부자의 userId
 
-          if (buyerMarketId.isNotEmpty) {
-            final donaPostRef = FirebaseFirestore.instance
-                .collection('Markets')
-                .doc(buyerMarketId)  // 구매자의 marketId 사용
-                .collection('DonaOrders');
+            // 기부자의 username을 가져오기 위해 Users 컬렉션 조회
+            final donorDoc = await FirebaseFirestore.instance.collection('Users').doc(donorUserId).get();
 
-            await donaPostRef.add({
-              'userId': user!.uid,
-              'username': username,
-              'donaId': item['donaId'],
-              'title': item['title'],
-              'price': item['price'],
-              'date': FieldValue.serverTimestamp(),
-              'paymentMethod': _selectedPaymentMethod,
-              'donaImg' : item['img'],
-            });
+            if (donorDoc.exists) {
+              final String donorUsername = donorDoc['username'] ?? 'Unknown'; // 기부자의 username
+              print("donorUsername: " + donorUsername); // 기부자의 username 출력
+
+              // 구매자의 marketId가 비어있지 않은 경우에만 DonaOrders에 추가
+              if (buyerMarketId.isNotEmpty) {
+                final donaOrderRef = FirebaseFirestore.instance
+                    .collection('Markets')
+                    .doc(buyerMarketId) // 구매자의 marketId
+                    .collection('DonaOrders');
+
+                await donaOrderRef.add({
+                  'userId': donorUserId, // 기부자의 userId
+                  'username': donorUsername, // 기부자의 username
+                  'donaId': item['donaId'],
+                  'title': item['title'],
+                  'price': item['price'],
+                  'date': FieldValue.serverTimestamp(),
+                  'paymentMethod': _selectedPaymentMethod,
+                  'donaImg': item['img'],
+                });
+
+                // 기부자에게 포인트 추가
+                int donationPoints = ((item['price'] * 0.05).toInt()); // 5% 포인트
+                await FirebaseFirestore.instance.collection('Users').doc(donorUserId).update({
+                  'points': FieldValue.increment(donationPoints), // 기부자에게 포인트 추가
+                });
+
+                // 사용자 서브컬렉션에 포인트 기록 저장
+                await FirebaseFirestore.instance.collection('Users').doc(donorUserId).collection('PointHistory').add({
+                  'point': donationPoints,
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
+                });
+              }
+            }
           }
         }
 
         // 판매글 구매 시
-        if (item['sellId'] != null && marketId.isNotEmpty) {
+        if (item['sellId'] != null && buyerMarketId.isNotEmpty) {
           // Users/{userId}/Orders에 판매글 구매 내역 저장
           DocumentReference userOrderRef = await FirebaseFirestore.instance
               .collection('Users')
@@ -208,23 +232,37 @@ class _PayPageState extends State<PayPage> {
 
           await userOrderRef.collection('items').add(item); // Users/{userId}/Orders/{orderId}/items에 아이템 추가
 
-          // 마켓의 SellOrders에 추가
-          if (!processedMarkets.contains(marketId)) {
-            final sellOrderRef = FirebaseFirestore.instance.collection('Markets').doc(marketId).collection('SellOrders');
+          // SellPosts의 DonaList에서 포인트 나누기
+          final donaListRef = FirebaseFirestore.instance
+              .collection('SellPosts') // SellPosts 컬렉션
+              .doc(item['sellId']) // 판매글 ID
+              .collection('DonaList'); // 해당 판매글의 DonaList 서브컬렉션
 
-            await sellOrderRef.add({
-              'buyerId': user!.uid,
-              'username': username,
-              'sellId': item['sellId'],
-              'title': item['title'],
-              'price': item['price'],
-              'date': FieldValue.serverTimestamp(),
-              'shippingStatus': '배송 준비',
-              'paymentMethod': _selectedPaymentMethod,
-              'sellImg' : item['img'],
+          final donaListDocs = await donaListRef.get(); // DonaList의 모든 문서 가져오기
+          int donaCount = donaListDocs.docs.length; // DonaList의 갯수
+
+          // 총 결제금액에서 배송비를 뺀 가격의 5% 계산
+          int totalPrice = ((totalProductPrice) * 0.05).toInt(); // 총 결제금액에서 배송비 뺀 가격의 5%
+
+          // 각 기부글 작성자에게 포인트 분배
+          for (var donaDoc in donaListDocs.docs) {
+            final String donaUserId = donaDoc['userId']; // 기부글 작성자의 userId
+
+            // 기부글 작성자에게 지급할 포인트 계산
+            int pointForDonaUser = (totalPrice ~/ donaCount); // 5% 포인트를 나눔
+
+            // 포인트 추가
+            final userRef = FirebaseFirestore.instance.collection('Users').doc(donaUserId);
+            await userRef.update({
+              'points': FieldValue.increment(pointForDonaUser), // 포인트 증가
             });
 
-            processedMarkets.add(marketId); // 이미 처리된 마켓은 다시 추가하지 않음
+            // 사용자 서브컬렉션에 포인트 기록 저장
+            await userRef.collection('PointHistory').add({
+              'point': pointForDonaUser,
+              'timestamp': FieldValue.serverTimestamp(),
+              'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
+            });
           }
         }
       }
@@ -243,41 +281,17 @@ class _PayPageState extends State<PayPage> {
         });
       }
 
-      // 포인트 적립 처리 (기부글 구매 시)
-      for (var item in widget.cartItems) {
-        if (item['donaId'] != null) {
-          final donaPostRef = FirebaseFirestore.instance.collection('DonaPosts').doc(item['donaId']);
-          final donaPostDoc = await donaPostRef.get();
-
-          if (donaPostDoc.exists) {
-            final donaUserId = donaPostDoc['userId'];
-            final point = donaPostDoc['point'] ?? 0;
-
-            // donaUser에게 포인트 추가
-            final userRef = FirebaseFirestore.instance.collection('Users').doc(donaUserId);
-            await userRef.update({
-              'points': FieldValue.increment(point), // 포인트 증가
-            });
-
-            // 사용자 서브컬렉션에 포인트 기록 저장
-            await userRef.collection('PointHistory').add({
-              'point': point,
-              'timestamp': FieldValue.serverTimestamp(),
-              'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
-            });
-          }
-        }
-      }
-
       // 카트 초기화
       await userModel.clearCart();
 
     } catch (e) {
+      print(e); // 에러를 로그로 출력
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
   }
+
 
   void _applyPoints() {
     int inputPoints = int.tryParse(_pointController.text) ?? 0;
