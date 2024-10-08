@@ -40,13 +40,13 @@ class _HomePageState extends State<HomePage> {
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: baseColor,
+        backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
-        showSelectedLabels: false, // 눌렀을 때 안움직이게
+        showSelectedLabels: false,
         showUnselectedLabels: false,
         items: btmNavItems,
         unselectedItemColor: iconColor,
-        selectedItemColor: Colors.blue[900],
+        selectedItemColor: Colors.green[300],
         currentIndex: _selctedIndex, // 현재 인덱스는 선택된 인덱스
         onTap: _onBtmItemClick, // 눌렀을 때 인덱스 값을 전달함 -> 함수 실행
       ),

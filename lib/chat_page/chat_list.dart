@@ -362,7 +362,7 @@ class _ChatListState extends State<ChatList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('채팅'),
+        title: const Text('채팅', style: TextStyle(fontFamily: 'NanumSquare',),),
       ),
       body: StreamBuilder<List<ChatModel>>(
         stream: _chatController.stream,
@@ -464,8 +464,8 @@ class _ChatListState extends State<ChatList> {
                               children: [
                                 Text(username,
                                     style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text(chat.text),
+                                        TextStyle(fontWeight: FontWeight.w900)),
+                                Text(chat.text, style: TextStyle(fontSize: 13),),
                               ],
                             ),
                           ],
