@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../home_page/feed_detail.dart';
+import '../widgets/sold_out.dart'; // SoldOutOverlay 임포트
 import '../sell_donation_page/edit_sell_product_form.dart';
 
 class MyMarketProductpage extends StatelessWidget {
@@ -76,6 +77,14 @@ class MyMarketProductpage extends StatelessWidget {
                               ),
                             ),
                           ),
+                        ),
+                      ),
+                      // 솔드 아웃 오버레이
+                      Positioned.fill(
+                        child: SoldOutOverlay(
+                          isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
+                          radius: 30.0, // 모서리에 맞게 둥글게 설정
+                          borderRadius: 6.0,
                         ),
                       ),
                       Positioned(
@@ -186,15 +195,12 @@ class MyMarketProductpage extends StatelessWidget {
                                           }
                                         },
                                       ),
-
-
                                     ],
                                   ),
                                 );
                               },
                             );
                           },
-
                           child: Icon(Icons.more_vert, color: Colors.white),
                         ),
                       ),
