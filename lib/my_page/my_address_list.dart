@@ -12,6 +12,13 @@ class AddressListPage extends StatefulWidget {
 class _AddressListPageState extends State<AddressListPage> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
+  String _formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.length == 11) {
+      return '${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 7)}-${phoneNumber.substring(7)}';
+    }
+    return phoneNumber; // 길이가 11이 아닐 경우 원래 전화번호 반환
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +74,7 @@ class _AddressListPageState extends State<AddressListPage> {
                     '배송지 추가 버튼을 눌러 주소를 입력해주세요.',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
-                  SizedBox(height: 16),  // 원하는 세로 간격 설정
+                  SizedBox(height: 16), // 원하는 세로 간격 설정
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.4, // 화면 너비의 80%만큼 버튼 길이 설정
                     child: ElevatedButton(
@@ -179,7 +186,7 @@ class _AddressListPageState extends State<AddressListPage> {
                                 ],
                               ),
                               SizedBox(height: 4),
-                              Text(addressData['phone'] ?? '전화번호 없음'),
+                              Text(_formatPhoneNumber(addressData['phone'] ?? '전화번호 없음')), // 포맷된 전화번호 출력
                               SizedBox(height: 4),
                               // 주소와 상세주소를 같은 줄에 같은 색상으로 표시
                               Text(
@@ -206,21 +213,23 @@ class _AddressListPageState extends State<AddressListPage> {
                                         style: TextStyle(color: Colors.grey[800]), // 수정 버튼 색상
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        // 삭제 기능 추가
-                                        await FirebaseFirestore.instance
-                                            .collection('Users')
-                                            .doc(_currentUser?.uid)
-                                            .collection('Addresses')
-                                            .doc(doc.id)
-                                            .delete();
-                                      },
-                                      child: Text(
-                                        '삭제',
-                                        style: TextStyle(color: Colors.red), // 삭제 버튼 빨간색
+                                    // 기본 배송지에는 삭제 버튼을 표시하지 않음
+                                    if (addressData['isDefault'] != true)
+                                      TextButton(
+                                        onPressed: () async {
+                                          // 삭제 기능 추가
+                                          await FirebaseFirestore.instance
+                                              .collection('Users')
+                                              .doc(_currentUser?.uid)
+                                              .collection('Addresses')
+                                              .doc(doc.id)
+                                              .delete();
+                                        },
+                                        child: Text(
+                                          '삭제',
+                                          style: TextStyle(color: Colors.red), // 삭제 버튼 빨간색
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),

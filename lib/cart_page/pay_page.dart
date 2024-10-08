@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import '../my_page/my_address_form.dart';
+import 'my_address_select.dart';
 import 'order_list.dart';
 
 class PayPage extends StatefulWidget {
@@ -359,47 +360,7 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  void _showAddressSelectionDialog() async {
-    List<Map<String, dynamic>> addresses = await _fetchSavedAddresses();
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text('배송지 정보'),
-          content: SingleChildScrollView  (
-            child: Column(
-              children: addresses.map((address) {
-                return ListTile(
-                  title: Text('${address['recipient']}'),
-                  subtitle: Text('${address['address']} ${address['detailAddress'] ?? ''}'),
-                  trailing: Radio(
-                    value: address,
-                    groupValue: _defaultAddress, // 현재 선택된 배송지
-                    onChanged: (value) {
-                      setState(() {
-                        _defaultAddress = value as Map<String, dynamic>; // 선택된 배송지 업데이트
-                      });
-                      Navigator.of(context).pop(); // 다이얼로그 닫기
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () {
-                Navigator.of(context).pop(); // 다이얼로그 닫기
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   Future<List<Map<String, dynamic>>> _fetchSavedAddresses() async {
     if (user != null) {
@@ -424,6 +385,7 @@ class _PayPageState extends State<PayPage> {
           .collection('Users')
           .doc(user!.uid)
           .collection('Addresses')
+          .where('isDefault', isEqualTo: true)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -464,19 +426,23 @@ class _PayPageState extends State<PayPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: GestureDetector(
-                        onTap: _showAddressSelectionDialog,
-                        child: Text(
-                          '배송지 변경',
-                          style: TextStyle(fontSize: 14, color: Colors.black),
-                        ),
-                      ),
+                    GestureDetector(
+                      onTap: () {
+                        // AddressSelectPage로 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddressSelectPage(
+                              onAddressSelected: (selectedAddress) {
+                                setState(() {
+                                  _defaultAddress = selectedAddress; // 기본 주소 업데이트
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text('배송지 변경'),
                     ),
                   ],
                 ),
@@ -487,10 +453,9 @@ class _PayPageState extends State<PayPage> {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  _formatPhoneNumber(_defaultAddress?['phone'] ?? ''), // 포맷된 전화번호 사용
+                  _formatPhoneNumber(_defaultAddress?['phone'] ?? ''),
                   style: TextStyle(fontSize: 16),
                 ),
-                SizedBox(height: 10),
               ],
             ),
           );
@@ -513,7 +478,7 @@ class _PayPageState extends State<PayPage> {
               children: [
                 Center(
                   child: Text(
-                    '저장된 배송지가 없습니다.',
+                    '저장된 기본 배송지가 없습니다.',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                   ),
@@ -546,6 +511,8 @@ class _PayPageState extends State<PayPage> {
       },
     );
   }
+
+
 
 // 전화번호 포맷팅 메서드
   String _formatPhoneNumber(String phoneNumber) {
