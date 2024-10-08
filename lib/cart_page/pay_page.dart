@@ -185,6 +185,7 @@ class _PayPageState extends State<PayPage> {
               'price': item['price'],
               'date': FieldValue.serverTimestamp(),
               'paymentMethod': _selectedPaymentMethod,
+              'donaImg' : item['img'],
             });
           }
         }
@@ -219,6 +220,7 @@ class _PayPageState extends State<PayPage> {
               'date': FieldValue.serverTimestamp(),
               'shippingStatus': '배송 준비',
               'paymentMethod': _selectedPaymentMethod,
+              'sellImg' : item['img'],
             });
 
             processedMarkets.add(marketId); // 이미 처리된 마켓은 다시 추가하지 않음

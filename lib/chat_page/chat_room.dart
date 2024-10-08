@@ -38,37 +38,49 @@ class _ChatRoomState extends State<ChatRoom> {
     }
   }
 
-  Stream<List<ChatModel>> _fetchMyMessages() async* {
-    if (loggedInUser == null) {
-      yield [];
-    } else {
-      yield* FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: loggedInUser!.uid)
-          .where(KEY_RECEIVE_USERID, isEqualTo: widget.marketId)
-          .orderBy(KEY_DATE, descending: false)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
-          .toList());
+  Future<String?> getChatId(String userId) async {
+    final chatQuery = await FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .where('users', arrayContainsAny: [userId, widget.marketId])
+        .get();
+
+    for (var doc in chatQuery.docs) {
+      final data = doc.data();
+      List<dynamic> users = data['users'] ?? [];
+
+      if (users.contains(widget.marketId)) {
+        return doc.id;
+      }
     }
+
+    return null;
   }
 
-  Stream<List<ChatModel>> _fetchOtherMessages() async* {
+
+  Stream<List<ChatModel>> _fetchAllMessages() async* {
     if (loggedInUser == null) {
       yield [];
-    } else {
-      yield* FirebaseFirestore.instance
-          .collection(COLLECTION_CHATS)
-          .where(KEY_SEND_USERID, isEqualTo: widget.marketId)
-          .where(KEY_RECEIVE_USERID, isEqualTo: loggedInUser!.uid)
-          .orderBy(KEY_DATE, descending: false)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
-          .toList());
+      return;
     }
+
+    String? chatId = await getChatId(loggedInUser!.uid);
+    if (chatId == null) {
+      print('No chat room found for user: ${loggedInUser!.uid} and market: ${widget.marketId}');
+      yield [];
+      return;
+    }
+
+    final messagesStream = FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .collection(COLLECTION_MESSAGES)
+        .orderBy(KEY_DATE, descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>)).toList());
+
+    yield* messagesStream;
   }
+
 
   void _sendMessage(String text) async {
     if (loggedInUser == null || text.trim().isEmpty) return;
@@ -76,29 +88,58 @@ class _ChatRoomState extends State<ChatRoom> {
     final receiveId = widget.marketId;
     if (receiveId == null) return;
 
-    final newChatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
-    final newChatId = newChatRef.id;
+    final List<String> userIds = [loggedInUser!.uid, receiveId];
 
-    final newChat = ChatModel(
-      chatId: newChatId,
-      sendId: loggedInUser!.uid,
-      receiveId: receiveId,
-      date: DateTime.now(),
-      text: text,
-    );
-
-    await FirebaseFirestore.instance
+    final chatQuery = await FirebaseFirestore.instance
         .collection(COLLECTION_CHATS)
-        .doc(newChatId)
-        .set(newChat.toMap(), SetOptions(merge: true));
+        .where('users', arrayContainsAny: [loggedInUser!.uid, receiveId])
+        .get();
+
+    String chatId;
+
+    if (chatQuery.docs.isNotEmpty) {
+      chatId = chatQuery.docs.first.id;
+    } else {
+      final chatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
+      chatId = chatRef.id;
+
+      await chatRef.set({
+        KEY_CHATID: chatId,
+        'users': userIds,
+        KEY_DATE: FieldValue.serverTimestamp()
+      });
+    }
+
+    final messageRef = FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .collection(COLLECTION_MESSAGES)
+        .doc();
+
+    await messageRef.set({
+      KEY_MESSAGE: messageRef.id,
+      KEY_TEXT: text,
+      KEY_SEND_USERID: loggedInUser!.uid,
+      KEY_RECEIVE_USERID: receiveId,
+      KEY_READBY: [loggedInUser!.uid],
+      KEY_DATE: FieldValue.serverTimestamp()
+    });
+
+    setState(() {});
 
     _controller.clear();
+    _scrollToBottom();
   }
+
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -116,66 +157,59 @@ class _ChatRoomState extends State<ChatRoom> {
         children: [
           Expanded(
             child: StreamBuilder<List<ChatModel>>(
-              stream: _fetchMyMessages(),
-              builder: (context, mySnapshot) {
-                return StreamBuilder<List<ChatModel>>(
-                  stream: _fetchOtherMessages(),
-                  builder: (context, otherSnapshot) {
-                    if (mySnapshot.connectionState == ConnectionState.waiting ||
-                        otherSnapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    }
+              stream: _fetchAllMessages(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-                    if (!mySnapshot.hasData && !otherSnapshot.hasData) {
-                      return Center(child: Text('No messages found'));
-                    }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('채팅을 시작하세요!'));
+                }
 
-                    final allMessages = [
-                      ...mySnapshot.data ?? [],
-                      ...otherSnapshot.data ?? []
-                    ];
+                final allMessages = snapshot.data ?? [];
+                print(allMessages);
 
-                    allMessages.sort((a, b) => a.date.compareTo(b.date));
+                allMessages.sort((a, b) => a.date.compareTo(b.date));
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom();
-                    });
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scrollToBottom();
+                });
 
-                    return ListView.builder(
-                      controller: _scrollController,
-                      itemCount: allMessages.length,
-                      itemBuilder: (ctx, index) {
-                        final chat = allMessages[index];
-                        bool isMe = chat.sendId == loggedInUser!.uid;
-                        return Row(
-                          mainAxisAlignment:
-                          isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                              margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: isMe ? Colors.blue[100] : Colors.grey[300],
-                                borderRadius: isMe
-                                    ? BorderRadius.only(
-                                  topLeft: Radius.circular(14),
-                                  topRight: Radius.circular(14),
-                                  bottomLeft: Radius.circular(14),
-                                )
-                                    : BorderRadius.only(
-                                  topLeft: Radius.circular(14),
-                                  topRight: Radius.circular(14),
-                                  bottomRight: Radius.circular(14),
-                                ),
-                              ),
-                              child: Text(
-                                chat.text,
-                                style: TextStyle(fontSize: 16),
-                              ),
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: allMessages.length,
+                  itemBuilder: (ctx, index) {
+                    final chat = allMessages[index];
+                    bool isMe = chat.sendId == loggedInUser!.uid;
+                    return Row(
+                      mainAxisAlignment: isMe
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: isMe ? Colors.blue[100] : Colors.grey[300],
+                            borderRadius: isMe
+                                ? BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              topRight: Radius.circular(14),
+                              bottomLeft: Radius.circular(14),
+                            )
+                                : BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              topRight: Radius.circular(14),
+                              bottomRight: Radius.circular(14),
                             ),
-                          ],
-                        );
-                      },
+                          ),
+                          child: Text(
+                            chat.text,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 );

@@ -8,8 +8,9 @@ import '../models/firestore/chat_model.dart';
 
 class SelectChatRoom extends StatefulWidget {
   final String otherUserId;
+  final String chatId;
 
-  const SelectChatRoom({Key? key, required this.otherUserId}) : super(key: key);
+  const SelectChatRoom({Key? key, required this.otherUserId, required this.chatId}) : super(key: key);
 
   @override
   _SelectChatRoomState createState() => _SelectChatRoomState();
@@ -63,14 +64,23 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
   }
 
   Future<String?> _getMarketIdForUser(String userId) async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('Markets')
-        .where(KEY_MARKET_USERKEY, isEqualTo: userId)
-        .get();
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Markets')
+          .where(KEY_MARKET_USERKEY, isEqualTo: userId)
+          .get();
 
-    if (querySnapshot.docs.isEmpty) return null;
-
-    return querySnapshot.docs.first.id;
+      if (querySnapshot.docs.isNotEmpty) {
+        final marketId = querySnapshot.docs.first.id;
+        return marketId;
+      } else {
+        print('No market found for user: $userId');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching market ID: $e');
+      return null;
+    }
   }
 
   Future<bool> _isMarketId(String id) async {
@@ -82,9 +92,45 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     return querySnapshot.exists;
   }
 
-  Stream<List<ChatModel>> _fetchMessages(String loggedInUser, String otherUserId) {
+  Stream<List<ChatModel>> _fetchMessages(String loggedInUser, String otherUserId) async* {
+    final chatQuerySnapshot = await FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .where('users', arrayContainsAny: [loggedInUser, otherUserId])
+        .get();
+
+    if (chatQuerySnapshot.docs.isEmpty) {
+      print('No chat room found between $loggedInUser and $otherUserId');
+
+      final newChatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
+      await newChatRef.set({
+        'users': [loggedInUser, otherUserId],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      final chatId = newChatRef.id;
+      print('New chat room created with ID: $chatId');
+
+      yield [];
+      return;
+    }
+
+    final filteredChats = chatQuerySnapshot.docs.where((doc) {
+      final users = List<String>.from(doc['users']);
+      return users.contains(loggedInUser) && users.contains(otherUserId);
+    }).toList();
+
+    if (filteredChats.isEmpty) {
+      print('No chat room found between $loggedInUser and $otherUserId');
+      yield [];
+      return;
+    }
+
+    final chatId = filteredChats.first.id;
+    print('Chat ID found: $chatId');
     final myMessages = FirebaseFirestore.instance
         .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .collection(COLLECTION_MESSAGES)
         .where(KEY_SEND_USERID, isEqualTo: loggedInUser)
         .where(KEY_RECEIVE_USERID, isEqualTo: otherUserId)
         .orderBy(KEY_DATE, descending: false)
@@ -95,57 +141,106 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
 
     final otherMessages = FirebaseFirestore.instance
         .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .collection(COLLECTION_MESSAGES)
         .where(KEY_SEND_USERID, isEqualTo: otherUserId)
         .where(KEY_RECEIVE_USERID, isEqualTo: loggedInUser)
-        .orderBy(KEY_DATE, descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs
         .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
         .toList());
 
-    return Rx.combineLatest2(myMessages, otherMessages, (myMessages, otherMessages) {
+    yield* Rx.combineLatest2(myMessages, otherMessages, (myMessages, otherMessages) {
       final allMessages = [...myMessages, ...otherMessages];
       allMessages.sort((a, b) => a.date.compareTo(b.date));
       return allMessages;
     });
   }
 
+
+  Future<bool> checkChatRoomUsers(String chatId, String userId) async {
+    try {
+      final chatDoc = await FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .doc(chatId)
+          .get();
+
+      if (!chatDoc.exists) {
+        print('Chat room not found');
+        return false;
+      }
+
+      List<dynamic> users = chatDoc['users'];
+
+      final marketId = await _getMarketIdForUser(userId);
+
+      if (users.contains(userId) || (marketId != null && users.contains(marketId))) {
+        return true;
+      } else {
+        print('User or Market not part of this chat room');
+        return false;
+      }
+    } catch (e) {
+      print('Error checking chat room users: $e');
+      return false;
+    }
+  }
+
   void _sendMessage(String text) async {
-    if (loggedInUser == null) return;
+    if (loggedInUser == null || text.isEmpty) return;
 
-    final receiveId = widget.otherUserId;
-    if (receiveId == null) {
-      print('Receiver ID is null');
-      return;
+    try {
+      final userMarketId = await _getMarketIdForUser(loggedInUser!.uid);
+
+      final chatQuerySnapshot = await FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .where('users', arrayContainsAny: [loggedInUser!.uid, userMarketId, widget.otherUserId])
+          .get();
+
+      final filteredChats = chatQuerySnapshot.docs.where((doc) {
+        final users = List<String>.from(doc['users']);
+        return (users.contains(loggedInUser!.uid) || (userMarketId != null && users.contains(userMarketId)))
+            && users.contains(widget.otherUserId);
+      }).toList();
+
+      if (filteredChats.isEmpty) {
+        print('No chat room found between users.');
+        return;
+      }
+
+      final chatId = filteredChats.first.id;
+
+      String sendId = loggedInUser!.uid;
+      if (userMarketId != null && (await checkChatRoomUsers(chatId, userMarketId))) {
+        sendId = userMarketId;
+      } else if (!(await checkChatRoomUsers(chatId, sendId))) {
+        print('User not part of this chat room');
+        return;
+      }
+
+      final messageRef = FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .doc(chatId)
+          .collection(COLLECTION_MESSAGES)
+          .doc();
+
+      final newMessage = {
+        KEY_MESSAGE: messageRef.id,
+        KEY_TEXT: text,
+        KEY_SEND_USERID: sendId,
+        KEY_RECEIVE_USERID: widget.otherUserId,
+        KEY_READBY: [sendId],
+        KEY_DATE: FieldValue.serverTimestamp(),
+      };
+
+      await messageRef.set(newMessage);
+
+      _controller.clear();
+      _scrollToBottom();
+
+    } catch (e) {
+      print('Error while sending message: $e');
     }
-
-    final marketId = await _getMarketIdForUser(loggedInUser!.uid);
-    if (marketId == null) {
-      print('Market ID not found');
-      return;
-    }
-
-    final isMarketId = await _isMarketId(receiveId);
-    final sendId = isMarketId ? loggedInUser!.uid : marketId;
-
-    final newChatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
-    final newChatId = newChatRef.id;
-
-    final newChat = ChatModel(
-      chatId: newChatId,
-      sendId: sendId,
-      receiveId: receiveId,
-      date: DateTime.now(),
-      text: text,
-    );
-
-    await FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .doc(newChatId)
-        .set(newChat.toMap(), SetOptions(merge: true));
-
-    _controller.clear();
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -225,7 +320,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
               final userId2 = widget.otherUserId;
 
               return StreamBuilder<List<ChatModel>>(
-                stream: _fetchMessages(userId1!, userId2),
+                stream: _fetchMessages(userId1, userId2),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
@@ -246,6 +341,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                     itemCount: allMessages.length,
                     itemBuilder: (ctx, index) {
                       final chat = allMessages[index];
+
                       bool isMe = chat.sendId == loggedInUser!.uid || chat.sendId == marketId;
 
                       return Row(
