@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
+import '../my_page/my_address_form.dart';
 import 'order_list.dart';
 
 class PayPage extends StatefulWidget {
@@ -23,13 +24,12 @@ class _PayPageState extends State<PayPage> {
   final user = FirebaseAuth.instance.currentUser;
   String? username;
   Map<String, dynamic>? latestOrder;
+  Map<String, dynamic>? _defaultAddress; // 기본 배송지 정보를 저장할 변수 추가
 
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _pointController = TextEditingController(); // 포인트 입력용 컨트롤러
 
-  String? _phoneNumber;
-  String? _address;
   List<Map<String, String>> _savedInfo = [];
   String _selectedPaymentMethod = '계좌 간편결제';
   bool _isChecked = false;
@@ -46,6 +46,7 @@ class _PayPageState extends State<PayPage> {
     super.initState();
     _fetchUsername();
     _fetchUserPoints();
+    _fetchDefaultAddress(); // 기본 배송지 정보 가져오기
     getCartItems();
   }
 
@@ -80,6 +81,31 @@ class _PayPageState extends State<PayPage> {
       setState(() {
         userPoints = userDoc['points'] ?? 0; // 유저의 보유 포인트 가져오기
       });
+    }
+  }
+
+  Future<void> _fetchDefaultAddress() async {
+    if (user != null) {
+      try {
+        QuerySnapshot addressSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user!.uid)
+            .collection('Addresses')
+            .where('isDefault', isEqualTo: true)
+            .get();
+
+        if (addressSnapshot.docs.isNotEmpty) {
+          setState(() {
+            _defaultAddress = addressSnapshot.docs.first.data() as Map<String, dynamic>;
+          });
+        } else {
+          setState(() {
+            _defaultAddress = null; // 기본 배송지가 없을 경우
+          });
+        }
+      } catch (e) {
+        print("Error fetching default address: $e");
+      }
     }
   }
 
@@ -125,7 +151,6 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
 
@@ -163,7 +188,6 @@ class _PayPageState extends State<PayPage> {
             });
           }
         }
-
 
         // 판매글 구매 시
         if (item['sellId'] != null && marketId.isNotEmpty) {
@@ -252,8 +276,6 @@ class _PayPageState extends State<PayPage> {
     }
   }
 
-
-
   void _applyPoints() {
     int inputPoints = int.tryParse(_pointController.text) ?? 0;
 
@@ -270,21 +292,6 @@ class _PayPageState extends State<PayPage> {
         usedPoints = inputPoints;
         discount = usedPoints; // 할인 금액에 사용한 포인트를 적용
         remainingPrice = totalProductPrice + totalShippingFee - usedPoints; // 포인트 적용 후 남은 금액
-      });
-    }
-  }
-
-  void _saveInfo() {
-    if (_phoneNumber != null &&
-        _phoneNumber!.isNotEmpty &&
-        _address != null &&
-        _address!.isNotEmpty) {
-      setState(() {
-        _savedInfo.add({'phone': _phoneNumber!, 'address': _address!});
-        _phoneController.clear();
-        _addressController.clear();
-        _phoneNumber = '';
-        _address = '';
       });
     }
   }
@@ -331,9 +338,7 @@ class _PayPageState extends State<PayPage> {
               children: [
                 if (user != null) _buildUserInfo(),
                 SizedBox(height: 10),
-                _buildSavedInfo(),
-                SizedBox(height: 10),
-                _buildContactForm(),
+                _buildDefaultAddressSection(), // 기본 배송지 섹션 추가
                 SizedBox(height: 10),
                 _buildOrderSummary(),
                 SizedBox(height: 10),
@@ -351,6 +356,219 @@ class _PayPageState extends State<PayPage> {
       ),
     );
   }
+
+  void _showAddressSelectionDialog() async {
+    List<Map<String, dynamic>> addresses = await _fetchSavedAddresses();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text('배송지 정보'),
+          content: SingleChildScrollView  (
+            child: Column(
+              children: addresses.map((address) {
+                return ListTile(
+                  title: Text('${address['recipient']}'),
+                  subtitle: Text('${address['address']} ${address['detailAddress'] ?? ''}'),
+                  trailing: Radio(
+                    value: address,
+                    groupValue: _defaultAddress, // 현재 선택된 배송지
+                    onChanged: (value) {
+                      setState(() {
+                        _defaultAddress = value as Map<String, dynamic>; // 선택된 배송지 업데이트
+                      });
+                      Navigator.of(context).pop(); // 다이얼로그 닫기
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchSavedAddresses() async {
+    if (user != null) {
+      try {
+        QuerySnapshot addressSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(user!.uid)
+            .collection('Addresses')
+            .get();
+
+        return addressSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      } catch (e) {
+        print("Error fetching saved addresses: $e");
+      }
+    }
+    return [];
+  }
+
+  Widget _buildDefaultAddressSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(user!.uid)
+          .collection('Addresses')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('오류가 발생했습니다.'));
+        }
+
+        final addresses = snapshot.data!.docs;
+        if (addresses.isNotEmpty) {
+          _defaultAddress = addresses.first.data() as Map<String, dynamic>;
+
+          return Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_defaultAddress?['recipient'] ?? '수령인 없음'}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: GestureDetector(
+                        onTap: _showAddressSelectionDialog,
+                        child: Text(
+                          '배송지 변경',
+                          style: TextStyle(fontSize: 14, color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Text(
+                  '${_defaultAddress?['address'] ?? '주소 없음'} ${_defaultAddress?['detailAddress'] ?? ''}',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  _formatPhoneNumber(_defaultAddress?['phone'] ?? ''), // 포맷된 전화번호 사용
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 10),
+              ],
+            ),
+          );
+        } else {
+          return Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Text(
+                    '저장된 배송지가 없습니다.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _navigateToAddAddress();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text('+ 배송지 추가하기', style: TextStyle(fontSize: 16, color: Colors.black)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+// 전화번호 포맷팅 메서드
+  String _formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.length == 11) {
+      return '${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 7)}-${phoneNumber.substring(7)}';
+    }
+    return phoneNumber; // 길이가 11이 아닐 경우 원래 전화번호 반환
+  }
+
+
+
+// 배송지 추가 페이지로 이동하는 메서드
+  void _navigateToAddAddress() {
+    // 배송지 추가 페이지로 이동하는 로직 추가
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddressForm()), // AddAddressPage는 배송지 추가 페이지입니다.
+    );
+  }
+
+
+
+
+
+
 
   Widget _buildAgreementSection() {
     return Column(
@@ -397,73 +615,6 @@ class _PayPageState extends State<PayPage> {
     );
   }
 
-  Widget _buildSavedInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List<Widget>.generate(_savedInfo.length, (index) {
-        final info = _savedInfo[index];
-        return RadioListTile<int>(
-          value: index,
-          groupValue: _selectedSavedInfoIndex, // 선택된 인덱스와 비교
-          onChanged: (int? value) {
-            setState(() {
-              _selectedSavedInfoIndex = value; // 인덱스 업데이트
-            });
-          },
-          title: Text(
-            '전화번호: ${info['phone']}, 배송지: ${info['address']}',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildContactForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _phoneController,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            labelText: '전화번호를 입력해주세요.',
-          ),
-          maxLines: 1,
-          onChanged: (value) {
-            setState(() {
-              _phoneNumber = value;
-            });
-          },
-        ),
-        SizedBox(height: 10),
-        TextField(
-          controller: _addressController,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            labelText: '배송지를 입력해주세요.',
-          ),
-          maxLines: 1,
-          onChanged: (value) {
-            setState(() {
-              _address = value;
-            });
-          },
-        ),
-        SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            ElevatedButton(
-              onPressed: _saveInfo,
-              child: Text("등록"),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildOrderSummary() {
     if (widget.cartItems.isEmpty) {
       return Center(child: Text('주문할 상품이 없습니다.'));
@@ -487,7 +638,6 @@ class _PayPageState extends State<PayPage> {
       ],
     );
   }
-
 
   List<Widget> _buildOrderItems() {
     if (widget.cartItems.isEmpty) {
@@ -525,7 +675,6 @@ class _PayPageState extends State<PayPage> {
       );
     }).toList();
   }
-
 
   Widget _buildPriceSummary() {
     return Column(
