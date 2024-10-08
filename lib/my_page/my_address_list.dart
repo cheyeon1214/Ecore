@@ -12,6 +12,13 @@ class AddressListPage extends StatefulWidget {
 class _AddressListPageState extends State<AddressListPage> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
+  String _formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.length == 11) {
+      return '${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 7)}-${phoneNumber.substring(7)}';
+    }
+    return phoneNumber; // 길이가 11이 아닐 경우 원래 전화번호 반환
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +43,20 @@ class _AddressListPageState extends State<AddressListPage> {
 
           final addressDocs = snapshot.data?.docs ?? [];
 
-          if (addressDocs.isEmpty) {
+          // 기본 배송지와 일반 배송지 분리
+          List<QueryDocumentSnapshot> defaultAddresses = [];
+          List<QueryDocumentSnapshot> normalAddresses = [];
+
+          for (var doc in addressDocs) {
+            final data = doc.data() as Map<String, dynamic>;
+            if (data['isDefault'] == true) {
+              defaultAddresses.add(doc);
+            } else {
+              normalAddresses.add(doc);
+            }
+          }
+
+          if (defaultAddresses.isEmpty && normalAddresses.isEmpty) {
             // 배송지가 없을 때 배송지 추가 버튼을 화면 중앙에 배치
             return Center(
               child: Column(
@@ -54,7 +74,7 @@ class _AddressListPageState extends State<AddressListPage> {
                     '배송지 추가 버튼을 눌러 주소를 입력해주세요.',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
-                  SizedBox(height: 16),  // 원하는 세로 간격 설정
+                  SizedBox(height: 16), // 원하는 세로 간격 설정
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.4, // 화면 너비의 80%만큼 버튼 길이 설정
                     child: ElevatedButton(
@@ -121,9 +141,12 @@ class _AddressListPageState extends State<AddressListPage> {
               ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: addressDocs.length,
+                  itemCount: defaultAddresses.length + normalAddresses.length,
                   itemBuilder: (context, index) {
-                    final doc = addressDocs[index];
+                    // 기본 배송지와 일반 배송지를 순서대로 나열
+                    final doc = index < defaultAddresses.length
+                        ? defaultAddresses[index]
+                        : normalAddresses[index - defaultAddresses.length];
                     final addressData = doc.data() as Map<String, dynamic>;
                     final addressId = doc.id; // 문서 ID 가져오기
 
@@ -137,15 +160,33 @@ class _AddressListPageState extends State<AddressListPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                addressData['recipient'] ?? '이름 없음',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black, // 이름 검정색
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    addressData['recipient'] ?? '이름 없음',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black, // 이름 검정색
+                                    ),
+                                  ),
+                                  // 기본 배송지 여부 표시
+                                  if (addressData['isDefault'] == true)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[100],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '기본 배송지',
+                                        style: TextStyle(color: Colors.blue[800], fontSize: 12),
+                                      ),
+                                    ),
+                                ],
                               ),
                               SizedBox(height: 4),
-                              Text(addressData['phone'] ?? '전화번호 없음'),
+                              Text(_formatPhoneNumber(addressData['phone'] ?? '전화번호 없음')), // 포맷된 전화번호 출력
                               SizedBox(height: 4),
                               // 주소와 상세주소를 같은 줄에 같은 색상으로 표시
                               Text(
@@ -172,21 +213,23 @@ class _AddressListPageState extends State<AddressListPage> {
                                         style: TextStyle(color: Colors.grey[800]), // 수정 버튼 색상
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        // 삭제 기능 추가
-                                        await FirebaseFirestore.instance
-                                            .collection('Users')
-                                            .doc(_currentUser?.uid)
-                                            .collection('Addresses')
-                                            .doc(doc.id)
-                                            .delete();
-                                      },
-                                      child: Text(
-                                        '삭제',
-                                        style: TextStyle(color: Colors.red), // 삭제 버튼 빨간색
+                                    // 기본 배송지에는 삭제 버튼을 표시하지 않음
+                                    if (addressData['isDefault'] != true)
+                                      TextButton(
+                                        onPressed: () async {
+                                          // 삭제 기능 추가
+                                          await FirebaseFirestore.instance
+                                              .collection('Users')
+                                              .doc(_currentUser?.uid)
+                                              .collection('Addresses')
+                                              .doc(doc.id)
+                                              .delete();
+                                        },
+                                        child: Text(
+                                          '삭제',
+                                          style: TextStyle(color: Colors.red), // 삭제 버튼 빨간색
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),

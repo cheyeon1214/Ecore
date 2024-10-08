@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore 임포트
 import '../home_page/feed_detail.dart';
 import '../models/firestore/user_model.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../widgets/sold_out.dart'; // SoldOutOverlay 위젯 임포트
 
 class FavoriteListPage extends StatelessWidget {
   @override
@@ -58,44 +59,56 @@ class FavoriteListPage extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2), // 둥글기 설정
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: 100, // 카드의 이미지 높이
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(2)), // 이미지 둥글기 조정
-                                  image: DecorationImage(
-                                    image: NetworkImage(firstImageUrl),
-                                    fit: BoxFit.cover, // 이미지 비율 유지
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10.0), // 이미지의 둥글기
+                                  child: Container(
+                                    height: 100, // 이미지 높이 설정
+                                    width: double.infinity, // 이미지가 카드 너비를 차지하도록 설정
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: NetworkImage(firstImageUrl),
+                                        fit: BoxFit.cover, // 이미지 비율 유지
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                                child: Text(
-                                  '${post.price}원', // 가격을 상단에 배치
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // 가격 글씨 크기 조정
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  post.title,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[900], // 특정 회색으로 변경
+                                // SoldOutOverlay를 이미지 위에 겹치게 설정
+                                Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0), // 둥글기 이미지와 동일하게 설정
+                                    child: SoldOutOverlay(
+                                      isSoldOut: post.stock == 0,
+                                      radius: 30, // 원하는 크기로 radius 조정 가능
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                              child: Text(
+                                '${post.price}원', // 가격을 상단에 배치
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // 가격 글씨 크기 조정
                               ),
-                            ],
-                          ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text(
+                                post.title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[900], // 특정 회색으로 변경
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Positioned(

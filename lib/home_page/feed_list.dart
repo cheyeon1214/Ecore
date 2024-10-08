@@ -124,7 +124,7 @@ class _SellListState extends State<SellList> {
                 ),
               ),
               // SoldOutOverlay를 추가하여 재고가 0일 때 판매 완료를 표시
-              SoldOutOverlay(isSoldOut: sellPost.stock == 0, radius: 30,), // 판매 완료 오버레이 추가
+              SoldOutOverlay(isSoldOut: sellPost.stock == 0, radius: 30, borderRadius: 10.0,), // 판매 완료 오버레이 추가
               // 실시간으로 즐겨찾기 상태를 확인하는 StreamBuilder 추가
               StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance

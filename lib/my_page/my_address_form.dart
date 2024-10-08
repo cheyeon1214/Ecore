@@ -15,6 +15,8 @@ class _AddressFormState extends State<AddressForm> {
   final TextEditingController _recipientController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
+  bool _isDefaultAddress = false; // 기본 배송지 여부
+
   @override
   void dispose() {
     _addressController.dispose();
@@ -47,6 +49,31 @@ class _AddressFormState extends State<AddressForm> {
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
+        // 주소 컬렉션에 저장된 주소가 하나도 없는지 확인
+        QuerySnapshot addressSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.uid)
+            .collection('Addresses')
+            .get();
+
+        bool isFirstAddress = addressSnapshot.docs.isEmpty; // 주소가 없는지 여부
+
+        // Firestore에 기본 배송지인지 체크하여 기존 기본 배송지를 업데이트
+        if (_isDefaultAddress || isFirstAddress) {
+          // 만약 기본 배송지로 설정되었거나, 첫 번째 주소라면
+          await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(currentUser.uid)
+              .collection('Addresses')
+              .where('isDefault', isEqualTo: true)
+              .get()
+              .then((snapshot) {
+            for (var doc in snapshot.docs) {
+              doc.reference.update({'isDefault': false}); // 기존 기본 배송지의 isDefault를 false로 업데이트
+            }
+          });
+        }
+
         // Firestore에 데이터 저장 (주소와 상세주소 분리해서 저장)
         await FirebaseFirestore.instance
             .collection('Users')
@@ -57,6 +84,7 @@ class _AddressFormState extends State<AddressForm> {
           'detailAddress': _detailAddressController.text, // 상세주소 저장
           'recipient': _recipientController.text, // 수령인 저장
           'phone': _phoneController.text,
+          'isDefault': _isDefaultAddress || isFirstAddress, // 기본 배송지 여부 저장 (첫 주소는 자동으로 기본 배송지로 설정)
           'createdAt': FieldValue.serverTimestamp(),
         });
 
@@ -65,6 +93,7 @@ class _AddressFormState extends State<AddressForm> {
       }
     }
   }
+
 
   // 폼 제출 성공 팝업
   void _showSuccessDialog() {
@@ -231,6 +260,22 @@ class _AddressFormState extends State<AddressForm> {
                 ],
               ),
               SizedBox(height: 16),
+
+              // 기본 배송지 설정 체크박스 추가
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _isDefaultAddress,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _isDefaultAddress = value ?? false;
+                      });
+                    },
+                  ),
+                  Text('기본 배송지로 설정'),
+                ],
+              ),
 
               // 추가하기 버튼
               ElevatedButton(
