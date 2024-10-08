@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../home_page/feed_detail.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../widgets/sold_out.dart'; // SoldOutOverlay 임포트
 
 class SearchPage extends StatefulWidget {
   final String marketId;
@@ -148,28 +149,40 @@ class _SearchPageState extends State<SearchPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 이미지 부분
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10.0),  // 모서리를 둥글게
-                            child: AspectRatio(
-                              aspectRatio: 1.0,  // 1:1 비율로 고정
-                              child: sellPost.img.isNotEmpty
-                                  ? Image.network(
-                                sellPost.img[0],  // 첫 번째 이미지 사용
-                                fit: BoxFit.cover,  // 이미지를 컨테이너에 맞춤
-                              )
-                                  : Container(
-                                color: Colors.grey[300],  // 이미지가 없을 때 회색 배경
-                                child: Center(
-                                  child: Text(
-                                    '이미지 없음',
-                                    style: TextStyle(color: Colors.grey),
+                          Stack(
+                            children: [
+                              // 상품 이미지
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게
+                                child: AspectRatio(
+                                  aspectRatio: 1.0,  // 1:1 비율로 고정
+                                  child: sellPost.img.isNotEmpty
+                                      ? Image.network(
+                                    sellPost.img[0],  // 첫 번째 이미지 사용
+                                    fit: BoxFit.cover,  // 이미지를 컨테이너에 맞춤
+                                  )
+                                      : Container(
+                                    color: Colors.grey[300],  // 이미지가 없을 때 회색 배경
+                                    child: Center(
+                                      child: Text(
+                                        '이미지 없음',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                              // 솔드 아웃 오버레이
+                              Positioned.fill(
+                                child: SoldOutOverlay(
+                                  isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
+                                  radius: 30.0, // 모서리에 맞게 둥글게 설정
+                                  borderRadius: 6.0,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 8),  // 이미지와 텍스트 간격
+                          SizedBox(height: 8),  // 이미지와 텍스트 간의 간격
                           Text(
                             '${sellPost.price}원',  // 가격 정보
                             style: TextStyle(
@@ -177,11 +190,11 @@ class _SearchPageState extends State<SearchPage> {
                               fontSize: 16.0,
                             ),
                           ),
-                          SizedBox(height: 4),  // 가격과 제목 간격
+                          SizedBox(height: 4),  // 가격과 제목 간의 간격
                           Text(
                             sellPost.title,  // 제목 정보
-                            maxLines: 2,  // 두 줄까지만 표시
-                            overflow: TextOverflow.ellipsis,  // 제목이 길면 생략
+                            maxLines: 2,  // 두 줄까지 표시
+                            overflow: TextOverflow.ellipsis,  // 두 줄 이상일 경우 생략
                             style: TextStyle(fontSize: 14.0),
                           ),
                         ],
