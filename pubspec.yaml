@@ -66,6 +66,7 @@ dev_dependencies:
 
 
 dependency_overrides:
+  smooth_page_indicator: ^1.2.0+3
   webview_flutter: ^4.9.0
 
 

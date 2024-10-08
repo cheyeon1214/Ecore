@@ -9,13 +9,14 @@ class SellProductForm extends StatefulWidget {
   final String name;
 
   const SellProductForm({super.key, required this.name});
+
   @override
   State<SellProductForm> createState() => _SellProductFormState();
 }
 
 class _SellProductFormState extends State<SellProductForm> {
   final _formKey = GlobalKey<FormState>();
-  List<XFile>? _images = []; // 여러 이미지를 저장할 리스트
+  List<XFile>? _images = [];
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -23,21 +24,23 @@ class _SellProductFormState extends State<SellProductForm> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _bodyController = TextEditingController();
-  final TextEditingController _shippingFeeController = TextEditingController(); // 배송비 입력 필드 컨트롤러 추가
+  final TextEditingController _shippingFeeController = TextEditingController();
+  final TextEditingController _stockController = TextEditingController();
   String? _categoryValue;
+
+  List<Map<String, dynamic>> _displayedDonaOrders = []; // 화면에 표시할 기부글 목록
 
   Future<void> getImages() async {
     if (_images!.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
       );
-      return; // 이미 10개 이상의 이미지가 선택된 경우 추가 선택 불가
+      return;
     }
 
     final pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        // 최대 10개를 초과하지 않도록 리스트에 추가
         _images = (_images! + pickedFiles).take(10).toList();
       });
     }
@@ -84,10 +87,9 @@ class _SellProductFormState extends State<SellProductForm> {
       final price = double.parse(_priceController.text);
       final category = _categoryValue;
       final body = _bodyController.text;
-      final shippingFee = double.parse(_shippingFeeController.text); // 배송비 추가
-      final stock = int.parse(_stockController.text); // 재고를 정수로 파싱하여 저장
+      final shippingFee = double.parse(_shippingFeeController.text);
+      final stock = int.parse(_stockController.text);
 
-      // 로딩 다이얼로그 표시
       _showLoadingDialog();
 
       try {
@@ -96,7 +98,6 @@ class _SellProductFormState extends State<SellProductForm> {
           imageUrls = await uploadImages(_images!);
         }
 
-        // Markets 컬렉션에서 현재 marketId와 동일한 name 필드를 가진 문서를 검색
         QuerySnapshot marketQuery = await _firestore
             .collection('Markets')
             .where('name', isEqualTo: widget.name)
@@ -105,61 +106,43 @@ class _SellProductFormState extends State<SellProductForm> {
         if (marketQuery.docs.isNotEmpty) {
           String marketDocumentId = marketQuery.docs.first.id;
 
-          // 1. SellPosts 컬렉션에 새로운 문서를 추가
+          // SellPosts에 새로운 문서를 추가
           DocumentReference sellPostRef = await _firestore.collection('SellPosts').add({
             'title': title,
             'price': price,
             'category': category,
             'body': body,
             'img': imageUrls,
-            'marketId': marketDocumentId, // marketId 필드에 문서 ID를 저장
-            'viewCount': 0, // 초기 조회수 0
-            'createdAt': FieldValue.serverTimestamp(), // 생성 시간
-            'shippingFee': shippingFee, // 배송비 추가
-            'stock': stock, // 재고 필드 추가
+            'marketId': marketDocumentId,
+            'viewCount': 0,
+            'createdAt': FieldValue.serverTimestamp(),
+            'shippingFee': shippingFee,
+            'stock': stock,
           });
 
-          // 2. 생성된 문서의 ID를 Markets 컬렉션의 sellPosts 배열에 추가
-          String sellPostId = sellPostRef.id;
-          DocumentReference marketRef = _firestore.collection('Markets').doc(marketDocumentId);
+          // 선택된 기부글을 DonaList 서브컬렉션에 추가
+          for (var donaOrder in _displayedDonaOrders) {
+            await sellPostRef.collection('DonaList').add(donaOrder);
+          }
 
-          await marketRef.update({
-            'sellPosts': FieldValue.arrayUnion([sellPostId])
-          });
-
-          // 작업 완료 후 로딩 다이얼로그 닫기
           Navigator.of(context).pop();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('판매 상품이 등록되었습니다.')),
-          );
-
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('판매 상품이 등록되었습니다.')));
           Navigator.pop(context);
         } else {
           throw '해당 이름의 마켓을 찾을 수 없습니다.';
         }
       } catch (e) {
-        // 작업 실패 시 로딩 다이얼로그 닫기
         Navigator.of(context).pop();
-
         print('Error adding document: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('문서 추가 실패: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('문서 추가 실패: $e')));
       }
     }
   }
-  //
-  // final TextEditingController _titleController = TextEditingController();
-  // final TextEditingController _priceController = TextEditingController();
-  // final TextEditingController _bodyController = TextEditingController();
-  final TextEditingController _stockController = TextEditingController(); // 재고 컨트롤러 추가
-  // String? _categoryValue;
 
   void _showLoadingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // 다이얼로그 외부를 클릭해도 닫히지 않도록 설정
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           child: Container(
@@ -176,6 +159,51 @@ class _SellProductFormState extends State<SellProductForm> {
         );
       },
     );
+  }
+
+  Future<void> _fetchDonaOrders() async {
+    // Markets 컬렉션에서 DonaOrders 서브컬렉션 불러오기
+    QuerySnapshot marketQuery = await _firestore
+        .collection('Markets')
+        .where('name', isEqualTo: widget.name)
+        .get();
+
+    if (marketQuery.docs.isNotEmpty) {
+      String marketDocumentId = marketQuery.docs.first.id;
+
+      QuerySnapshot donaOrdersQuery = await _firestore
+          .collection('Markets')
+          .doc(marketDocumentId)
+          .collection('DonaOrders')
+          .get();
+
+      List<Map<String, dynamic>> donaOrders = donaOrdersQuery.docs.map((doc) {
+        return {
+          'date': doc['date'],
+          'donaId': doc['donaId'],
+          'paymentMethod': doc['paymentMethod'],
+          'title': doc['title'],
+          'userId': doc['userId'],
+          'username': doc['username'],
+          'donaImg': doc['donaImg'], // donaImg 추가
+        };
+      }).toList();
+
+      // 새로운 페이지로 기부글 목록 보여주기
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DonaOrdersSelectionPage(
+            donaOrders: donaOrders,
+            onDonaOrdersSelected: (selectedDonaOrders) {
+              setState(() {
+                _displayedDonaOrders = selectedDonaOrders; // 선택된 기부글을 저장
+              });
+            },
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -238,7 +266,7 @@ class _SellProductFormState extends State<SellProductForm> {
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.camera_alt, size: 50), // 항상 카메라 아이콘만 표시
+                      child: Icon(Icons.camera_alt, size: 50),
                     ),
                   ),
                   SizedBox(width: 16),
@@ -368,7 +396,7 @@ class _SellProductFormState extends State<SellProductForm> {
               SizedBox(height: 16),
               TextFormField(
                 controller: _stockController,
-                decoration: InputDecoration(labelText: '재고 수량'), // 재고 입력 필드
+                decoration: InputDecoration(labelText: '재고 수량'),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
@@ -379,7 +407,7 @@ class _SellProductFormState extends State<SellProductForm> {
                 },
               ),
               SizedBox(height: 16),
-            TextFormField(
+              TextFormField(
                 controller: _bodyController,
                 decoration: InputDecoration(
                   labelText: '자세한 설명',
@@ -395,12 +423,112 @@ class _SellProductFormState extends State<SellProductForm> {
               ),
               SizedBox(height: 16),
               ElevatedButton(
+                onPressed: _fetchDonaOrders,
+                child: Text('기부글 선택하기'),
+              ),
+              SizedBox(height: 16),
+              // 선택된 기부글 표시
+              if (_displayedDonaOrders.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('선택된 기부글:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(height: 8),
+                    ..._displayedDonaOrders.map((donaOrder) {
+                      return ListTile(
+                        title: Text(donaOrder['title']),
+                        subtitle: Text('기부자: ${donaOrder['username']}'),
+                        leading: donaOrder['donaImg'] != null && donaOrder['donaImg'].isNotEmpty
+                            ? Image.network(
+                          donaOrder['donaImg'][0], // 첫 번째 이미지를 표시
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        )
+                            : null,
+                        trailing: IconButton(
+                          icon: Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _displayedDonaOrders.remove(donaOrder); // 선택 해제
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              SizedBox(height: 16),
+              ElevatedButton(
                 onPressed: _submitForm,
                 child: Text('판매하기'),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class DonaOrdersSelectionPage extends StatefulWidget {
+  final List<Map<String, dynamic>> donaOrders;
+  final ValueChanged<List<Map<String, dynamic>>> onDonaOrdersSelected;
+
+  const DonaOrdersSelectionPage({
+    Key? key,
+    required this.donaOrders,
+    required this.onDonaOrdersSelected,
+  }) : super(key: key);
+
+  @override
+  _DonaOrdersSelectionPageState createState() => _DonaOrdersSelectionPageState();
+}
+
+class _DonaOrdersSelectionPageState extends State<DonaOrdersSelectionPage> {
+  List<Map<String, dynamic>> selectedDonaOrders = []; // 선택된 기부글 목록
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('내 기부글 목록'),
+      ),
+      body: ListView.builder(
+        itemCount: widget.donaOrders.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(widget.donaOrders[index]['title']),
+            subtitle: Text('기부자: ${widget.donaOrders[index]['username']}'),
+            leading: widget.donaOrders[index]['donaImg'] != null && widget.donaOrders[index]['donaImg'].isNotEmpty
+                ? Image.network(
+              widget.donaOrders[index]['donaImg'][0], // 첫 번째 이미지를 표시
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+            )
+                : null,
+            trailing: Checkbox(
+              value: selectedDonaOrders.contains(widget.donaOrders[index]),
+              onChanged: (bool? selected) {
+                setState(() {
+                  if (selected == true) {
+                    selectedDonaOrders.add(widget.donaOrders[index]); // 선택된 기부글 추가
+                  } else {
+                    selectedDonaOrders.remove(widget.donaOrders[index]); // 선택 해제
+                  }
+                });
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          widget.onDonaOrdersSelected(selectedDonaOrders); // 선택된 기부글을 부모 위젯에 전달
+          Navigator.pop(context); // 페이지 닫기
+        },
+        child: Icon(Icons.check),
       ),
     );
   }
