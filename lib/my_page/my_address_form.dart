@@ -49,8 +49,18 @@ class _AddressFormState extends State<AddressForm> {
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
+        // 주소 컬렉션에 저장된 주소가 하나도 없는지 확인
+        QuerySnapshot addressSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(currentUser.uid)
+            .collection('Addresses')
+            .get();
+
+        bool isFirstAddress = addressSnapshot.docs.isEmpty; // 주소가 없는지 여부
+
         // Firestore에 기본 배송지인지 체크하여 기존 기본 배송지를 업데이트
-        if (_isDefaultAddress) {
+        if (_isDefaultAddress || isFirstAddress) {
+          // 만약 기본 배송지로 설정되었거나, 첫 번째 주소라면
           await FirebaseFirestore.instance
               .collection('Users')
               .doc(currentUser.uid)
@@ -74,7 +84,7 @@ class _AddressFormState extends State<AddressForm> {
           'detailAddress': _detailAddressController.text, // 상세주소 저장
           'recipient': _recipientController.text, // 수령인 저장
           'phone': _phoneController.text,
-          'isDefault': _isDefaultAddress, // 기본 배송지 여부 저장
+          'isDefault': _isDefaultAddress || isFirstAddress, // 기본 배송지 여부 저장 (첫 주소는 자동으로 기본 배송지로 설정)
           'createdAt': FieldValue.serverTimestamp(),
         });
 
@@ -83,6 +93,7 @@ class _AddressFormState extends State<AddressForm> {
       }
     }
   }
+
 
   // 폼 제출 성공 팝업
   void _showSuccessDialog() {
