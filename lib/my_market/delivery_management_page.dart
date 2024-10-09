@@ -290,22 +290,36 @@ class _DeliveryManagementPageState extends State<DeliveryManagementPage> {
 
         batch.update(orderRef, {'shippingStatus': nextStatus});
 
-        // if (userId.isNotEmpty && sellId.isNotEmpty) {
-        //   DocumentReference userOrderRef = FirebaseFirestore.instance
-        //       .collection('Users')
-        //       .doc(userId)
-        //       .collection('Orders')
-        //       .doc(sellId);
-        //
-        //   DocumentSnapshot userOrderSnapshot = await userOrderRef.get();
-        //   if (userOrderSnapshot.exists) {
-        //     batch.update(userOrderRef, {'shippingStatus': nextStatus});
-        //   } else {
-        //     print('유저 주문 문서가 존재하지 않습니다: $sellId');
-        //   }
-        // }
+        if (userId.isNotEmpty && sellId.isNotEmpty) {
+          QuerySnapshot userOrdersSnapshot = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(userId)
+              .collection('Orders')
+              .where('orderId', isEqualTo: sellId)
+              .get();
+
+          if (userOrdersSnapshot.docs.isNotEmpty) {
+            for (var userOrderDoc in userOrdersSnapshot.docs) {
+              DocumentReference userOrderRef = userOrderDoc.reference;
+
+              QuerySnapshot itemsQuerySnapshot = await userOrderRef.collection('items')
+                  .where('sellId', isEqualTo: sellId)
+                  .get();
+
+              if (itemsQuerySnapshot.docs.isNotEmpty) {
+                for (var itemDoc in itemsQuerySnapshot.docs) {
+                  batch.update(itemDoc.reference, {'shippingStatus': nextStatus});
+                }
+              } else {
+                print('해당 sellId에 맞는 아이템이 없습니다: $sellId');
+              }
+            }
+          } else {
+            print('유저 주문 문서가 존재하지 않습니다: $sellId');
+          }
+        }
       } else {
-        print('마켓 주문 문서가 존재하지 않습니다: $orderId');
+        print('해당 주문 문서가 존재하지 않습니다: $orderId');
       }
     }
 
