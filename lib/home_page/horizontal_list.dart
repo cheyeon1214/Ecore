@@ -3,6 +3,7 @@ import '../donation_page/donation_page_banner.dart';
 import '../models/firestore/sell_post_model.dart';
 import 'feed_detail.dart';
 import 'feed_list.dart';
+import '../widgets/sold_out.dart'; // SoldOutOverlay 위젯 임포트
 
 class HorizontalListSection extends StatelessWidget {
   final Stream<List<SellPostModel>> stream;
@@ -94,13 +95,27 @@ class HorizontalListSection extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              height: 130, // Adjust height for the image
-                              child: Image.network(
-                                firstImageUrl, // 첫 번째 이미지를 사용하도록 변경
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                            Stack( // Stack 위젯으로 오버레이 적용
+                              children: [
+                                Container(
+                                  height: 130, // Adjust height for the image
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0), // 모서리를 둥글게 설정
+                                    child: Image.network(
+                                      firstImageUrl, // 첫 번째 이미지를 사용
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                // SoldOutOverlay를 이미지 위에 겹치게 설정
+                                if (post.stock == 0) // 재고가 없을 때만 표시
+                                  SoldOutOverlay(
+                                    isSoldOut: true,
+                                    radius: 30, // 원하는 크기로 radius 조정 가능
+                                    borderRadius: 10.0, // 이미지와 동일하게 둥글기 설정
+                                  ),
+                              ],
                             ),
                             Padding(
                               padding: const EdgeInsets.all(4.0),
