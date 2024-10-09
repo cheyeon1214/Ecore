@@ -367,12 +367,10 @@ class _ChatListState extends State<ChatList> {
       body: StreamBuilder<List<ChatModel>>(
         stream: _chatController.stream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('채팅방이 없습니다.'));
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error loading chats'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('채팅방이 없습니다.'));
           }
 
           final chats = snapshot.data!;
