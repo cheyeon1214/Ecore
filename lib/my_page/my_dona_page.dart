@@ -5,6 +5,7 @@ import '../donation_page/dona_detail.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/user_model.dart';
 import '../sell_donation_page/edit_dona_product_form.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // FirebaseAuth import 추가
 
 class MyDonaPage extends StatelessWidget {
   @override
@@ -21,8 +22,9 @@ class MyDonaPage extends StatelessWidget {
             return Center(child: Text('등록한 기부글이 없습니다.'));
           }
 
-          return FutureBuilder<List<DonaPostModel>>(
-            future: _getMyDonaPosts(myPosts), // my_posts에 해당하는 기부글 불러오기
+          // Firestore의 my_posts 배열에 해당하는 기부글 실시간 구독
+          return StreamBuilder<List<DonaPostModel>>(
+            stream: _getMyDonaPostsStream(myPosts), // 실시간 데이터 스트림 가져오기
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator());
@@ -55,8 +57,8 @@ class MyDonaPage extends StatelessWidget {
                     ),
                     title: Text(
                       post.title,
-                      maxLines: 1, // 한 줄로 제한
-                      overflow: TextOverflow.ellipsis, // 생략 표시
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -65,8 +67,8 @@ class MyDonaPage extends StatelessWidget {
                     ),
                     subtitle: Text(
                       post.body,
-                      maxLines: 1, // 한 줄로 제한
-                      overflow: TextOverflow.ellipsis, // 생략 표시
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     trailing: IconButton(
                       icon: Icon(Icons.more_vert), // 세로 점 아이콘
@@ -92,21 +94,15 @@ class MyDonaPage extends StatelessWidget {
     );
   }
 
-  // Firestore에서 my_posts 배열에 해당하는 기부 글들 가져오기
-  Future<List<DonaPostModel>> _getMyDonaPosts(List<String> myPosts) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('DonaPosts')
-          .where(FieldPath.documentId, whereIn: myPosts)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => DonaPostModel.fromSnapshot(doc))
-          .toList();
-    } catch (e) {
-      print('Error fetching dona posts: $e');
-      return [];
-    }
+  // Firestore에서 my_posts 배열에 해당하는 기부 글들 실시간 구독
+  Stream<List<DonaPostModel>> _getMyDonaPostsStream(List<String> myPosts) {
+    return FirebaseFirestore.instance
+        .collection('DonaPosts')
+        .where(FieldPath.documentId, whereIn: myPosts)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => DonaPostModel.fromSnapshot(doc))
+        .toList());
   }
 
   // 옵션 메뉴 표시
@@ -136,15 +132,74 @@ class MyDonaPage extends StatelessWidget {
                 leading: Icon(Icons.delete),
                 title: Text('삭제하기'),
                 onTap: () {
-                  // 삭제하기 동작
-                  Navigator.pop(context);
+                  Navigator.pop(context); // 옵션 메뉴 닫기
+                  _confirmDelete(context, post.donaId); // 삭제 확인 다이얼로그 호출
                 },
               ),
-              // 추가 옵션을 여기에 추가
             ],
           ),
         );
       },
     );
+  }
+
+  // 삭제 확인 다이얼로그
+  void _confirmDelete(BuildContext context, String donaId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('삭제 확인'),
+          content: Text('정말로 이 기부글을 삭제하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // '아니오' 선택 시 팝업 닫기
+              },
+              child: Text('아니오'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // '예' 선택 시 팝업 닫기
+                await _deleteDonaPost(context, donaId); // 삭제 메서드 호출
+              },
+              child: Text('예'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 기부글 삭제 메서드
+  Future<void> _deleteDonaPost(BuildContext context, String donaId) async {
+    try {
+      // 현재 사용자의 UID 가져오기
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+      // DonaPosts 컬렉션에서 문서 삭제
+      await FirebaseFirestore.instance.collection('DonaPosts').doc(donaId).delete();
+
+      // Users 컬렉션의 my_posts 배열에서 해당 문서 ID 삭제
+      if (userId != null) {
+        await FirebaseFirestore.instance.collection('Users').doc(userId).update({
+          'my_posts': FieldValue.arrayRemove([donaId]), // 삭제할 문서 ID
+        });
+      }
+
+      // ScaffoldMessenger 사용
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('기부글이 삭제되었습니다.')),
+        );
+      }
+    } catch (e) {
+      print('Error deleting dona post: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('삭제 실패: $e')),
+        );
+      }
+    }
   }
 }
