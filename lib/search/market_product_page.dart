@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/firestore/sell_post_model.dart';
 import '../home_page/feed_detail.dart';
+import '../widgets/sold_out.dart'; // SoldOutOverlay 임포트
 
 class MarketProductpage extends StatelessWidget {
   final String marketId;
@@ -55,25 +56,37 @@ class MarketProductpage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게 설정
-                    child: AspectRatio(
-                      aspectRatio: 1.0,  // 1:1 비율 고정
-                      child: Container(
-                        color: Colors.blueGrey,
-                        child: sellPost.img.isNotEmpty
-                            ? Image.network(
-                          sellPost.img[0],
-                          fit: BoxFit.cover,  // 이미지를 컨테이너에 맞게 1:1로 채움
-                        )
-                            : Center(
-                          child: Text(
-                            '이미지 없음',
-                            style: TextStyle(color: Colors.white),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게 설정
+                        child: AspectRatio(
+                          aspectRatio: 1.0,  // 1:1 비율 고정
+                          child: Container(
+                            color: Colors.blueGrey,
+                            child: sellPost.img.isNotEmpty
+                                ? Image.network(
+                              sellPost.img[0],
+                              fit: BoxFit.cover,  // 이미지를 컨테이너에 맞게 1:1로 채움
+                            )
+                                : Center(
+                              child: Text(
+                                '이미지 없음',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      // 솔드 아웃 오버레이
+                      Positioned.fill(
+                        child: SoldOutOverlay(
+                          isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
+                          radius: 30.0, // 모서리에 맞게 둥글게 설정
+                          borderRadius: 6.0,
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 10),  // 이미지와 텍스트 간의 간격
                   Text(
