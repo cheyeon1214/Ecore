@@ -21,7 +21,7 @@ class _DeliveryManagementPageState extends State<DeliveryManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('배송 관리'),
+        title: const Text('배송 관리', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10.0),

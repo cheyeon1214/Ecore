@@ -32,7 +32,7 @@ class _OrderedDonaPageState extends State<OrderedDonaPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('구매한 기부글'),
+        title: const Text('구매한 기부글', style: TextStyle(fontFamily: 'NanumSquare',)),
         leading: const BackButton(),
       ),
       body: Column(

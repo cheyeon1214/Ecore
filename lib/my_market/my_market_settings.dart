@@ -14,7 +14,7 @@ class MyMarketSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('마켓 설정'),
+        title: Text('마켓 설정', style: TextStyle(fontFamily: 'NanumSquare',)),
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black), // 뒤로가기 버튼 색상
       ),
