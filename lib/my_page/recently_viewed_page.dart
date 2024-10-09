@@ -12,7 +12,7 @@ class RecentViewedPage extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('최근 본 상품'),
+        title: Text('최근 본 상품', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: Consumer<UserModel>(
         builder: (context, userModel, child) {
