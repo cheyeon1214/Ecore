@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../donation_page/donation_page_banner.dart';
 import '../models/firestore/sell_post_model.dart';
+import '../models/firestore/market_model.dart'; // Markets 컬렉션 모델 임포트
 import 'feed_detail.dart';
 import 'feed_list.dart';
 import '../widgets/sold_out.dart'; // SoldOutOverlay 위젯 임포트
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore 임포트
 
 class HorizontalListSection extends StatelessWidget {
   final Stream<List<SellPostModel>> stream;
@@ -126,16 +128,36 @@ class HorizontalListSection extends StatelessWidget {
                                 style: TextStyle(fontSize: 14),
                               ),
                             ),
-                            // 제목과 가격 사이에 "마켓 이름" 텍스트 추가
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                              child: Text(
-                                '마켓 이름', // 정적 텍스트로 "마켓 이름" 표시
-                                style: TextStyle(fontSize: 14, color: Colors.black54), // 스타일 조정 가능
-                              ),
+                            // Firestore에서 마켓 이름 가져오기
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('Markets')
+                                  .doc(post.marketId) // post에서 marketId 가져오기
+                                  .snapshots(),
+                              builder: (context, marketSnapshot) {
+                                if (marketSnapshot.connectionState == ConnectionState.waiting) {
+                                  return Text('로딩 중...');
+                                }
+                                if (marketSnapshot.hasError) {
+                                  return Text('에러 발생');
+                                }
+                                if (!marketSnapshot.hasData || !marketSnapshot.data!.exists) {
+                                  return Text('마켓 없음');
+                                }
+
+                                final marketName = marketSnapshot.data!['name']; // name 필드 가져오기
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 4.0),
+                                  child: Text(
+                                    marketName, // Firestore에서 가져온 마켓 이름 표시
+                                    style: TextStyle(fontSize: 14, color: Colors.black54), // 스타일 조정 가능
+                                  ),
+                                );
+                              },
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                              padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
                               child: Text(
                                 '${post.price}원',
                                 style: TextStyle(
