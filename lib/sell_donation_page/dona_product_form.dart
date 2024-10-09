@@ -99,7 +99,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
         }
 
         // 현재 사용자의 UID를 user 필드로 추가
-        await _firestore.collection('DonaPosts').add({
+        DocumentReference docRef = await _firestore.collection('DonaPosts').add({
           'title': title,
           'category': category,
           'material': material,
@@ -111,6 +111,11 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'createdAt': FieldValue.serverTimestamp(),
           'userId': currentUser?.uid, // 현재 사용자의 UID 추가
           'point': point, // 포인트 필드 추가
+        });
+
+        // Users 컬렉션의 my_posts 배열에 문서 ID 추가
+        await _firestore.collection('Users').doc(currentUser?.uid).update({
+          'my_posts': FieldValue.arrayUnion([docRef.id]) // 새로운 문서 ID 추가
         });
 
         Navigator.of(context).pop();
