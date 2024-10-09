@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../donation_page/dona_detail.dart';
 import '../models/firestore/dona_post_model.dart';
 import '../models/firestore/user_model.dart';
+import '../sell_donation_page/edit_dona_product_form.dart';
 
 class MyDonaPage extends StatelessWidget {
   @override
@@ -70,7 +71,6 @@ class MyDonaPage extends StatelessWidget {
                     trailing: IconButton(
                       icon: Icon(Icons.more_vert), // 세로 점 아이콘
                       onPressed: () {
-                        // 여기에 버튼 클릭 시 동작을 추가하세요.
                         _showOptions(context, post);
                       },
                     ),
@@ -123,8 +123,13 @@ class MyDonaPage extends StatelessWidget {
                 leading: Icon(Icons.edit),
                 title: Text('수정하기'),
                 onTap: () {
-                  // 수정하기 동작
-                  Navigator.pop(context);
+                  Navigator.pop(context); // 옵션 메뉴 닫기
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DonaProductEditForm(donaId: post.donaId), // 수정 폼으로 이동
+                    ),
+                  );
                 },
               ),
               ListTile(
