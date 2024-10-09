@@ -15,7 +15,7 @@ class MyPageBanner extends StatelessWidget {
       appBar: AppBar(
         title: Padding(
           padding: const EdgeInsets.all(10.0),
-          child: Text('마이페이지', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text('마이페이지', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'NanumSquare',)),
         ),
       ),
       body: BodyContents(),
