@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../home_page/feed_detail.dart';
 import '../models/firestore/sell_post_model.dart';
-import '../widgets/sold_out.dart'; // SoldOutOverlay 임포트
+import '../widgets/sold_out.dart';
 
 class SearchPage extends StatefulWidget {
   final String marketId;
@@ -14,9 +14,9 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  String searchQuery = '';  // 검색어를 저장할 변수
-  bool showResults = false; // 검색 결과를 보여줄지 결정하는 변수
-  TextEditingController _controller = TextEditingController(); // 텍스트 필드를 컨트롤할 컨트롤러
+  String searchQuery = '';
+  bool showResults = false;
+  TextEditingController _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -24,45 +24,45 @@ class _SearchPageState extends State<SearchPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0, // 그림자 제거
+        elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            Navigator.pop(context); // 뒤로 가기 버튼 클릭 시 이전 페이지로 돌아감
+            Navigator.pop(context);
           },
         ),
         title: Stack(
-          alignment: Alignment.centerRight, // 오른쪽 끝에 버튼 배치
+          alignment: Alignment.centerRight,
           children: [
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               decoration: BoxDecoration(
-                color: Colors.grey[200], // 배경색 설정 (연한 회색)
-                borderRadius: BorderRadius.circular(10), // 테두리 둥글게
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
               ),
               child: TextField(
-                controller: _controller, // 컨트롤러 추가
+                controller: _controller,
                 onChanged: (query) {
                   setState(() {
                     searchQuery = query;
-                    showResults = false; // 검색 중에는 결과를 숨김
+                    showResults = false;
                   });
                 },
                 decoration: InputDecoration(
-                  border: InputBorder.none, // 기본 테두리 제거
-                  hintText: '상품을 검색해보세요.', // 힌트 텍스트
-                  hintStyle: TextStyle(color: Colors.grey), // 힌트 텍스트 색상 설정
+                  border: InputBorder.none,
+                  hintText: '상품을 검색해보세요.',
+                  hintStyle: TextStyle(color: Colors.grey),
                 ),
               ),
             ),
-            if (searchQuery.isNotEmpty) // 검색어가 있을 때만 X 버튼 표시
+            if (searchQuery.isNotEmpty)
               IconButton(
-                icon: Icon(Icons.cancel, color: Colors.grey), // X 아이콘
+                icon: Icon(Icons.cancel, color: Colors.grey),
                 onPressed: () {
-                  _controller.clear(); // 텍스트 필드를 비움
+                  _controller.clear();
                   setState(() {
-                    searchQuery = ''; // 검색어 초기화
-                    showResults = false; // 검색 결과도 초기화
+                    searchQuery = '';
+                    showResults = false;
                   });
                 },
               ),
@@ -74,9 +74,8 @@ class _SearchPageState extends State<SearchPage> {
             icon: Icon(Icons.search_rounded, color: Colors.black),
             onPressed: () {
               if (searchQuery.isNotEmpty) {
-                // 검색어가 입력된 경우에만 검색 결과를 보여줌
                 setState(() {
-                  showResults = true; // 검색 결과를 보여줌
+                  showResults = true;
                 });
               }
             },
@@ -98,7 +97,7 @@ class _SearchPageState extends State<SearchPage> {
             return Center(child: Text('상품이 없습니다.'));
           }
 
-          // 검색어를 포함하는 상품 필터링
+          // 필터링 로직
           var filteredPosts = snapshot.data!.docs.where((doc) {
             var title = (doc['title'] as String).toLowerCase();
             return title.contains(searchQuery.toLowerCase());
@@ -108,7 +107,6 @@ class _SearchPageState extends State<SearchPage> {
             return Center(child: Text('검색 결과가 없습니다.'));
           }
 
-          // 필터링된 상품 수
           int resultCount = filteredPosts.length;
 
           return Column(
@@ -117,7 +115,7 @@ class _SearchPageState extends State<SearchPage> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  '상품 $resultCount', // 상품 개수 표시
+                  '상품 $resultCount',
                   style: TextStyle(
                     fontSize: 16.0,
                     fontWeight: FontWeight.bold,
@@ -128,12 +126,12 @@ class _SearchPageState extends State<SearchPage> {
                 child: GridView.builder(
                   padding: EdgeInsets.all(8.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,  // 한 줄에 3개씩
-                    crossAxisSpacing: 8.0,  // 그리드 아이템 간격 (가로)
-                    mainAxisSpacing: 8.0,   // 그리드 아이템 간격 (세로)
-                    childAspectRatio: 0.6,  // 그리드 아이템 비율 (이미지 + 텍스트)
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8.0,
+                    mainAxisSpacing: 8.0,
+                    childAspectRatio: 0.6,
                   ),
-                  itemCount: resultCount, // 필터링된 상품 수만큼 출력
+                  itemCount: resultCount,
                   itemBuilder: (context, index) {
                     var sellPost = SellPostModel.fromSnapshot(filteredPosts[index]);
 
@@ -151,18 +149,17 @@ class _SearchPageState extends State<SearchPage> {
                         children: [
                           Stack(
                             children: [
-                              // 상품 이미지
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(6.0),  // 모서리를 둥글게
+                                borderRadius: BorderRadius.circular(6.0),
                                 child: AspectRatio(
-                                  aspectRatio: 1.0,  // 1:1 비율로 고정
+                                  aspectRatio: 1.0,
                                   child: sellPost.img.isNotEmpty
                                       ? Image.network(
-                                    sellPost.img[0],  // 첫 번째 이미지 사용
-                                    fit: BoxFit.cover,  // 이미지를 컨테이너에 맞춤
+                                    sellPost.img[0],
+                                    fit: BoxFit.cover,
                                   )
                                       : Container(
-                                    color: Colors.grey[300],  // 이미지가 없을 때 회색 배경
+                                    color: Colors.grey[300],
                                     child: Center(
                                       child: Text(
                                         '이미지 없음',
@@ -172,29 +169,27 @@ class _SearchPageState extends State<SearchPage> {
                                   ),
                                 ),
                               ),
-                              // 솔드 아웃 오버레이
-                              Positioned.fill(
-                                child: SoldOutOverlay(
-                                  isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
-                                  radius: 30.0, // 모서리에 맞게 둥글게 설정
-                                  borderRadius: 6.0,
-                                ),
+                              // SoldOutOverlay 위젯이 Stack 내부에 위치해야 함
+                              SoldOutOverlay(
+                                isSoldOut: sellPost.stock == 0,
+                                radius: 30.0,
+                                borderRadius: 6.0,
                               ),
                             ],
                           ),
-                          SizedBox(height: 8),  // 이미지와 텍스트 간의 간격
+                          SizedBox(height: 8),
                           Text(
-                            '${sellPost.price}원',  // 가격 정보
+                            '${sellPost.price}원',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16.0,
                             ),
                           ),
-                          SizedBox(height: 4),  // 가격과 제목 간의 간격
+                          SizedBox(height: 4),
                           Text(
-                            sellPost.title,  // 제목 정보
-                            maxLines: 2,  // 두 줄까지 표시
-                            overflow: TextOverflow.ellipsis,  // 두 줄 이상일 경우 생략
+                            sellPost.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 14.0),
                           ),
                         ],

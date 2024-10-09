@@ -74,17 +74,12 @@ class RecentViewedPage extends StatelessWidget {
                               ),
                             ),
                             // SoldOutOverlay를 이미지 위에 겹치게 설정
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(10)), // 둥글기 이미지와 동일하게 설정
-                                child: SoldOutOverlay(
-                                  isSoldOut: post.stock == 0,
-                                  radius: 30,
-                                  borderRadius: 5.0,
-                                  // 원하는 크기로 radius 조정 가능
-                                ),
+                            if (post.stock == 0) // 재고가 없을 때만 표시
+                              SoldOutOverlay(
+                                isSoldOut: true,
+                                radius: 30,
+                                borderRadius: 5.0,
                               ),
-                            ),
                           ],
                         ),
                         Padding(
