@@ -78,14 +78,10 @@ class FavoriteListPage extends StatelessWidget {
                                   ),
                                 ),
                                 // SoldOutOverlay를 이미지 위에 겹치게 설정
-                                Positioned.fill(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10.0), // 둥글기 이미지와 동일하게 설정
-                                    child: SoldOutOverlay(
-                                      isSoldOut: post.stock == 0,
-                                      radius: 30, // 원하는 크기로 radius 조정 가능
-                                    ),
-                                  ),
+                                SoldOutOverlay(
+                                  isSoldOut: post.stock == 0,
+                                  radius: 30, // 원하는 크기로 radius 조정 가능
+                                  borderRadius: 10.0,
                                 ),
                               ],
                             ),
