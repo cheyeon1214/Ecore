@@ -40,7 +40,7 @@ class HorizontalListSection extends StatelessWidget {
             ],
           ),
           SizedBox(
-            height: 200, // Set height for the ListView
+            height: 220, // Set height for the ListView
             child: StreamBuilder<List<SellPostModel>>(
               stream: stream,
               builder: (context, snapshot) {
@@ -124,6 +124,14 @@ class HorizontalListSection extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(fontSize: 14),
+                              ),
+                            ),
+                            // 제목과 가격 사이에 "마켓 이름" 텍스트 추가
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                              child: Text(
+                                '마켓 이름', // 정적 텍스트로 "마켓 이름" 표시
+                                style: TextStyle(fontSize: 14, color: Colors.black54), // 스타일 조정 가능
                               ),
                             ),
                             Padding(
