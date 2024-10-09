@@ -54,13 +54,26 @@ class MyDonaPage extends StatelessWidget {
                     ),
                     title: Text(
                       post.title,
+                      maxLines: 1, // 한 줄로 제한
+                      overflow: TextOverflow.ellipsis, // 생략 표시
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    subtitle: Text('${post.body}'),
+                    subtitle: Text(
+                      post.body,
+                      maxLines: 1, // 한 줄로 제한
+                      overflow: TextOverflow.ellipsis, // 생략 표시
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.more_vert), // 세로 점 아이콘
+                      onPressed: () {
+                        // 여기에 버튼 클릭 시 동작을 추가하세요.
+                        _showOptions(context, post);
+                      },
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -94,5 +107,39 @@ class MyDonaPage extends StatelessWidget {
       print('Error fetching dona posts: $e');
       return [];
     }
+  }
+
+  // 옵션 메뉴 표시
+  void _showOptions(BuildContext context, DonaPostModel post) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('수정하기'),
+                onTap: () {
+                  // 수정하기 동작
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete),
+                title: Text('삭제하기'),
+                onTap: () {
+                  // 삭제하기 동작
+                  Navigator.pop(context);
+                },
+              ),
+              // 추가 옵션을 여기에 추가
+            ],
+          ),
+        );
+      },
+    );
   }
 }
