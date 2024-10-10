@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../cosntants/firestore_key.dart';
@@ -14,7 +13,6 @@ class ChatBanner extends StatefulWidget {
 }
 
 class _ChatBannerState extends State<ChatBanner> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   String marketName = '';
 
   @override
@@ -25,7 +23,6 @@ class _ChatBannerState extends State<ChatBanner> {
 
   Future<void> _getMarketName() async {
     try {
-      // Reference to the Firestore collection
       DocumentSnapshot marketSnapshot = await FirebaseFirestore.instance
           .collection('Markets')
           .doc(widget.marketId)

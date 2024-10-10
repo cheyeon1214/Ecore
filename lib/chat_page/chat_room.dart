@@ -66,7 +66,6 @@ class _ChatRoomState extends State<ChatRoom> {
 
     String? chatId = await getChatId(loggedInUser!.uid);
     if (chatId == null) {
-      print('No chat room found for user: ${loggedInUser!.uid} and market: ${widget.marketId}');
       yield [];
       return;
     }

@@ -127,7 +127,6 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     }
 
     final chatId = filteredChats.first.id;
-    print('Chat ID found: $chatId');
     final myMessages = FirebaseFirestore.instance
         .collection(COLLECTION_CHATS)
         .doc(chatId)

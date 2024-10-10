@@ -172,7 +172,6 @@ class _ChatListState extends State<ChatList> {
         final chatId = userChatsSnapshot.docs.first.id;
         return chatId;
       } else {
-        print('No chat rooms found for user: $userId or market: $userMarketId');
 
         final newChatRef =
             FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
@@ -234,7 +233,6 @@ class _ChatListState extends State<ChatList> {
       final unreadMessages = allMessagesSnapshot.docs.where((doc) {
         final data = doc.data();
         final List<dynamic> readBy = data[KEY_READBY] ?? [];
-        print("Read by: $readBy, User ID: $userId");
         return !readBy.contains(userId);
       }).toList();
 
@@ -259,7 +257,6 @@ class _ChatListState extends State<ChatList> {
         KEY_READBY: FieldValue.arrayUnion([currentUserId, userMarketId])
       });
 
-      print('Message $messageId marked as read by $currentUserId and $userMarketId');
     } catch (e) {
       print('Error marking message as read: $e');
     }
@@ -388,7 +385,6 @@ class _ChatListState extends State<ChatList> {
             itemBuilder: (context, index) {
               final chat = chats[index];
               final otherUserId = _userIdCache[chat.chatId]!;
-              print(otherUserId);
 
               return FutureBuilder<Map<String, String>>(
                 future: _getOrFetchUserData(otherUserId),
@@ -450,7 +446,6 @@ class _ChatListState extends State<ChatList> {
                       }
 
                       final unreadCount = unreadSnapshot.data ?? 0;
-                      print('Unread Count: $unreadCount');
 
                       return ListTile(
                         title: Row(
