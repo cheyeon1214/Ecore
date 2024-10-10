@@ -83,11 +83,9 @@ class _CartListState extends State<CartList> {
 
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
+                      child: Card(
+                        color: Colors.white,
+                        elevation: 2.0,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -187,6 +185,7 @@ class _CartListState extends State<CartList> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
                         ),
                       ),
