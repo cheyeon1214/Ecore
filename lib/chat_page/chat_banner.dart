@@ -44,21 +44,11 @@ class _ChatBannerState extends State<ChatBanner> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80.0),
-        child: AppBar(
-          title: Text(marketName.isEmpty ? 'Chat' : marketName, style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),),
-          bottom: PreferredSize(
-            preferredSize: Size.fromHeight(4.0), // 구분선 높이
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 15),
-              child: Container(
-                color: Colors.grey[300],
-                height: 3.0,
-              ),
-            ),
-          ),
-        ),
+      appBar: AppBar(
+          title: Text(marketName.isEmpty ? 'Chat' : marketName, style: TextStyle(
+        fontSize: 22,
+        fontFamily: 'NanumSquare',
+        )),
       ),
       body: ChatRoom(marketId: widget.marketId),
     );
