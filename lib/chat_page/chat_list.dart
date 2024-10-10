@@ -246,17 +246,25 @@ class _ChatListState extends State<ChatList> {
   }
 
   Future<void> markMessageAsRead(
-      String chatId, String messageId, String sendId) async {
-    final messageRef = FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .doc(messageId);
+      String chatId, String messageId, String currentUserId, String userMarketId) async {
+    try {
+      final messageRef = FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .doc(chatId)
+          .collection(COLLECTION_MESSAGES)
+          .doc(messageId);
 
-    await messageRef.update({
-      KEY_READBY: FieldValue.arrayUnion([sendId])
-    });
+      // 현재 유저의 UID와 마켓 아이디를 모두 읽음 처리에 추가
+      await messageRef.update({
+        KEY_READBY: FieldValue.arrayUnion([currentUserId, userMarketId])
+      });
+
+      print('Message $messageId marked as read by $currentUserId and $userMarketId');
+    } catch (e) {
+      print('Error marking message as read: $e');
+    }
   }
+
 
   void _processChatUpdates(
       List<QueryDocumentSnapshot<Map<String, dynamic>>> userMessages,
@@ -493,43 +501,38 @@ class _ChatListState extends State<ChatList> {
                               ),
                           ],
                         ),
-                        onTap: () async {
-                          final currentUserId =
-                              FirebaseAuth.instance.currentUser!.uid;
-                          final userMarketId =
-                              await _getMarketIdForUser(currentUserId);
-                          final sendId = userMarketId ?? currentUserId;
+                          onTap: () async {
+                            final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+                            final userMarketId = await _getMarketIdForUser(currentUserId);
 
-                          final chatId =
-                              await getChatIdFromMessage(chat.chatId);
+                            final chatId = await getChatIdFromMessage(chat.chatId);
 
-                          if (chatId == null) {
-                            print("채팅방을 찾을 수 없습니다.");
-                            return;
-                          }
+                            if (chatId == null) {
+                              print("채팅방을 찾을 수 없습니다.");
+                              return;
+                            }
 
-                          final messageSnapshots = await FirebaseFirestore
-                              .instance
-                              .collection(COLLECTION_CHATS)
-                              .doc(chatId)
-                              .collection(COLLECTION_MESSAGES)
-                              .get();
-
-                          for (var messageDoc in messageSnapshots.docs) {
-                            final messageId = messageDoc.id;
-                            await markMessageAsRead(chatId, messageId, sendId);
-                          }
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SelectChatRoom(
-                                chatId: chatId,
-                                otherUserId: otherUserId,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SelectChatRoom(
+                                  chatId: chatId,
+                                  otherUserId: otherUserId,
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+
+                            final messageSnapshots = await FirebaseFirestore.instance
+                                .collection(COLLECTION_CHATS)
+                                .doc(chatId)
+                                .collection(COLLECTION_MESSAGES)
+                                .get();
+
+                            for (var messageDoc in messageSnapshots.docs) {
+                              final messageId = messageDoc.id;
+                              await markMessageAsRead(chatId, messageId, currentUserId, userMarketId ?? currentUserId);
+                            }
+                          }
                       );
                     },
                   );
