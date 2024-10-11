@@ -243,7 +243,7 @@ class _EditMarketInfoPageState extends State<EditMarketInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('마켓 정보 수정'),
+        title: Text('마켓 정보 수정', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),

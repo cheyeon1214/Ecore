@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../cosntants/common_color.dart';
 import '../cosntants/firestore_key.dart';
 import '../models/firestore/chat_model.dart';
 
@@ -65,7 +66,6 @@ class _ChatRoomState extends State<ChatRoom> {
 
     String? chatId = await getChatId(loggedInUser!.uid);
     if (chatId == null) {
-      print('No chat room found for user: ${loggedInUser!.uid} and market: ${widget.marketId}');
       yield [];
       return;
     }
@@ -168,7 +168,6 @@ class _ChatRoomState extends State<ChatRoom> {
                 }
 
                 final allMessages = snapshot.data ?? [];
-                print(allMessages);
 
                 allMessages.sort((a, b) => a.date.compareTo(b.date));
 
@@ -191,7 +190,7 @@ class _ChatRoomState extends State<ChatRoom> {
                           padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                           margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                           decoration: BoxDecoration(
-                            color: isMe ? Colors.blue[100] : Colors.grey[300],
+                            color: isMe ? iconColor : Colors.grey[200],
                             borderRadius: isMe
                                 ? BorderRadius.only(
                               topLeft: Radius.circular(14),
@@ -206,7 +205,10 @@ class _ChatRoomState extends State<ChatRoom> {
                           ),
                           child: Text(
                             chat.text,
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(
+                                fontSize: 15,
+                                color: isMe ? Colors.white : Colors.black,
+                            ),
                           ),
                         ),
                       ],
@@ -224,9 +226,8 @@ class _ChatRoomState extends State<ChatRoom> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(30.0),
-                      border: Border.all(color: Colors.grey[300]!),
                     ),
                     child: TextField(
                       controller: _controller,
@@ -241,7 +242,7 @@ class _ChatRoomState extends State<ChatRoom> {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.blue[300],
+                    color: iconColor,
                   ),
                   child: IconButton(
                     icon: Icon(Icons.send, color: Colors.white),

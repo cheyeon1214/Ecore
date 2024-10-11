@@ -14,7 +14,7 @@ class FavoriteListPage extends StatelessWidget {
       backgroundColor: Colors.white, // 배경색 설정
       appBar: AppBar(
         backgroundColor: Colors.white, // AppBar 배경색 설정
-        title: Text('찜 한 상품'), // 제목 설정
+        title: Text('찜한 상품', style: TextStyle(fontFamily: 'NanumSquare',)), // 제목 설정
       ),
       body: Consumer<UserModel>(
         builder: (context, userModel, child) {

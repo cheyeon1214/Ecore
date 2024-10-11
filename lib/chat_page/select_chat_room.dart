@@ -1,3 +1,4 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -126,7 +127,6 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     }
 
     final chatId = filteredChats.first.id;
-    print('Chat ID found: $chatId');
     final myMessages = FirebaseFirestore.instance
         .collection(COLLECTION_CHATS)
         .doc(chatId)
@@ -277,107 +277,103 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                 '${snapshot.data}',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'NanumSquare',
                 ),
               );
             }
           },
         ),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(20.0),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: Container(
-              color: Colors.grey[300],
-              height: 3.0,
-            ),
-          ),
-        ),
       ),
-      body: FutureBuilder<String?>(
-        future: _getMarketIdForUser(loggedInUser!.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Error fetching market ID'));
-          }
+      body: Padding(
+        padding: const EdgeInsets.only(top: 7.0),
+        child: FutureBuilder<String?>(
+          future: _getMarketIdForUser(loggedInUser!.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError || !snapshot.hasData) {
+              return Center(child: Text('Error fetching market ID'));
+            }
 
-          final marketId = snapshot.data;
-          if (marketId == null) {
-            return Center(child: Text('Market ID not found'));
-          }
+            final marketId = snapshot.data;
+            if (marketId == null) {
+              return Center(child: Text('Market ID not found'));
+            }
 
-          return FutureBuilder<bool>(
-            future: _isMarketId(widget.otherUserId),
-            builder: (context, isMarketSnapshot) {
-              if (isMarketSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              }
+            return FutureBuilder<bool>(
+              future: _isMarketId(widget.otherUserId),
+              builder: (context, isMarketSnapshot) {
+                if (isMarketSnapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-              final isMarketId = isMarketSnapshot.data ?? false;
-              final userId1 = isMarketId ? loggedInUser!.uid : marketId;
-              final userId2 = widget.otherUserId;
+                final isMarketId = isMarketSnapshot.data ?? false;
+                final userId1 = isMarketId ? loggedInUser!.uid : marketId;
+                final userId2 = widget.otherUserId;
 
-              return StreamBuilder<List<ChatModel>>(
-                stream: _fetchMessages(userId1, userId2),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  }
+                return StreamBuilder<List<ChatModel>>(
+                  stream: _fetchMessages(userId1, userId2),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('No messages found'));
-                  }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text('No messages found'));
+                    }
 
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToBottom();
-                  });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToBottom();
+                    });
 
-                  final allMessages = snapshot.data!;
+                    final allMessages = snapshot.data!;
 
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: allMessages.length,
-                    itemBuilder: (ctx, index) {
-                      final chat = allMessages[index];
+                    return ListView.builder(
+                      controller: _scrollController,
+                      itemCount: allMessages.length,
+                      itemBuilder: (ctx, index) {
+                        final chat = allMessages[index];
 
-                      bool isMe = chat.sendId == loggedInUser!.uid || chat.sendId == marketId;
+                        bool isMe = chat.sendId == loggedInUser!.uid || chat.sendId == marketId;
 
-                      return Row(
-                        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                            margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: isMe ? Colors.blue[100] : Colors.grey[300],
-                              borderRadius: isMe
-                                  ? BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                                bottomLeft: Radius.circular(14),
-                              )
-                                  : BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                                bottomRight: Radius.circular(14),
+                        return Row(
+                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                              margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: isMe ? iconColor : Colors.grey[200],
+                                borderRadius: isMe
+                                    ? BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(14),
+                                )
+                                    : BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomRight: Radius.circular(14),
+                                ),
+                              ),
+                              child: Text(
+                                chat.text,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: isMe ? Colors.white : Colors.black,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              chat.text,
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -387,9 +383,8 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(30.0),
-                  border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: TextField(
                   controller: _controller,
@@ -404,7 +399,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.blue[300],
+                color: iconColor,
               ),
               child: IconButton(
                 icon: Icon(Icons.send, color: Colors.white),

@@ -105,7 +105,7 @@ class _EditSellerInfoFormState extends State<EditSellerInfoForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('판매자 정보 수정'),
+        title: Text('판매자 정보 수정', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -230,7 +230,11 @@ class _PayPageState extends State<PayPage> {
             'shippingStatus': '배송 준비',
           });
 
-          await userOrderRef.collection('items').add(item); // Users/{userId}/Orders/{orderId}/items에 아이템 추가
+          await userOrderRef.collection('items').add({
+            ...item,
+            'shippingStatus': '배송 준비', // 새로운 shippingStatus 필드 추가
+          });
+          // Users/{userId}/Orders/{orderId}/items에 아이템 추가
 
           // SellPosts의 DonaList에서 포인트 나누기
           final donaListRef = FirebaseFirestore.instance
