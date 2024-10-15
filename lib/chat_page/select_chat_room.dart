@@ -389,8 +389,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                     itemCount: allMessages.length,
                     itemBuilder: (ctx, index) {
                       final chat = allMessages[index];
-                      bool isMe = chat.sendId == loggedInUser!.uid ||
-                          chat.sendId == userMarketId;
+                      bool isMe = chat.sendId != widget.otherUserId;
 
                       return FutureBuilder<Map<String, String>>(
                           future: _getOtherUserProfileImage(widget.chatId),
