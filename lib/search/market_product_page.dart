@@ -79,12 +79,10 @@ class MarketProductpage extends StatelessWidget {
                         ),
                       ),
                       // 솔드 아웃 오버레이
-                      Positioned.fill(
-                        child: SoldOutOverlay(
-                          isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
-                          radius: 30.0, // 모서리에 맞게 둥글게 설정
-                          borderRadius: 6.0,
-                        ),
+                      SoldOutOverlay(
+                        isSoldOut: sellPost.stock == 0, // 솔드 아웃 상태 확인
+                        radius: 30.0, // 모서리에 맞게 둥글게 설정
+                        borderRadius: 6.0,
                       ),
                     ],
                   ),

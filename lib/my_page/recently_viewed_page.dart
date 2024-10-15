@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore 임포트
 import '../home_page/feed_detail.dart';
 import '../models/firestore/user_model.dart';
 import '../models/firestore/sell_post_model.dart';
@@ -83,14 +84,7 @@ class RecentViewedPage extends StatelessWidget {
                           ],
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                          child: Text(
-                            '${post.price}원', // 가격을 상단에 배치
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // 가격 글씨 크기 조정
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // 간격 조정
                           child: Text(
                             post.title,
                             style: TextStyle(
@@ -99,6 +93,50 @@ class RecentViewedPage extends StatelessWidget {
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Firestore에서 마켓 이름 가져오기
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('Markets')
+                              .doc(post.marketId) // post에서 marketId 가져오기
+                              .snapshots(),
+                          builder: (context, marketSnapshot) {
+                            if (marketSnapshot.connectionState == ConnectionState.waiting) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
+                                child: Text('로딩 중...'),
+                              );
+                            }
+                            if (marketSnapshot.hasError) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
+                                child: Text('에러 발생'),
+                              );
+                            }
+                            if (!marketSnapshot.hasData || !marketSnapshot.data!.exists) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
+                                child: Text('마켓 없음'),
+                              );
+                            }
+
+                            final marketName = marketSnapshot.data!['name']; // name 필드 가져오기
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0), // 간격 조정
+                              child: Text(
+                                marketName, // Firestore에서 가져온 마켓 이름 표시
+                                style: TextStyle(fontSize: 14, color: Colors.black54), // 스타일 조정 가능
+                              ),
+                            );
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // 가격과의 간격 조정
+                          child: Text(
+                            '${post.price}원', // 가격을 상단에 배치
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // 가격 글씨 크기 조정
                           ),
                         ),
                       ],
