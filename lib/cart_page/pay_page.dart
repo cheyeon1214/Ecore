@@ -1,9 +1,9 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
-import '../models/firestore/sell_post_model.dart';
 import '../models/firestore/user_model.dart';
 import '../my_page/my_address_form.dart';
 import 'my_address_select.dart';
@@ -19,19 +19,17 @@ class PayPage extends StatefulWidget {
 }
 
 class _PayPageState extends State<PayPage> {
-  int totalShippingFee = 0; // 배송비 변수 추가
-  int? _selectedSavedInfoIndex; // 추가: 변수를 선언하고 초기화
+  int totalShippingFee = 0;
 
   final user = FirebaseAuth.instance.currentUser;
   String? username;
   Map<String, dynamic>? latestOrder;
-  Map<String, dynamic>? _defaultAddress; // 기본 배송지 정보를 저장할 변수 추가
+  Map<String, dynamic>? _defaultAddress;
 
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _pointController = TextEditingController(); // 포인트 입력용 컨트롤러
+  final TextEditingController _pointController = TextEditingController();
 
-  List<Map<String, String>> _savedInfo = [];
   String _selectedPaymentMethod = '계좌 간편결제';
   bool _isChecked = false;
   int totalProductPrice = 0;
@@ -47,7 +45,7 @@ class _PayPageState extends State<PayPage> {
     super.initState();
     _fetchUsername();
     _fetchUserPoints();
-    _fetchDefaultAddress(); // 기본 배송지 정보 가져오기
+    _fetchDefaultAddress();
     getCartItems();
   }
 
@@ -61,7 +59,7 @@ class _PayPageState extends State<PayPage> {
 
         setState(() {
           username = userDoc['username'] ?? "No username";
-          userPoints = userDoc['points'] ?? 0; // 보유 포인트 가져오기
+          userPoints = userDoc['points'] ?? 0;
         });
 
       } catch (e) {
@@ -80,7 +78,7 @@ class _PayPageState extends State<PayPage> {
           .doc(user!.uid)
           .get();
       setState(() {
-        userPoints = userDoc['points'] ?? 0; // 유저의 보유 포인트 가져오기
+        userPoints = userDoc['points'] ?? 0;
       });
     }
   }
@@ -101,7 +99,7 @@ class _PayPageState extends State<PayPage> {
           });
         } else {
           setState(() {
-            _defaultAddress = null; // 기본 배송지가 없을 경우
+            _defaultAddress = null;
           });
         }
       } catch (e) {
@@ -112,13 +110,12 @@ class _PayPageState extends State<PayPage> {
 
   Future<void> getCartItems() async {
     try {
-      // 선택된 cartItems를 그대로 사용하여 불러옵니다.
       List<Map<String, dynamic>> selectedCartItems = widget.cartItems;
 
       int totalPrice = 0;
       int donaCount = 0;
       int totalShippingFee = 0;
-      Set<String> processedMarkets = {}; // 중복 마켓을 처리하기 위한 Set
+      Set<String> processedMarkets = {};
 
       // 선택된 아이템들에 대해 총 상품 금액과 배송비를 계산
       for (var item in selectedCartItems) {
@@ -154,7 +151,6 @@ class _PayPageState extends State<PayPage> {
 
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
-    Set<String> processedMarkets = {}; // 중복된 마켓에 대한 처리 방지
 
     try {
       // 기부글 및 판매글을 분리하여 처리
@@ -335,7 +331,7 @@ class _PayPageState extends State<PayPage> {
           ),
           automaticallyImplyLeading: false,
           flexibleSpace: Container(
-            color: Colors.blue[200],
+            color: baseColor,
             child: Center(
               child: Text(
                 "주문",
@@ -540,8 +536,6 @@ class _PayPageState extends State<PayPage> {
     return phoneNumber; // 길이가 11이 아닐 경우 원래 전화번호 반환
   }
 
-
-
 // 배송지 추가 페이지로 이동하는 메서드
   void _navigateToAddAddress() {
     // 배송지 추가 페이지로 이동하는 로직 추가
@@ -550,12 +544,6 @@ class _PayPageState extends State<PayPage> {
       MaterialPageRoute(builder: (context) => AddressForm()), // AddAddressPage는 배송지 추가 페이지입니다.
     );
   }
-
-
-
-
-
-
 
   Widget _buildAgreementSection() {
     return Column(
@@ -610,7 +598,7 @@ class _PayPageState extends State<PayPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(color: Colors.blue[100], thickness: 3),
+        Divider(color: baseColor, thickness: 3),
         Text(
           '주문 상품',
           style: TextStyle(
@@ -703,7 +691,7 @@ class _PayPageState extends State<PayPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(color: Colors.blue[100], thickness: 3),
+        Divider(color: baseColor, thickness: 3),
         Text(
           '할인 적용',
           style: TextStyle(
@@ -762,7 +750,7 @@ class _PayPageState extends State<PayPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(color: Colors.blue[100], thickness: 3),
+        Divider(color: baseColor, thickness: 3),
         Text(
           '결제 수단',
           style: TextStyle(
@@ -804,7 +792,7 @@ class _PayPageState extends State<PayPage> {
             },
           ),
         ),
-        Divider(color: Colors.blue[100], thickness: 3),
+        Divider(color: baseColor, thickness: 3),
       ],
     );
   }
@@ -827,7 +815,7 @@ class _PayPageState extends State<PayPage> {
           }
         },
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.blue[100],
+          backgroundColor: baseColor,
           side: BorderSide.none,
         ),
         child: Text(

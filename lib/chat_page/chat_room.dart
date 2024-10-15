@@ -131,6 +131,22 @@ class _ChatRoomState extends State<ChatRoom> {
     _scrollToBottom();
   }
 
+  Future<Map<String, String>> _getUserProfileImage(String marketId) async {
+    final marketDoc = await FirebaseFirestore.instance.collection('Markets')
+        .doc(marketId)
+        .get();
+
+    if (marketDoc.exists) {
+      final image = marketDoc.data()?['img'] ?? '';
+      return {
+        'img': image,
+      };
+    }
+
+    return {
+      'img': '',
+    };
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -181,11 +197,37 @@ class _ChatRoomState extends State<ChatRoom> {
                   itemBuilder: (ctx, index) {
                     final chat = allMessages[index];
                     bool isMe = chat.sendId == loggedInUser!.uid;
+
+                    return FutureBuilder<Map<String, String>>(
+                    future: _getUserProfileImage(widget.marketId),
+                    builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                    }
+
+                    if (userSnapshot.hasError || !userSnapshot.hasData) {
+                    return Text('Error loading user data');
+                    }
+
+                    final profileImageUrl =
+                    userSnapshot.data?['profile_img'] ?? '';
+
                     return Row(
                       mainAxisAlignment: isMe
                           ? MainAxisAlignment.end
                           : MainAxisAlignment.start,
                       children: [
+                        Padding(
+                          padding: EdgeInsets.only(left: 10.0, bottom: 13.0),
+                          child: !isMe
+                              ? CircleAvatar(
+                            backgroundImage: profileImageUrl.isNotEmpty
+                                ? NetworkImage(profileImageUrl)
+                                : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
+                          )
+                              : SizedBox.shrink(),
+                        ),
                         Container(
                           padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                           margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -194,12 +236,12 @@ class _ChatRoomState extends State<ChatRoom> {
                             borderRadius: isMe
                                 ? BorderRadius.only(
                               topLeft: Radius.circular(14),
-                              topRight: Radius.circular(14),
+                              bottomRight: Radius.circular(14),
                               bottomLeft: Radius.circular(14),
                             )
                                 : BorderRadius.only(
-                              topLeft: Radius.circular(14),
                               topRight: Radius.circular(14),
+                              bottomLeft: Radius.circular(14),
                               bottomRight: Radius.circular(14),
                             ),
                           ),
@@ -212,6 +254,7 @@ class _ChatRoomState extends State<ChatRoom> {
                           ),
                         ),
                       ],
+    );}
                     );
                   },
                 );

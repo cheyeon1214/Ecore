@@ -243,6 +243,24 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     }
   }
 
+  Future<Map<String, String>> _getUserProfileImage() async {
+    final userDoc = await FirebaseFirestore.instance.collection('Users')
+        .doc(widget.otherUserId)
+        .get();
+
+    if (userDoc.exists) {
+      final profileImage = userDoc.data()?['profile_img'] ?? '';
+      return {
+        'profile_img': profileImage,
+      };
+    }
+
+    return {
+      'profile_img': '',
+    };
+  }
+
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -336,9 +354,35 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
 
                         bool isMe = chat.sendId == loggedInUser!.uid || chat.sendId == marketId;
 
+
+                        return FutureBuilder<Map<String, String>>(
+                        future: _getUserProfileImage(),
+                        builder: (context, userSnapshot) {
+                          if (userSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          }
+
+                          if (userSnapshot.hasError || !userSnapshot.hasData) {
+                            return Text('Error loading user data');
+                          }
+
+                          final profileImageUrl =
+                              userSnapshot.data?['profile_img'] ?? '';
+
                         return Row(
                           mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                           children: [
+                            Padding(
+                              padding: EdgeInsets.only(left: 10.0, bottom: 13.0),
+                              child: !isMe
+                              ? CircleAvatar(
+                              backgroundImage: profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                                  : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
+                              )
+                              : SizedBox.shrink(),
+                            ),
                             Container(
                               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                               margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -347,12 +391,12 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                                 borderRadius: isMe
                                     ? BorderRadius.only(
                                   topLeft: Radius.circular(14),
-                                  topRight: Radius.circular(14),
+                                  bottomRight: Radius.circular(14),
                                   bottomLeft: Radius.circular(14),
                                 )
                                     : BorderRadius.only(
-                                  topLeft: Radius.circular(14),
                                   topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(14),
                                   bottomRight: Radius.circular(14),
                                 ),
                               ),
@@ -365,6 +409,8 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                               ),
                             ),
                           ],
+                        );
+                        }
                         );
                       },
                     );
