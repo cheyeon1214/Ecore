@@ -109,6 +109,7 @@ const COLLECTION_CHATS = 'Chats';
 const COLLECTION_MESSAGES = 'Messages';
 
 const KEY_CHATID = 'chatId';
+const KEY_CHAT_SELLID = 'sellId';
 const KEY_MESSAGE = 'messageId';
 const KEY_SEND_USERID = 'sendId';
 const KEY_RECEIVE_USERID = 'receiveId';

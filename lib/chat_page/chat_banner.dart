@@ -6,7 +6,8 @@ import 'chat_room.dart';
 
 class ChatBanner extends StatefulWidget {
   final String marketId;
-  const ChatBanner({Key? key, required this.marketId}) : super(key: key);
+  final String sellId;
+  const ChatBanner({Key? key, required this.marketId, required this.sellId}) : super(key: key);
 
   @override
   _ChatBannerState createState() => _ChatBannerState();
@@ -47,7 +48,7 @@ class _ChatBannerState extends State<ChatBanner> {
         fontFamily: 'NanumSquare',
         )),
       ),
-      body: ChatRoom(marketId: widget.marketId),
+      body: ChatRoom(marketId: widget.marketId, sellId: widget.sellId),
     );
   }
 }

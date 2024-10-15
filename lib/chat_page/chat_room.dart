@@ -8,7 +8,8 @@ import '../models/firestore/chat_model.dart';
 
 class ChatRoom extends StatefulWidget {
   final String marketId;
-  const ChatRoom({Key? key, required this.marketId}) : super(key: key);
+  final String sellId;
+  const ChatRoom({Key? key, required this.marketId, required this.sellId}) : super(key: key);
 
   @override
   _ChatRoomState createState() => _ChatRoomState();
@@ -105,6 +106,7 @@ class _ChatRoomState extends State<ChatRoom> {
 
       await chatRef.set({
         KEY_CHATID: chatId,
+        KEY_CHAT_SELLID: widget.sellId,
         'users': userIds,
         KEY_DATE: FieldValue.serverTimestamp()
       });
@@ -148,6 +150,19 @@ class _ChatRoomState extends State<ChatRoom> {
     };
   }
 
+  Future<Map<String, dynamic>> _fetchProductInfo() async {
+    final productDoc = await FirebaseFirestore.instance
+        .collection('SellPosts') // 상품 데이터가 저장된 Firestore 컬렉션 이름
+        .doc(widget.sellId)
+        .get();
+
+    if (productDoc.exists) {
+      return productDoc.data() ?? {};
+    } else {
+      throw Exception('Product not found');
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -171,137 +186,221 @@ class _ChatRoomState extends State<ChatRoom> {
     return Scaffold(
       body: Column(
         children: [
-          Expanded(
-            child: StreamBuilder<List<ChatModel>>(
-              stream: _fetchAllMessages(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
+          FutureBuilder<Map<String, dynamic>>(
+            future: _fetchProductInfo(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator(); // 로딩 중일 때 표시할 위젯
+              }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('채팅을 시작하세요!'));
-                }
+              if (snapshot.hasError) {
+                return Text('Error loading product');
+              }
 
-                final allMessages = snapshot.data ?? [];
+              final productData = snapshot.data ?? {};
+              final imageUrl = productData['img'][0] ?? ''; // 이미지 URL
+              final title = productData['title'] ?? '상품 제목 없음'; // 상품 제목
+              final price = productData['price'] ?? 0; // 상품 가격
 
-                allMessages.sort((a, b) => a.date.compareTo(b.date));
-
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _scrollToBottom();
-                });
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  itemCount: allMessages.length,
-                  itemBuilder: (ctx, index) {
-                    final chat = allMessages[index];
-                    bool isMe = chat.sendId == loggedInUser!.uid;
-
-                    return FutureBuilder<Map<String, String>>(
-                    future: _getUserProfileImage(widget.marketId),
-                    builder: (context, userSnapshot) {
-                    if (userSnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                    }
-
-                    if (userSnapshot.hasError || !userSnapshot.hasData) {
-                    return Text('Error loading user data');
-                    }
-
-                    final profileImageUrl =
-                    userSnapshot.data?['profile_img'] ?? '';
-
-                    return Row(
-                      mainAxisAlignment: isMe
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: Card(
+                  color: Colors.grey[100],
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Row(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(left: 10.0, bottom: 13.0),
-                          child: !isMe
-                              ? CircleAvatar(
-                            backgroundImage: profileImageUrl.isNotEmpty
-                                ? NetworkImage(profileImageUrl)
-                                : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
-                          )
-                              : SizedBox.shrink(),
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: isMe ? iconColor : Colors.grey[200],
-                            borderRadius: isMe
-                                ? BorderRadius.only(
-                              topLeft: Radius.circular(14),
-                              bottomRight: Radius.circular(14),
-                              bottomLeft: Radius.circular(14),
-                            )
-                                : BorderRadius.only(
-                              topRight: Radius.circular(14),
-                              bottomLeft: Radius.circular(14),
-                              bottomRight: Radius.circular(14),
-                            ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.network(
+                            imageUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.network(
+                                'https://via.placeholder.com/150',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              );
+                            },
                           ),
-                          child: Text(
-                            chat.text,
-                            style: TextStyle(
-                                fontSize: 15,
-                                color: isMe ? Colors.white : Colors.black,
+                        ),
+                        SizedBox(width: 20),
+                        // 최소 너비 설정된 컨테이너
+                        Flexible(
+                          child: Container(
+                            constraints: BoxConstraints(
+                              minWidth: 100,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  overflow: TextOverflow.ellipsis, // 넘치는 텍스트 처리
+                                  maxLines: 1, // 한 줄로 제한
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  '${price}원',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: iconColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis, // 넘치는 텍스트 처리
+                                  maxLines: 1, // 한 줄로 제한
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
-    );}
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: '메시지를 입력해주세요.',
-                        border: InputBorder.none,
-                      ),
                     ),
                   ),
                 ),
-                SizedBox(width: 8.0),
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: iconColor,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white),
-                    onPressed: () {
-                      final message = _controller.text.trim();
-                      if (message.isNotEmpty) {
-                        _sendMessage(message);
+              );
+            },
+          ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: StreamBuilder<List<ChatModel>>(
+                    stream: _fetchAllMessages(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
                       }
+
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(child: Text('채팅을 시작하세요!'));
+                      }
+
+                      final allMessages = snapshot.data ?? [];
+
+                      allMessages.sort((a, b) => a.date.compareTo(b.date));
+
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToBottom();
+                      });
+
+                      return ListView.builder(
+                        controller: _scrollController,
+                        itemCount: allMessages.length,
+                        itemBuilder: (ctx, index) {
+                          final chat = allMessages[index];
+                          bool isMe = chat.sendId == loggedInUser!.uid;
+
+                          return FutureBuilder<Map<String, String>>(
+                              future: _getUserProfileImage(widget.marketId),
+                              builder: (context, userSnapshot) {
+                                if (userSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                }
+
+                                if (userSnapshot.hasError || !userSnapshot.hasData) {
+                                  return Text('Error loading user data');
+                                }
+
+                                final profileImageUrl =
+                                    userSnapshot.data?['profile_img'] ?? '';
+
+                                return Row(
+                                  mainAxisAlignment: isMe
+                                      ? MainAxisAlignment.end
+                                      : MainAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.only(left: 10.0, bottom: 13.0),
+                                      child: !isMe
+                                          ? CircleAvatar(
+                                        backgroundImage: profileImageUrl.isNotEmpty
+                                            ? NetworkImage(profileImageUrl)
+                                            : AssetImage('assets/images/defualt_profile.jpg') as ImageProvider,
+                                      )
+                                          : SizedBox.shrink(),
+                                    ),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                        decoration: BoxDecoration(
+                                          color: isMe ? iconColor : Colors.grey[200],
+                                          borderRadius: isMe
+                                              ? BorderRadius.only(
+                                            topLeft: Radius.circular(14),
+                                            bottomRight: Radius.circular(14),
+                                            bottomLeft: Radius.circular(14),
+                                          )
+                                              : BorderRadius.only(
+                                            topRight: Radius.circular(14),
+                                            bottomLeft: Radius.circular(14),
+                                            bottomRight: Radius.circular(14),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          chat.text,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color: isMe ? Colors.white : Colors.black,
+                                          ),
+                                        ),
+                                    ),
+                                  ],
+                                );}
+                          );
+                        },
+                      );
                     },
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          decoration: InputDecoration(
+                            hintText: '메시지를 입력해주세요.',
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: iconColor,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.send, color: Colors.white),
+                        onPressed: () {
+                          final message = _controller.text.trim();
+                          if (message.isNotEmpty) {
+                            _sendMessage(message);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
