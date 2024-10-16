@@ -195,7 +195,7 @@ class _PayPageState extends State<PayPage> {
                 });
 
                 // 기부자에게 포인트 추가
-                int donationPoints = ((item['price'] * 0.05).toInt()); // 5% 포인트
+                int donationPoints = item['point'];
                 await FirebaseFirestore.instance.collection('Users').doc(donorUserId).update({
                   'points': FieldValue.increment(donationPoints), // 기부자에게 포인트 추가
                 });
@@ -204,6 +204,7 @@ class _PayPageState extends State<PayPage> {
                 await FirebaseFirestore.instance.collection('Users').doc(donorUserId).collection('PointHistory').add({
                   'point': donationPoints,
                   'timestamp': FieldValue.serverTimestamp(),
+                  'name' : '기부글',
                   'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
                 });
               }
@@ -261,6 +262,7 @@ class _PayPageState extends State<PayPage> {
             await userRef.collection('PointHistory').add({
               'point': pointForDonaUser,
               'timestamp': FieldValue.serverTimestamp(),
+              'name' : '판매글',
               'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
             });
           }
