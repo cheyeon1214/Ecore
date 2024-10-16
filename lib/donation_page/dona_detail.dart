@@ -131,6 +131,28 @@ class _DonaDetailState extends State<DonaDetail> {
       return;
     }
 
+    final marketId = userDoc.data()?['marketId'];
+    if(marketId != null){
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('알림'),
+            content: Text('기부제품은 마켓만 구매 가능합니다.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
     final cart = userDoc.data()?['cart'] ?? [];
     final newCartItem = {
       'donaUser' : widget.donaPost.userId,
