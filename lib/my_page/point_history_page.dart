@@ -109,10 +109,11 @@ class _PointHistoryPageState extends State<PointHistoryPage> {
                     final dateString = DateFormat('yyyy-MM-dd').format(timestamp);
                     final point = data['point'] as int;
                     final type = data.containsKey('type') ? data['type'] : 'earn'; // containsKey 사용 가능
+                    final name = data.containsKey('name') ? data['name'] : '기타'; // 'name' 필드 가져오기
 
-                    // 적립/사용/소멸 표시 방식
+                    // 적립/사용/소멸 표시 방식 및 name 필드에 따른 적립 유형 표시
                     final pointDisplay = type == 'use' ? '-${point}P' : '+${point}P';
-                    final typeDisplay = type == 'use' ? '사용' : type == 'expire' ? '소멸' : '적립';
+                    final typeDisplay = type == 'use' ? '사용' : type == 'expire' ? '소멸' : '$name 적립';
 
                     return Card(
                       color: Colors.white,
@@ -148,6 +149,7 @@ class _PointHistoryPageState extends State<PointHistoryPage> {
                     );
                   },
                 );
+
               },
             ),
           ),
