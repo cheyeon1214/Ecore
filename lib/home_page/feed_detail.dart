@@ -334,7 +334,7 @@ class _FeedDetailState extends State<FeedDetail> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ChatBanner(marketId: widget.sellPost.marketId),
+                  builder: (context) => ChatBanner(marketId: widget.sellPost.marketId, sellId: widget.sellPost.sellId),
                 ),
               );
             }

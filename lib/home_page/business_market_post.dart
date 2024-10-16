@@ -49,7 +49,7 @@ class BusinessMarketPost extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('사업자 등록된 마켓의 상품'),
+        title: Text('사업자 등록된 마켓의 상품', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: StreamBuilder<List<SellPostModel>>(
         stream: businessSellPostsStream(), // 위에서 정의한 Stream 함수 호출

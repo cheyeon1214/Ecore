@@ -18,7 +18,7 @@ class _SettlementPageState extends State<SettlementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('정산 관리'),
+        title: const Text('정산 관리', style: TextStyle(fontFamily: 'NanumSquare',)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(3.0),
@@ -94,76 +94,78 @@ class _SettlementPageState extends State<SettlementPage> {
                                 ),
                               ),
                             ),
-                            const Divider(),
                             ...groupedOrders[date]!.map((doc) {
                               Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                               String sellImageUrl = data.containsKey('sellImg') && data['sellImg'] != null
                                   ? data['sellImg'][0]
                                   : 'https://via.placeholder.com/70';
 
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(5.0),
-                                      child: Image.network(
-                                        sellImageUrl,
-                                        height: 70,
-                                        width: 70,
-                                        fit: BoxFit.cover,
+                              return Card(
+                                elevation: 2.0,
+                                color: Colors.white,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(5.0),
+                                        child: Image.network(
+                                          sellImageUrl,
+                                          height: 70,
+                                          width: 70,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                    ),
-                                    // const SizedBox(width: 40),
-                                    Expanded(
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  data['title'] ?? '상품명 없음',
-                                                  style: const TextStyle(
-                                                    fontSize: 15,
+                                      // const SizedBox(width: 40),
+                                      Expanded(
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    data['title'] ?? '상품명 없음',
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                    ),
                                                   ),
-                                                ),
-                                                Text(
-                                                    data['paymentMethod'] ?? '',
+                                                  Text(
+                                                      data['paymentMethod'] ?? '',
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                      ),
+                                                  ),
+                                                  Text(
+                                                    '구매자 : ${data['username']}' ?? '',
                                                     style: const TextStyle(
                                                       fontSize: 11,
                                                     ),
-                                                ),
-                                                Text(
-                                                  '구매자 : ${data['username']}' ?? '',
-                                                  style: const TextStyle(
-                                                    fontSize: 11,
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                          Spacer(),
-                                          Text(
-                                            '+ ₩${data['price'] ?? 0}',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green[300],
+                                            Spacer(),
+                                            Text(
+                                              '+ ₩${data['price'] ?? 0}',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green[300],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             }).toList(),
-                            const Divider(),
                           ],
                         );
                       }).toList(),

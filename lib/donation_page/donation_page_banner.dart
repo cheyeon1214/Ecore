@@ -32,6 +32,7 @@ class _DonationBannerState extends State<DonationBanner> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
+                  fontFamily: 'NanumSquare',
                 ),
               ),
               SizedBox(width: 8),

@@ -1,10 +1,10 @@
 import 'package:ecore/models/firebase_auth_state.dart';
 import 'package:ecore/my_page/favorite_list_page.dart';
-import 'package:ecore/my_page/my_address_form.dart';
 import 'package:ecore/my_page/recently_viewed_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../cosntants/common_color.dart';
 import 'my_address_list.dart';
 import 'my_dona_page.dart';
 
@@ -17,7 +17,6 @@ class MyPageList extends StatefulWidget {
 
 class _MyPageListState extends State<MyPageList> {
   void _signOut() async {
-    // 로그아웃을 처리하는 메서드
     await Provider.of<FirebaseAuthState>(context, listen: false).signOut();
   }
   @override
@@ -36,7 +35,7 @@ class _MyPageListState extends State<MyPageList> {
                 ),
               );
             },
-            child: Text('최근 본 상품', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('최근 본 상품', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {
               Navigator.push(
@@ -46,7 +45,7 @@ class _MyPageListState extends State<MyPageList> {
                 ),
               );
             },
-            child: Text('찜 한 상품', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('찜 한 상품', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {
               Navigator.push(
@@ -56,24 +55,24 @@ class _MyPageListState extends State<MyPageList> {
                 ),
               );
             },
-            child: Text('배송지 관리', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('배송지 관리', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         Divider(thickness: 2),
         Text('고객센터'),
         TextButton(
             onPressed: () {},
-            child: Text('기부자 문의 내역', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('기부자 문의 내역', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {},
-            child: Text('판매자 문의 내역', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('판매자 문의 내역', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {},
-            child: Text('FAQ', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('FAQ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {},
-            child: Text('공지사항', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('공지사항', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         TextButton(
             onPressed: () {},
-            child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         Divider(thickness: 2),
         Text('커뮤니티'),
         TextButton(
@@ -85,7 +84,7 @@ class _MyPageListState extends State<MyPageList> {
                 ),
               );
             },
-            child: Text('내 기부글 보기', style: TextStyle(fontWeight: FontWeight.bold))),
+            child: Text('내 기부글 보기', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         SizedBox(height: 40,),
         Divider(thickness: 2),
         Text('서비스 설정'),
@@ -96,7 +95,7 @@ class _MyPageListState extends State<MyPageList> {
         ),
         SizedBox(height: 40,),
         Container(
-          color: Colors.blue[50],
+          color: baseColor,
           width: MediaQuery.of(context).size.width,
           child: Padding(
             padding: const EdgeInsets.all(15.0),

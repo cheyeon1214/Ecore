@@ -172,7 +172,6 @@ class _ChatListState extends State<ChatList> {
         final chatId = userChatsSnapshot.docs.first.id;
         return chatId;
       } else {
-        print('No chat rooms found for user: $userId or market: $userMarketId');
 
         final newChatRef =
             FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
@@ -234,7 +233,6 @@ class _ChatListState extends State<ChatList> {
       final unreadMessages = allMessagesSnapshot.docs.where((doc) {
         final data = doc.data();
         final List<dynamic> readBy = data[KEY_READBY] ?? [];
-        print("Read by: $readBy, User ID: $userId");
         return !readBy.contains(userId);
       }).toList();
 
@@ -246,17 +244,24 @@ class _ChatListState extends State<ChatList> {
   }
 
   Future<void> markMessageAsRead(
-      String chatId, String messageId, String sendId) async {
-    final messageRef = FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .doc(messageId);
+      String chatId, String messageId, String currentUserId, String userMarketId) async {
+    try {
+      final messageRef = FirebaseFirestore.instance
+          .collection(COLLECTION_CHATS)
+          .doc(chatId)
+          .collection(COLLECTION_MESSAGES)
+          .doc(messageId);
 
-    await messageRef.update({
-      KEY_READBY: FieldValue.arrayUnion([sendId])
-    });
+      // 현재 유저의 UID와 마켓 아이디를 모두 읽음 처리에 추가
+      await messageRef.update({
+        KEY_READBY: FieldValue.arrayUnion([currentUserId, userMarketId])
+      });
+
+    } catch (e) {
+      print('Error marking message as read: $e');
+    }
   }
+
 
   void _processChatUpdates(
       List<QueryDocumentSnapshot<Map<String, dynamic>>> userMessages,
@@ -362,17 +367,15 @@ class _ChatListState extends State<ChatList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('채팅'),
+        title: const Text('채팅', style: TextStyle(fontFamily: 'NanumSquare',),),
       ),
       body: StreamBuilder<List<ChatModel>>(
         stream: _chatController.stream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('채팅방이 없습니다.'));
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error loading chats'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('채팅방이 없습니다.'));
           }
 
           final chats = snapshot.data!;
@@ -382,7 +385,6 @@ class _ChatListState extends State<ChatList> {
             itemBuilder: (context, index) {
               final chat = chats[index];
               final otherUserId = _userIdCache[chat.chatId]!;
-              print(otherUserId);
 
               return FutureBuilder<Map<String, String>>(
                 future: _getOrFetchUserData(otherUserId),
@@ -444,7 +446,6 @@ class _ChatListState extends State<ChatList> {
                       }
 
                       final unreadCount = unreadSnapshot.data ?? 0;
-                      print('Unread Count: $unreadCount');
 
                       return ListTile(
                         title: Row(
@@ -464,74 +465,72 @@ class _ChatListState extends State<ChatList> {
                               children: [
                                 Text(username,
                                     style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text(chat.text),
+                                        TextStyle(fontWeight: FontWeight.w900)),
+                                Text(chat.text, style: TextStyle(fontSize: 13),),
                               ],
                             ),
                           ],
                         ),
-                        trailing: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              _formatDate(chat.date),
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                            if (unreadCount > 0)
-                              Container(
-                                padding: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '$unreadCount',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
-                                ),
+                        trailing: Padding(
+                          padding: const EdgeInsets.only(top: 7.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _formatDate(chat.date),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey),
                               ),
-                          ],
+                              if (unreadCount > 0)
+                                Container(
+                                  padding: EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '$unreadCount',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                        onTap: () async {
-                          final currentUserId =
-                              FirebaseAuth.instance.currentUser!.uid;
-                          final userMarketId =
-                              await _getMarketIdForUser(currentUserId);
-                          final sendId = userMarketId ?? currentUserId;
+                          onTap: () async {
+                            final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+                            final userMarketId = await _getMarketIdForUser(currentUserId);
 
-                          final chatId =
-                              await getChatIdFromMessage(chat.chatId);
+                            final chatId = await getChatIdFromMessage(chat.chatId);
 
-                          if (chatId == null) {
-                            print("채팅방을 찾을 수 없습니다.");
-                            return;
-                          }
+                            if (chatId == null) {
+                              print("채팅방을 찾을 수 없습니다.");
+                              return;
+                            }
 
-                          final messageSnapshots = await FirebaseFirestore
-                              .instance
-                              .collection(COLLECTION_CHATS)
-                              .doc(chatId)
-                              .collection(COLLECTION_MESSAGES)
-                              .get();
-
-                          for (var messageDoc in messageSnapshots.docs) {
-                            final messageId = messageDoc.id;
-                            await markMessageAsRead(chatId, messageId, sendId);
-                          }
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SelectChatRoom(
-                                chatId: chatId,
-                                otherUserId: otherUserId,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SelectChatRoom(
+                                  chatId: chatId,
+                                  otherUserId: otherUserId,
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+
+                            final messageSnapshots = await FirebaseFirestore.instance
+                                .collection(COLLECTION_CHATS)
+                                .doc(chatId)
+                                .collection(COLLECTION_MESSAGES)
+                                .get();
+
+                            for (var messageDoc in messageSnapshots.docs) {
+                              final messageId = messageDoc.id;
+                              await markMessageAsRead(chatId, messageId, currentUserId, userMarketId ?? currentUserId);
+                            }
+                          }
                       );
                     },
                   );

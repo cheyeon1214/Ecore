@@ -15,6 +15,8 @@ class CartList extends StatefulWidget {
 class _CartListState extends State<CartList> {
   final Map<String, bool> _selectedItems = {}; // 선택된 항목을 저장하는 Map
   final Set<String> _marketProcessed = {}; // 마켓 이름이 처리되었는지 확인하는 Set
+  int totalShippingFee = 0;
+  int totalProductPrice = 0;
   int _totalPrice = 0; // 총 결제 금액을 저장하는 변수
 
   @override
@@ -82,12 +84,10 @@ class _CartListState extends State<CartList> {
                     final itemId = cartItem['sellId'] ?? cartItem['donaId'] as String;
 
                     return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
+                      padding: const EdgeInsets.all(5.0),
+                      child: Card(
+                        color: Colors.white,
+                        elevation: 2.0,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -101,40 +101,57 @@ class _CartListState extends State<CartList> {
                                 ),
                               ),
                             ),
-                            ListTile(
-                              leading: Checkbox(
-                                value: _selectedItems[itemId] ?? false, // 선택된 상태를 표시
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    _selectedItems[itemId] = value ?? false;
-                                    _calculateTotalPrice(cartItems); // 총 가격 계산
-                                  });
-                                },
-                              ),
-                              title: Text(cartItem['title'] ?? '제목 없음'),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 25.0),
+                              child: Row(
                                 children: [
-                                  Text('${cartItem['price']}원'),
-                                  Text('배송비: ${shippingFee}원'),
+                                  Checkbox(
+                                    value: _selectedItems[itemId] ?? false,
+                                    fillColor: MaterialStateProperty.resolveWith<Color?>(
+                                          (Set<MaterialState> states) {
+                                        if (states.contains(MaterialState.selected)) {
+                                          return iconColor;
+                                        }
+                                        return Colors.white;
+                                      },
+                                    ),
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        _selectedItems[itemId] = value ?? false;
+                                        _calculateTotalPrice(cartItems);
+                                      });
+                                    },
+                                  ),
+                                  SizedBox(width: 10),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                    child: Image.network(
+                                      imageUrl,
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  SizedBox(width: 20),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(cartItem['title'] ?? '제목 없음'),
+                                        Text('${cartItem['price']}원'),
+                                        Text('배송비: ${shippingFee}원'),
+                                      ],
+                                    ),
+                                  ),
+                              IconButton(
+                                  icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
+                                  onPressed: () {
+                                    setState(() {
+                                      userModel.removeCartItem(itemId); // 장바구니에서 아이템 삭제
+                                    });
+                                  },
+                                ),
                                 ],
-                              ),
-                              trailing: Image.network(
-                                imageUrl,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: Icon(Icons.remove_shopping_cart, color: Colors.red[300]),
-                                onPressed: () {
-                                  setState(() {
-                                    userModel.removeCartItem(itemId); // 장바구니에서 아이템 삭제
-                                  });
-                                },
                               ),
                             ),
                           ],
@@ -149,23 +166,14 @@ class _CartListState extends State<CartList> {
                 color: Colors.white,
                 child: Column(
                   children: [
-                    Row(
+                    Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '총 결제 금액:',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '$_totalPrice원',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        _buildPriceRow('상품 금액', totalProductPrice),
+                        SizedBox(height: 10),
+                        _buildPriceRow('배송비', totalShippingFee),
+                        SizedBox(height: 10),
+                        _buildPriceRow('총 결제 금액', _totalPrice),
                       ],
                     ),
                     SizedBox(height: 8.0),
@@ -187,6 +195,7 @@ class _CartListState extends State<CartList> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
                         ),
                       ),
@@ -202,16 +211,39 @@ class _CartListState extends State<CartList> {
     );
   }
 
+  Widget _buildPriceRow(String label, int amount) {
+    return Row(
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(label),
+          ),
+        ),
+        Flexible(
+          fit: FlexFit.loose,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text('${amount}원'),
+          ),
+        ),
+      ],
+    );
+  }
+
   // 선택된 상품들의 총 가격을 계산하는 함수
   void _calculateTotalPrice(List<Map<String, dynamic>> cartItems) {
     int totalPrice = 0;
+    int totalProductPrice = 0;
+    int totalShippingFee = 0;
     Set<String> processedMarkets = {}; // 이미 처리된 마켓
 
     for (var cartItem in cartItems) {
       final itemId = cartItem['sellId'] ?? cartItem['donaId'] as String;
 
       if (_selectedItems[itemId] ?? false) {
-        int price = (cartItem['price'] ?? 0).toInt(); // price도 num일 경우 변환
+        int price = (cartItem['price'] ?? 0).toInt();
         final marketName = cartItem['marketName'] ?? 'Unknown Market';
         int shippingFee = cartItem['shippingFee'] ?? 0;
 
@@ -221,16 +253,20 @@ class _CartListState extends State<CartList> {
 
         // 마켓 이름이 중복되지 않으면 배송비 추가
         if (!processedMarkets.contains(marketName)) {
-          totalPrice += shippingFee;
+          totalShippingFee += shippingFee;
           processedMarkets.add(marketName); // 마켓 이름을 처리된 목록에 추가
         }
 
-        totalPrice += price;
+        totalProductPrice += price;
       }
     }
 
+    totalPrice = totalProductPrice + totalShippingFee;
+
     setState(() {
-      _totalPrice = totalPrice; // 총 결제 금액 업데이트
+      _totalPrice = totalPrice;
+      this.totalProductPrice = totalProductPrice;
+      this.totalShippingFee = totalShippingFee;
     });
   }
 

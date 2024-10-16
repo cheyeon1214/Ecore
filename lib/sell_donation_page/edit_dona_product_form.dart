@@ -5,41 +5,68 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 
-class DonaProductForm extends StatefulWidget {
+class DonaProductEditForm extends StatefulWidget {
+  final String donaId; // 수정할 기부 글의 ID
+
+  const DonaProductEditForm({Key? key, required this.donaId}) : super(key: key);
+
   @override
-  State<DonaProductForm> createState() => _DonaProductFormState();
+  State<DonaProductEditForm> createState() => _DonaProductEditFormState();
 }
 
-class _DonaProductFormState extends State<DonaProductForm> {
+class _DonaProductEditFormState extends State<DonaProductEditForm> {
   final _formKey = GlobalKey<FormState>();
-  List<XFile>? _images = []; // 여러 이미지를 저장할 리스트
+  List<XFile>? _images = [];
   final picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-
-  // 현재 로그인된 사용자 정보 가져오기
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _bodyController = TextEditingController();
   final TextEditingController _materialController = TextEditingController();
   final TextEditingController _colorController = TextEditingController();
-  final TextEditingController _pointController = TextEditingController(); // 포인트 입력 필드
+  final TextEditingController _pointController = TextEditingController();
   String? _categoryValue;
   String? _selectedCondition = 'S';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDonaPostData(); // 데이터 로드
+  }
+
+  Future<void> _loadDonaPostData() async {
+    DocumentSnapshot doc = await _firestore.collection('DonaPosts').doc(widget.donaId).get();
+    if (doc.exists) {
+      var data = doc.data() as Map<String, dynamic>;
+      _titleController.text = data['title'] ?? '';
+      _categoryValue = data['category'];
+      _bodyController.text = data['body'] ?? '';
+      _materialController.text = data['material'] ?? '';
+      _colorController.text = data['color'] ?? '';
+      _pointController.text = data['point']?.toString() ?? '';
+      _selectedCondition = data['condition'] ?? 'S';
+
+      // 이미지 로딩
+      _images = (data['img'] as List<dynamic>?)
+          ?.map((url) => XFile(url))
+          .toList() ?? [];
+      setState(() {});
+    }
+  }
 
   Future<void> getImages() async {
     if (_images!.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('최대 10개의 이미지까지 선택할 수 있습니다.')),
       );
-      return; // 이미 10개 이상의 이미지가 선택된 경우 추가 선택 불가
+      return;
     }
 
     final pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        // 최대 10개를 초과하지 않도록 리스트에 추가
         _images = (_images! + pickedFiles).take(10).toList();
       });
     }
@@ -88,7 +115,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
       final color = _colorController.text;
       final condition = _selectedCondition;
       final body = _bodyController.text;
-      final point = int.tryParse(_pointController.text) ?? 0; // 포인트 입력 값
+      final point = int.tryParse(_pointController.text) ?? 0;
 
       _showLoadingDialog();
 
@@ -98,8 +125,8 @@ class _DonaProductFormState extends State<DonaProductForm> {
           imageUrls = await uploadImages(_images!);
         }
 
-        // 현재 사용자의 UID를 user 필드로 추가
-        DocumentReference docRef = await _firestore.collection('DonaPosts').add({
+        // Firestore에서 수정된 내용을 업데이트
+        await _firestore.collection('DonaPosts').doc(widget.donaId).update({
           'title': title,
           'category': category,
           'material': material,
@@ -107,30 +134,22 @@ class _DonaProductFormState extends State<DonaProductForm> {
           'condition': condition,
           'body': body,
           'img': imageUrls,
-          'viewCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-          'userId': currentUser?.uid, // 현재 사용자의 UID 추가
-          'point': point, // 포인트 필드 추가
-        });
-
-        // Users 컬렉션의 my_posts 배열에 문서 ID 추가
-        await _firestore.collection('Users').doc(currentUser?.uid).update({
-          'my_posts': FieldValue.arrayUnion([docRef.id]) // 새로운 문서 ID 추가
+          'point': point,
         });
 
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('기부 상품이 등록되었습니다.')),
+          SnackBar(content: Text('기부 상품이 수정되었습니다.')),
         );
 
         Navigator.pop(context);
       } catch (e) {
         Navigator.of(context).pop();
 
-        print('Error adding document: $e');
+        print('Error updating document: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('문서 추가 실패: $e')),
+          SnackBar(content: Text('문서 수정 실패: $e')),
         );
       }
     }
@@ -149,7 +168,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 16),
-                Text("상품등록 중..."),
+                Text("상품수정 중..."),
               ],
             ),
           ),
@@ -164,7 +183,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('기부하기'),
+        title: Text('기부 상품 수정'),
         leading: IconButton(
           icon: Icon(Icons.close),
           onPressed: () {
@@ -249,8 +268,8 @@ class _DonaProductFormState extends State<DonaProductForm> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(_images![index].path),
+                            child: Image.network(
+                              _images![index].path, // Firebase에서 URL 가져오기
                               fit: BoxFit.cover,
                               width: 100,
                               height: 100,
@@ -262,7 +281,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  _images!.removeAt(index);
+                                  _images!.removeAt(index); // 이미지 삭제
                                 });
                               },
                               child: Container(
@@ -387,7 +406,7 @@ class _DonaProductFormState extends State<DonaProductForm> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _submitForm,
-                child: Text('기부하기'),
+                child: Text('수정하기'),
               ),
             ],
           ),

@@ -1,7 +1,7 @@
+import 'package:ecore/cosntants/common_color.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../cosntants/firestore_key.dart';
 import '../models/firestore/chat_model.dart';
@@ -21,6 +21,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
   final ScrollController _scrollController = ScrollController();
   User? loggedInUser;
   final Map<String, String> _usernameCache = {};
+  String? userMarketId;
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
         setState(() {
           loggedInUser = user;
         });
+        userMarketId = await _getMarketIdForUser(user.uid);
       }
     } catch (e) {
       print(e);
@@ -82,81 +84,6 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
       return null;
     }
   }
-
-  Future<bool> _isMarketId(String id) async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('Markets')
-        .doc(id)
-        .get();
-
-    return querySnapshot.exists;
-  }
-
-  Stream<List<ChatModel>> _fetchMessages(String loggedInUser, String otherUserId) async* {
-    final chatQuerySnapshot = await FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .where('users', arrayContainsAny: [loggedInUser, otherUserId])
-        .get();
-
-    if (chatQuerySnapshot.docs.isEmpty) {
-      print('No chat room found between $loggedInUser and $otherUserId');
-
-      final newChatRef = FirebaseFirestore.instance.collection(COLLECTION_CHATS).doc();
-      await newChatRef.set({
-        'users': [loggedInUser, otherUserId],
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      final chatId = newChatRef.id;
-      print('New chat room created with ID: $chatId');
-
-      yield [];
-      return;
-    }
-
-    final filteredChats = chatQuerySnapshot.docs.where((doc) {
-      final users = List<String>.from(doc['users']);
-      return users.contains(loggedInUser) && users.contains(otherUserId);
-    }).toList();
-
-    if (filteredChats.isEmpty) {
-      print('No chat room found between $loggedInUser and $otherUserId');
-      yield [];
-      return;
-    }
-
-    final chatId = filteredChats.first.id;
-    print('Chat ID found: $chatId');
-    final myMessages = FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .where(KEY_SEND_USERID, isEqualTo: loggedInUser)
-        .where(KEY_RECEIVE_USERID, isEqualTo: otherUserId)
-        .orderBy(KEY_DATE, descending: false)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
-        .toList());
-
-    final otherMessages = FirebaseFirestore.instance
-        .collection(COLLECTION_CHATS)
-        .doc(chatId)
-        .collection(COLLECTION_MESSAGES)
-        .where(KEY_SEND_USERID, isEqualTo: otherUserId)
-        .where(KEY_RECEIVE_USERID, isEqualTo: loggedInUser)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
-        .toList());
-
-    yield* Rx.combineLatest2(myMessages, otherMessages, (myMessages, otherMessages) {
-      final allMessages = [...myMessages, ...otherMessages];
-      allMessages.sort((a, b) => a.date.compareTo(b.date));
-      return allMessages;
-    });
-  }
-
 
   Future<bool> checkChatRoomUsers(String chatId, String userId) async {
     try {
@@ -243,17 +170,102 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
     }
   }
 
+  Stream<List<ChatModel>> _fetchMessages(String chatId) {
+    return FirebaseFirestore.instance
+        .collection('Chats')
+        .doc(chatId)
+        .collection('Messages')
+        .orderBy('date', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => ChatModel.fromMap(doc.data() as Map<String, dynamic>))
+        .toList());
+  }
+
+  Future<Map<String, dynamic>> _fetchProductInfo(String chatId) async {
+    DocumentSnapshot chatSnapshot = await FirebaseFirestore.instance
+        .collection(COLLECTION_CHATS)
+        .doc(chatId)
+        .get();
+
+    if (chatSnapshot.exists) {
+      Map<String, dynamic>? data = chatSnapshot.data() as Map<String, dynamic>?;
+      if (data != null && data.containsKey('sellId')) {
+        String sellId = data['sellId'];
+
+        DocumentSnapshot sellPostSnapshot = await FirebaseFirestore.instance
+            .collection(COLLECTION_SELL_PRODUCTS)
+            .doc(sellId)
+            .get();
+
+        if (sellPostSnapshot.exists) {
+          return sellPostSnapshot.data() as Map<String, dynamic>? ?? {};
+        } else {
+          throw Exception('Product not found');
+        }
+      } else {
+        throw Exception('sellId not found in chat document');
+      }
+    } else {
+      throw Exception('Chat document not found');
+    }
+  }
+
+  Future<String?> _getOtherUserId(String chatId) async {
+    final chatDoc = await FirebaseFirestore.instance
+        .collection('Chats')
+        .doc(chatId)
+        .get();
+
+    final data = chatDoc.data();
+    if (data != null) {
+      List<dynamic> users = data['users'];
+      // 현재 사용자의 ID와 마켓 ID를 제외하고 상대방의 ID만 추출
+      return users.firstWhere(
+            (userId) => userId != loggedInUser!.uid && userId != userMarketId,
+        orElse: () => null,
+      );
+    }
+
+    return null;
+  }
+
+  Future<Map<String, String>> _getOtherUserProfileImage(String chatId) async {
+    final otherUserId = await _getOtherUserId(chatId);
+    if (otherUserId != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(otherUserId)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        final profileImageUrl = data?['profile_img'] ?? '';
+        return {
+          'profile_img': profileImageUrl,
+        };
+      }
+    }
+
+    return {
+      'profile_img': '', // 기본 이미지 URL 또는 빈 값
+    };
+  }
+
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
+        final maxScrollExtent = _scrollController.position.maxScrollExtent;
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          maxScrollExtent,
           duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -277,50 +289,90 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                 '${snapshot.data}',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'NanumSquare',
                 ),
               );
             }
           },
         ),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(20.0),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: Container(
-              color: Colors.grey[300],
-              height: 3.0,
-            ),
-          ),
-        ),
       ),
-      body: FutureBuilder<String?>(
-        future: _getMarketIdForUser(loggedInUser!.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Error fetching market ID'));
-          }
-
-          final marketId = snapshot.data;
-          if (marketId == null) {
-            return Center(child: Text('Market ID not found'));
-          }
-
-          return FutureBuilder<bool>(
-            future: _isMarketId(widget.otherUserId),
-            builder: (context, isMarketSnapshot) {
-              if (isMarketSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
+      body: Column(
+        children: [
+          FutureBuilder<Map<String, dynamic>>(
+            future: _fetchProductInfo(widget.chatId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator(); // 로딩 중일 때 표시할 위젯
               }
 
-              final isMarketId = isMarketSnapshot.data ?? false;
-              final userId1 = isMarketId ? loggedInUser!.uid : marketId;
-              final userId2 = widget.otherUserId;
+              if (snapshot.hasError) {
+                return Text('Error loading product');
+              }
 
-              return StreamBuilder<List<ChatModel>>(
-                stream: _fetchMessages(userId1, userId2),
+              final productData = snapshot.data ?? {};
+              final imageUrl = productData['img'][0] ?? 'https://via.placeholder.com/150'; // 이미지 URL
+              final title = productData['title'] ?? '상품 제목 없음'; // 상품 제목
+              final price = productData['price'] ?? 0; // 상품 가격
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: Card(
+                  color: Colors.grey[100],
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.network(
+                            imageUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.network(
+                                'https://via.placeholder.com/150',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 20),
+                        // 상품 제목과 가격
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '${price}원',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: iconColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          Expanded(  // 채팅 메시지 리스트를 제한된 공간 안에 넣기
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: StreamBuilder<List<ChatModel>>(
+                stream: _fetchMessages(widget.chatId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
@@ -330,10 +382,6 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                     return Center(child: Text('No messages found'));
                   }
 
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToBottom();
-                  });
-
                   final allMessages = snapshot.data!;
 
                   return ListView.builder(
@@ -341,44 +389,84 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
                     itemCount: allMessages.length,
                     itemBuilder: (ctx, index) {
                       final chat = allMessages[index];
+                      bool isMe = chat.sendId != widget.otherUserId;
 
-                      bool isMe = chat.sendId == loggedInUser!.uid || chat.sendId == marketId;
+                      return FutureBuilder<Map<String, String>>(
+                          future: _getOtherUserProfileImage(widget.chatId),
+                          // chatId에 해당하는 상대방 이미지 가져오기
+                          builder: (context, userSnapshot) {
+                            if (userSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            }
 
-                      return Row(
-                        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                            margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: isMe ? Colors.blue[100] : Colors.grey[300],
-                              borderRadius: isMe
-                                  ? BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                                bottomLeft: Radius.circular(14),
-                              )
-                                  : BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                                bottomRight: Radius.circular(14),
+                            if (userSnapshot.hasError ||
+                                !userSnapshot.hasData) {
+                              return Text('Error loading user data');
+                            }
+
+                            final profileImageUrl = userSnapshot
+                                .data?['profile_img'] ??
+                                'https://via.placeholder.com/150';
+
+                            return Row(
+                              mainAxisAlignment: isMe
+                                  ? MainAxisAlignment.end
+                                  : MainAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                      left: 10.0, bottom: 13.0),
+                                  child: !isMe
+                                      ? CircleAvatar(
+                                    backgroundImage: profileImageUrl.isNotEmpty
+                                        ? NetworkImage(
+                                        profileImageUrl) as ImageProvider
+                                        : AssetImage(
+                                        'assets/images/default_profile.jpg'),
+                                    radius: 20,
+                                  )
+                                      : SizedBox.shrink(),
+                                ),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 16),
+                                margin: EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: isMe ? iconColor : Colors.grey[200],
+                                  borderRadius: isMe
+                                      ? BorderRadius.only(
+                                    topLeft: Radius.circular(14),
+                                    bottomRight: Radius.circular(14),
+                                    bottomLeft: Radius.circular(14),
+                                  )
+                                      : BorderRadius.only(
+                                    topRight: Radius.circular(14),
+                                    bottomLeft: Radius.circular(14),
+                                    bottomRight: Radius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  chat.text,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: isMe ? Colors.white : Colors.black,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              chat.text,
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
+                            ]);
+                          }
                       );
-                    },
+                    }
                   );
                 },
-              );
-            },
-          );
-        },
+              ),
+            ),
+          ),
+        ],
       ),
+
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Row(
@@ -387,9 +475,8 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(30.0),
-                  border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: TextField(
                   controller: _controller,
@@ -404,7 +491,7 @@ class _SelectChatRoomState extends State<SelectChatRoom> {
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.blue[300],
+                color: iconColor,
               ),
               child: IconButton(
                 icon: Icon(Icons.send, color: Colors.white),

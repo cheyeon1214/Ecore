@@ -114,11 +114,11 @@ class _SellListState extends State<SellList> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10.0), // 이미지의 둥근 모서리
+                borderRadius: BorderRadius.circular(10.0), // 이미지의 둥글기
                 child: CachedNetworkImage(
                   imageUrl: firstImageUrl,
                   width: double.infinity,
-                  height: 150, // 이미지의 높이 설정
+                  height: 120, // 이미지의 높이를 줄임
                   fit: BoxFit.cover,
                   errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
@@ -166,13 +166,12 @@ class _SellListState extends State<SellList> {
             children: [
               Expanded(
                 child: Text(
-                  '${sellPost.price}원',
+                  sellPost.title, // 제목
                   style: TextStyle(
-                    fontSize: 15, // 텍스트 크기를 줄여서 오버플로우 방지
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                     color: Colors.black87,
                   ),
-                  maxLines: 1,
+                  maxLines: 1, // 제목이 한 줄을 넘어가면 생략
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -209,12 +208,40 @@ class _SellListState extends State<SellList> {
               ),
             ],
           ),
+          // Firestore에서 마켓 이름 가져오기
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('Markets')
+                .doc(sellPost.marketId) // post에서 marketId 가져오기
+                .snapshots(),
+            builder: (context, marketSnapshot) {
+              if (marketSnapshot.connectionState == ConnectionState.waiting) {
+                return Text('로딩 중...');
+              }
+              if (marketSnapshot.hasError) {
+                return Text('에러 발생');
+              }
+              if (!marketSnapshot.hasData || !marketSnapshot.data!.exists) {
+                return Text('마켓 없음');
+              }
+
+              final marketName = marketSnapshot.data!['name']; // name 필드 가져오기
+
+              return Text(
+                marketName, // Firestore에서 가져온 마켓 이름 표시
+                style: TextStyle(fontSize: 12, color: Colors.black54), // 스타일 조정 가능
+              );
+            },
+          ),
           Text(
-            sellPost.title,
+            '${sellPost.price}원', // 가격
             style: TextStyle(
-              fontSize: 12, //
-              color: Colors.grey[700],
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
