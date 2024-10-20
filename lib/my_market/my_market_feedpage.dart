@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecore/my_market/write_feedPosts.dart';
 
+import 'edit_feedPosts.dart';
+
 class MyMarketFeedPage extends StatefulWidget {
   final String marketId;
 
@@ -98,32 +100,83 @@ class _MyMarketFeedPageState extends State<MyMarketFeedPage> {
   }
 
   void _showOptionsMenu(String postId) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.grey[200], // 원하는 배경색으로 변경
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('수정하기'),
+                onTap: () {
+                  Navigator.pop(context); // 옵션 메뉴 닫기
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditPostPage(
+                        marketId: widget.marketId,
+                        postId: postId,
+                        onPostEdited: (editedPostId) {
+                          _getMarketData(); // 게시글 수정 후 데이터를 다시 가져옴
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete),
+                title: Text('삭제하기'),
+                onTap: () {
+                  Navigator.pop(context); // 옵션 메뉴 닫기
+                  _confirmDelete(context, postId); // 삭제 확인 다이얼로그 호출
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+  void _confirmDelete(BuildContext context, String postId) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("옵션"),
-          content: Text("수정 또는 삭제할 수 있습니다."),
+          title: Text('삭제 확인'),
+          content: Text('정말로 이 게시글을 삭제하시겠습니까?'),
           actions: [
             TextButton(
               onPressed: () {
-                // 수정 기능 추가 (추후 구현)
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // '아니오' 선택 시 팝업 닫기
               },
-              child: Text("수정"),
+              child: Text('아니오'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deletePost(postId);
+              onPressed: () async {
+                Navigator.of(context).pop(); // '예' 선택 시 팝업 닫기
+                await _deletePost(postId); // 삭제 메서드 호출
               },
-              child: Text("삭제"),
+              child: Text('예'),
             ),
           ],
         );
       },
     );
   }
+
 
   void _showAddPostDialog() {
     Navigator.push(
