@@ -181,7 +181,7 @@ class _MyMarketBannerState extends State<MyMarketBanner> {
                       // 상품 페이지를 MyMarketProductpage 위젯으로 교체
                       MyMarketProductpage(marketId: market.marketId),
                       // 피드 페이지
-                      MyMarketFeedpage(marketId: market.marketId,),
+                      MyMarketFeedPage(marketId: market.marketId,),
                       // 리뷰 페이지
                       MyMarketReviewPage(marketId: market.marketId), // marketId 전달
                     ],

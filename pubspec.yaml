@@ -63,6 +63,7 @@ dev_dependencies:
   remedi_kopo: ^0.0.2
   image: ^4.2.0
   path_provider: ^2.1.4
+  timeago: ^3.7.0
 
 
 dependency_overrides:
