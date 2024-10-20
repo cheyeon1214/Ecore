@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import '../models/firestore/user_model.dart';
+import '../my_market/ordered_dona_page.dart';
 import '../my_page/my_address_form.dart';
 import 'my_address_select.dart';
 import 'order_list.dart';
@@ -39,6 +40,8 @@ class _PayPageState extends State<PayPage> {
   int userPoints = 0; // 유저가 보유한 포인트
   int remainingPrice = 0; // 포인트 적용 후 남은 결제 금액
   int discount = 0; // 할인 금액
+  bool isDonaOrderId = false;
+  String buyerMarketId = '';
 
   @override
   void initState() {
@@ -157,7 +160,7 @@ class _PayPageState extends State<PayPage> {
       for (var item in widget.cartItems) {
         // 구매자의 marketId 가져오기
         final buyerDoc = await FirebaseFirestore.instance.collection('Users').doc(user!.uid).get();
-        final String buyerMarketId = buyerDoc['marketId']; // 구매자의 marketId
+        buyerMarketId = buyerDoc['marketId']; // 구매자의 marketId
 
         // 기부글 구매 시 DonaOrders에 추가
         if (item['donaId'] != null) {
@@ -165,6 +168,7 @@ class _PayPageState extends State<PayPage> {
           // 기부글 정보를 가져오기 위해 DonaPosts에서 userId를 가져옵니다.
           final donaPostRef = FirebaseFirestore.instance.collection('DonaPosts').doc(item['donaId']);
           final donaPostDoc = await donaPostRef.get();
+          isDonaOrderId = true;
 
           if (donaPostDoc.exists) {
             final String donorUserId = donaPostDoc['userId']; // 기부자의 userId
@@ -195,7 +199,7 @@ class _PayPageState extends State<PayPage> {
                 });
 
                 // 기부자에게 포인트 추가
-                int donationPoints = ((item['price'] * 0.05).toInt()); // 5% 포인트
+                int donationPoints = item['point'];
                 await FirebaseFirestore.instance.collection('Users').doc(donorUserId).update({
                   'points': FieldValue.increment(donationPoints), // 기부자에게 포인트 추가
                 });
@@ -204,6 +208,7 @@ class _PayPageState extends State<PayPage> {
                 await FirebaseFirestore.instance.collection('Users').doc(donorUserId).collection('PointHistory').add({
                   'point': donationPoints,
                   'timestamp': FieldValue.serverTimestamp(),
+                  'name' : '기부글',
                   'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
                 });
               }
@@ -261,6 +266,7 @@ class _PayPageState extends State<PayPage> {
             await userRef.collection('PointHistory').add({
               'point': pointForDonaUser,
               'timestamp': FieldValue.serverTimestamp(),
+              'name' : '판매글',
               'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
             });
           }
@@ -804,10 +810,18 @@ class _PayPageState extends State<PayPage> {
         onPressed: () async {
           if (_isChecked) {
             await _createOrder();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => OrderList()),
-            );
+
+            if (isDonaOrderId) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OrderedDonaPage(marketId: buyerMarketId,)),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OrderList()),
+              );
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('주문 내용을 확인하고 동의해야 합니다.')),
