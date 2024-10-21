@@ -136,6 +136,17 @@ class _PayPageState extends State<PayPage> {
             totalShippingFee += (item['shippingFee'] as num).toInt() ?? 0;
           }
         }
+
+        // 재고 수 확인
+        final sellPostDoc = await FirebaseFirestore.instance
+            .collection('SellPosts')
+            .doc(item['sellId'])
+            .get();
+
+        if (sellPostDoc.exists) {
+          int stock = sellPostDoc.data()?['stock'] ?? 0;
+          item['stock'] = stock; // 재고 수를 아이템에 추가
+        }
       }
 
       setState(() {
@@ -148,6 +159,7 @@ class _PayPageState extends State<PayPage> {
       print("Failed to get selected cart items: $e");
     }
   }
+
 
   Future<void> _createOrder() async {
     final userModel = Provider.of<UserModel>(context, listen: false);
@@ -266,6 +278,11 @@ class _PayPageState extends State<PayPage> {
               'type': 'earn' // 적립이라는 것을 구분하기 위한 필드
             });
           }
+          // 재고 수 감소
+          final sellPostRef = FirebaseFirestore.instance.collection('SellPosts').doc(item['sellId']);
+          await sellPostRef.update({
+            'stock': FieldValue.increment(-1), // 재고 감소
+          });
         }
       }
 
@@ -626,32 +643,67 @@ class _PayPageState extends State<PayPage> {
     }
 
     return widget.cartItems.map((item) {
-      final imageUrl =
-          (item['img'] as List<dynamic>?)?.first ??
-              'https://via.placeholder.com/150';
+      final imageUrl = (item['img'] as List<dynamic>?)?.first ??
+          'https://via.placeholder.com/150';
+
+      // 재고 상태에 따라 색상 결정
+      Color stockColor = (item['stock'] == 1) ? Colors.redAccent : Colors.black54;
+
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.network(
-              imageUrl,
-              height: 100,
-              width: 100,
-              fit: BoxFit.cover,
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Card(
+          color: Colors.white, // 카드 색상을 하얀색으로 설정
+          elevation: 2, // 그림자 효과
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10), // 모서리 둥글게
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0), // 이미지 모서리 둥글게
+                  child: Image.network(
+                    imageUrl,
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold, // 상품명 굵게
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '가격: ${item['price']}원',
+                        style: TextStyle(fontSize: 14, color: Colors.black54),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '재고: ${item['stock']}개', // 재고 표시
+                        style: TextStyle(fontSize: 14, color: stockColor), // 재고 색상 설정
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: 15),
-            Expanded(
-              child: Text(
-                '상품명: ${item['title']}  가격: ${item['price']}원',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
+          ),
         ),
       );
     }).toList();
   }
+
 
   Widget _buildPriceSummary() {
     return Column(
