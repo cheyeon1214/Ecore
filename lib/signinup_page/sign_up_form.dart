@@ -18,6 +18,11 @@ class _SignUpFormState extends State<SignUpForm> {
   bool _isEmailSent = false;
   bool _isEmailVerified = false;
 
+  bool _isAllChecked = false; // 전체 동의 체크박스 상태
+  bool _isTermsChecked1 = false;
+  bool _isTermsChecked2 = false;
+  bool _isTermsChecked3 = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -110,6 +115,23 @@ class _SignUpFormState extends State<SignUpForm> {
     }
   }
 
+  void _toggleAllTerms(bool? value) {
+    setState(() {
+      _isAllChecked = value ?? false;
+      _isTermsChecked1 = _isAllChecked;
+      _isTermsChecked2 = _isAllChecked;
+      _isTermsChecked3 = _isAllChecked;
+    });
+  }
+
+  void _navigateToTermsDetail(String title, String content) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TermsDetailPage(title: title, content: content),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,6 +199,71 @@ class _SignUpFormState extends State<SignUpForm> {
                   }
                 },
               ),
+              SizedBox(height: 16),
+
+              // 전체 동의 체크박스
+              CheckboxListTile(
+                title: Text('전체 동의'),
+                value: _isAllChecked,
+                onChanged: _toggleAllTerms,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+
+              // 구분선
+              Divider(thickness: 1),
+
+              // 필수 약관 체크박스
+              ListTile(
+                leading: Checkbox(
+                  value: _isTermsChecked1,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isTermsChecked1 = value ?? false;
+                      _isAllChecked = _isTermsChecked1 && _isTermsChecked2 && _isTermsChecked3;
+                    });
+                  },
+                ),
+                title: Text('(필수) 에코리 개인정보 처리방침 동의'),
+                trailing: Icon(Icons.chevron_right),
+                onTap: () {
+                  _navigateToTermsDetail('에코리 개인정보 처리방침 동의', '이곳에 이용 약관의 세부 내용이 표시됩니다.');
+                },
+              ),
+
+              ListTile(
+                leading: Checkbox(
+                  value: _isTermsChecked2,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isTermsChecked2 = value ?? false;
+                      _isAllChecked = _isTermsChecked1 && _isTermsChecked2 && _isTermsChecked3;
+                    });
+                  },
+                ),
+                title: Text('(필수) 개인정보 제3자 제공 동의'),
+                trailing: Icon(Icons.chevron_right),
+                onTap: () {
+                  _navigateToTermsDetail('개인정보 제3자 제공 동의', '이곳에 개인정보 처리방침의 세부 내용이 표시됩니다.');
+                },
+              ),
+
+              ListTile(
+                leading: Checkbox(
+                  value: _isTermsChecked3,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isTermsChecked3 = value ?? false;
+                      _isAllChecked = _isTermsChecked1 && _isTermsChecked2 && _isTermsChecked3;
+                    });
+                  },
+                ),
+                title: Text('(필수) 포인트 약관 동의'),
+                trailing: Icon(Icons.chevron_right),
+                onTap: () {
+                  _navigateToTermsDetail('포인트 약관 동의', '이곳에 포인트 약관의 세부 내용이 표시됩니다.');
+                },
+              ),
+
               SizedBox(height: 16),
               if (!_isEmailSent) ...[
                 ElevatedButton(
@@ -250,6 +337,101 @@ class _SignUpFormState extends State<SignUpForm> {
         color: Colors.grey[300]!,
       ),
       borderRadius: BorderRadius.circular(8.0),
+    );
+  }
+}
+
+// 약관 세부 내용을 표시할 페이지
+class TermsDetailPage extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const TermsDetailPage({Key? key, required this.title, required this.content}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // 테이블 추가
+            if (title == '개인정보 제3자 제공 동의') ...[
+              Table(
+                border: TableBorder.all(), // 테두리
+                columnWidths: const <int, TableColumnWidth>{
+                  0: FlexColumnWidth(), // 첫 번째 열의 너비 설정
+                  1: FlexColumnWidth(),
+                  2: FlexColumnWidth(),
+                  3: FlexColumnWidth(),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(
+                    decoration: BoxDecoration(color: Colors.grey[300]), // 헤더 배경색
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          '제공받는자',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          '이용목적',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          '보유·이용기간',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('주문자정보(성명, 연락처)'),
+                      ),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('서비스 제공업체'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          '판매자와 구매자 사이의 원활한 거래 진행\n상품의 배송을 위한 배송지 확인, 고객상담 및 불만처리 등',
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('발송완료 후 15일'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('수령인 정보(성명, 연락처, 주소)'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 16), // 테이블과 다른 내용 간의 간격
+            ] else ...[
+              // 다른 내용이 들어갈 경우
+              Text(content),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
