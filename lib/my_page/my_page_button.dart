@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cart_page/order_list.dart';
 import '../cosntants/common_color.dart';
+import '../donation_page/dona_profile.dart';
 import '../models/firestore/user_model.dart';
 import '../my_market/create_my_market.dart';
 import '../my_market/my_market_banner.dart';
@@ -260,7 +261,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingPage(userId: userId),
+                        builder: (context) => DonaProfilePage(userId: userId),
                       ),
                     );
 
