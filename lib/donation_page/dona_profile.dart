@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../my_page/setting_page.dart';
-
 class DonaProfilePage extends StatelessWidget {
   final String userId;  // 필수로 받아올 userId
 
@@ -56,22 +54,8 @@ class DonaProfilePage extends StatelessWidget {
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               SizedBox(height: 8),
-                              // 별표와 평점 표시
-                              Row(
-                                children: [
-                                  Row(
-                                    children: List.generate(5, (index) {
-                                      if (index < 4) {
-                                        return Icon(Icons.star, color: Colors.amber, size: 24);
-                                      } else {
-                                        return Icon(Icons.star_half, color: Colors.amber, size: 24); // 반별
-                                      }
-                                    }),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text('4.5', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // 평점 표시
-                                ],
-                              ),
+                              // 별표와 평점 표시 (평균값 계산 후 표시)
+                              _buildRatingStars(userId), // 별점 표시 부분
                             ],
                           ),
                         ],
@@ -82,27 +66,6 @@ class DonaProfilePage extends StatelessWidget {
               },
             ),
 
-            SizedBox(height: 10),
-            // 프로필 수정 버튼
-            Center(  // Center로 중앙에 배치
-              child: TextButton(
-                onPressed: () {
-
-                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => SettingPage(userId: userId), // userId 전달
-                                      ),
-                                    );
-                },
-                child: Text('프로필 수정', style: TextStyle(color: Colors.black)),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.grey[200],  // 배경 색상 설정
-                  fixedSize: Size(360, 48),  // 버튼 크기 설정 (가로 360)
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ),
             SizedBox(height: 10),
             Divider(thickness: 1, color: Colors.grey), // 구분선
 
@@ -123,6 +86,53 @@ class DonaProfilePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // 별점 표시를 위한 위젯 (평균 계산)
+  Widget _buildRatingStars(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Reviews')
+          .where('userId', isEqualTo: userId) // 해당 userId의 리뷰들 가져오기
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator(); // 로딩 중일 때
+        } else if (snapshot.hasError) {
+          return Text('에러 발생'); // 에러 발생 시
+        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Text('평가 없음'); // 리뷰가 없을 때
+        }
+
+        // 리뷰의 별점(rating) 필드들의 평균 계산
+        var reviews = snapshot.data!.docs;
+        double totalRating = 0;
+        for (var review in reviews) {
+          totalRating += (review['rating'] as num).toDouble(); // 별점 합산
+        }
+        double averageRating = totalRating / reviews.length; // 평균 계산
+
+        // 별점 표시
+        return Row(
+          children: [
+            Row(
+              children: List.generate(5, (index) {
+                // 평균에 따른 별점 표시
+                if (index < averageRating.floor()) {
+                  return Icon(Icons.star, color: Colors.amber, size: 24);
+                } else if (index < averageRating) {
+                  return Icon(Icons.star_half, color: Colors.amber, size: 24);
+                } else {
+                  return Icon(Icons.star_border, color: Colors.amber, size: 24);
+                }
+              }),
+            ),
+            SizedBox(width: 8),
+            Text(averageRating.toStringAsFixed(1), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // 평균 별점 텍스트
+          ],
+        );
+      },
     );
   }
 }

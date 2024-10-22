@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/firestore/dona_post_model.dart';
 import '../widgets/view_counter.dart';
+import 'dona_profile.dart';
 
 class DonaDetail extends StatefulWidget {
   final DonaPostModel donaPost;
@@ -43,15 +44,32 @@ class _DonaDetailState extends State<DonaDetail> {
           children: [
             _buildImageCarousel(widget.donaPost.img), // 이미지 리스트 처리
             SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DonaProfilePage(userId: widget.donaPost.userId),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _userInfoBuild(context), // 사용자 정보 표시
+                    SizedBox(height: 16),
+                    Divider(thickness: 1, color: Colors.grey), // 사용자 정보와 상품 정보를 나누는 선 추가
+                  ],
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _userInfoBuild(context), // 사용자 정보 표시
-                  SizedBox(height: 16),
-                  Divider(thickness: 1, color: Colors.grey), // 사용자 정보와 상품 정보를 나누는 선 추가
-                  SizedBox(height: 16),
                   Text(
                     widget.donaPost.title,
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
