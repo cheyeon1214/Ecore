@@ -99,7 +99,7 @@ class _TitleBannerState extends State<TitleBanner> {
             ),
             HorizontalListSection(
               stream: businessSellPostsStream(), // Stream 설정
-              title: '사업자 등록된 마켓의 상품',
+              title: '믿고 거래하는 에코리 상품',
               onMorePressed: () {
                 Navigator.push(
                   context,
