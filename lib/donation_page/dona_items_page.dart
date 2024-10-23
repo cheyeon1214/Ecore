@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../donation_page/dona_detail.dart'; // DonaDetail 페이지 import
+import '../models/firestore/dona_post_model.dart'; // DonaPostModel import
 
 class DonationItemsPage extends StatelessWidget {
   final String userId; // 사용자 ID는 필수로 받아옴
@@ -55,23 +57,22 @@ class DonationItemsPage extends StatelessWidget {
                 return ListView.builder(
                   itemCount: donationItems.length,
                   itemBuilder: (context, index) {
-                    var itemData = donationItems[index].data() as Map<String, dynamic>;
+                    var itemData = donationItems[index];
 
-                    // 기부 포스트의 필드들을 가져오기
-                    String title = itemData['title'] ?? '제목 없음';
-                    String condition = itemData['condition'] ?? '알 수 없음';
-                    DateTime createdAt = itemData['createdAt'].toDate();
-                    String body = itemData['body'] ?? '내용 없음';
-                    List<dynamic> imgList = itemData['img'] ?? [];
-
-                    // 첫 번째 이미지를 가져오고 없으면 기본 이미지를 설정
-                    String imageUrl = imgList.isNotEmpty ? imgList[0] : 'https://via.placeholder.com/100';
+                    // Firestore DocumentSnapshot을 이용해 DonaPostModel 객체 생성
+                    DonaPostModel donaPost = DonaPostModel.fromSnapshot(itemData);
 
                     return Column(
                       children: [
                         OutlinedButton(
                           onPressed: () {
-                            // 물품 상세 페이지로 이동
+                            // DonaDetail 페이지로 이동하며 donaPost 객체 전달
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DonaDetail(donaPost: donaPost),
+                              ),
+                            );
                           },
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
@@ -86,7 +87,7 @@ class DonationItemsPage extends StatelessWidget {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(10.0), // 이미지 모서리 둥글게
                                   child: CachedNetworkImage(
-                                    imageUrl: imageUrl,
+                                    imageUrl: donaPost.img.isNotEmpty ? donaPost.img[0] : 'https://via.placeholder.com/100',
                                     width: 105, // 이미지 너비 증가
                                     height: 105, // 이미지 높이 증가
                                     fit: BoxFit.cover,
@@ -100,7 +101,7 @@ class DonationItemsPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      title,
+                                      donaPost.title,
                                       style: TextStyle(
                                         fontSize: 18, // 텍스트 크기 증가
                                         fontWeight: FontWeight.normal,
@@ -110,7 +111,7 @@ class DonationItemsPage extends StatelessWidget {
                                     Row(
                                       children: [
                                         Text(
-                                          '상태: $condition', // 상태 표시
+                                          '상태: ${donaPost.condition}', // 상태 표시
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.grey[600],
@@ -118,7 +119,7 @@ class DonationItemsPage extends StatelessWidget {
                                         ),
                                         SizedBox(width: 10),
                                         Text(
-                                          _timeAgo(createdAt), // 업로드 시간 표시
+                                          _timeAgo(donaPost.createdAt), // 업로드 시간 표시
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[500],
@@ -128,7 +129,7 @@ class DonationItemsPage extends StatelessWidget {
                                     ),
                                     SizedBox(height: 4), // 상태와 시간 사이의 간격
                                     Text(
-                                      body, // 상세 내용 표시
+                                      donaPost.body, // 상세 내용 표시
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[700],
