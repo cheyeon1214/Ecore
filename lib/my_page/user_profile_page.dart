@@ -1,7 +1,8 @@
+import 'package:ecore/my_page/setting_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../my_page/setting_page.dart';
+import '../donation_page/dona_review_page.dart';
 
 class UserProfilePage extends StatelessWidget {
   final String userId;  // 필수로 받아올 userId
@@ -99,11 +100,121 @@ class UserProfilePage extends StatelessWidget {
             ),
 
             // 받은 거래 후기 섹션
-            ListTile(
-              title: Text('받은 거래 후기'),  // '받은 매너 평가'를 '받은 거래 후기'로 변경
-              subtitle: Text('받은 거래 후기가 아직 없어요.'),
-              trailing: Icon(Icons.chevron_right),
-              onTap: () {},
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Reviews')
+                  .where('userId', isEqualTo: userId) // 해당 userId의 리뷰들 가져오기
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return ListTile(
+                    title: Text('받은 거래 후기'),
+                    subtitle: Text('받은 거래 후기가 아직 없어요.'),
+                    trailing: Icon(Icons.chevron_right),
+                  );
+                } else if (snapshot.hasError) {
+                  return ListTile(
+                    title: Text('에러 발생'),
+                    trailing: Icon(Icons.chevron_right),
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return ListTile(
+                    title: Text('받은 거래 후기'),
+                    subtitle: Text('받은 거래 후기가 아직 없어요.'),
+                    trailing: Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DonaReviewPage(userId: userId), // DonaReviewPage로 이동
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                var reviews = snapshot.data!.docs;
+                int reviewCount = reviews.length;
+
+                // 받은 거래 후기 최대 3개 표시
+                List<Widget> reviewWidgets = reviews.take(3).map((review) {
+                  var reviewData = review.data() as Map<String, dynamic>;
+                  String reviewText = reviewData['review'] ?? '리뷰 없음';
+                  double rating = (reviewData['rating'] as num?)?.toDouble() ?? 0;
+                  String marketId = reviewData['marketId'] ?? '알 수 없음';
+
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance.collection('Markets').doc(marketId).get(),
+                    builder: (context, marketSnapshot) {
+                      if (marketSnapshot.connectionState == ConnectionState.waiting) {
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+                          ),
+                          title: Text('Loading...'),
+                          subtitle: Text('$reviewText\n별점: $rating'),
+                        );
+                      } else if (marketSnapshot.hasError || !marketSnapshot.hasData || !marketSnapshot.data!.exists) {
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+                          ),
+                          title: Text('Unknown Market'),
+                          subtitle: Text('$reviewText\n별점: $rating'),
+                        );
+                      }
+
+                      var marketData = marketSnapshot.data!.data() as Map<String, dynamic>?;
+                      String marketName = marketData?['name'] ?? 'Unknown Market';
+                      String marketImgUrl = marketData?['img'] ?? 'https://via.placeholder.com/150';
+
+                      List<Widget> stars = List.generate(5, (index) {
+                        if (index < rating.floor()) {
+                          return Icon(Icons.star, color: Colors.amber, size: 20);
+                        } else if (index < rating) {
+                          return Icon(Icons.star_half, color: Colors.amber, size: 20);
+                        } else {
+                          return Icon(Icons.star_border, color: Colors.amber, size: 20);
+                        }
+                      });
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: NetworkImage(marketImgUrl),
+                        ),
+                        title: Text(marketName),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: stars),
+                            SizedBox(height: 8),
+                            Text(reviewText),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      title: Text('받은 거래 후기 $reviewCount개'),  // 후기 개수 표시
+                      trailing: Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DonaReviewPage(userId: userId), // DonaReviewPage로 이동
+                          ),
+                        );
+                      },
+                    ),
+                    Column(children: reviewWidgets),  // 최대 3개의 리뷰 리스트
+                  ],
+                );
+              },
             ),
           ],
         ),
