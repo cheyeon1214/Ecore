@@ -155,7 +155,7 @@ class _DonaDetailState extends State<DonaDetail> {
     }
 
     final marketId = userDoc.data()?['marketId'];
-    if (marketId != null) {
+    if (marketId == null) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
