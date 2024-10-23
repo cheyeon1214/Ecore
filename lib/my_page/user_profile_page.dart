@@ -1,11 +1,13 @@
 import 'package:ecore/my_page/setting_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
+import '../donation_page/dona_detail.dart'; // DonaDetail 페이지 import
+import '../models/firestore/dona_post_model.dart'; // DonaPostModel import
 import '../donation_page/dona_review_page.dart';
 
 class UserProfilePage extends StatelessWidget {
-  final String userId;  // 필수로 받아올 userId
+  final String userId; // 필수로 받아올 userId
 
   const UserProfilePage({Key? key, required this.userId}) : super(key: key);
 
@@ -14,7 +16,7 @@ class UserProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('프로필'),
-        centerTitle: true,  // 앱바 제목 중앙 배치
+        centerTitle: true, // 앱바 제목 중앙 배치
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -53,7 +55,7 @@ class UserProfilePage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                userName,  // Firestore에서 실시간으로 가져온 사용자 이름
+                                userName, // Firestore에서 실시간으로 가져온 사용자 이름
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                               ),
                               SizedBox(height: 8),
@@ -71,7 +73,7 @@ class UserProfilePage extends StatelessWidget {
 
             SizedBox(height: 10),
             // 프로필 수정 버튼
-            Center(  // Center로 중앙에 배치
+            Center(
               child: TextButton(
                 onPressed: () {
                   Navigator.push(
@@ -83,8 +85,8 @@ class UserProfilePage extends StatelessWidget {
                 },
                 child: Text('프로필 수정', style: TextStyle(color: Colors.black)),
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.grey[200],  // 배경 색상 설정
-                  fixedSize: Size(360, 48),  // 버튼 크기 설정 (가로 360)
+                  backgroundColor: Colors.grey[200], // 배경 색상 설정
+                  fixedSize: Size(360, 48), // 버튼 크기 설정 (가로 360)
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
@@ -93,11 +95,136 @@ class UserProfilePage extends StatelessWidget {
             Divider(thickness: 1, color: Colors.grey), // 구분선
 
             // 기부 물품 섹션
-            ListTile(
-              title: Text('기부 물품 2개'),  // '판매물품'을 '기부 물품'으로 변경
-              trailing: Icon(Icons.chevron_right),
-              onTap: () {},
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('DonaPosts')
+                  .where('userId', isEqualTo: userId) // 해당 사용자의 기부 물품만 가져오기
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('오류가 발생했습니다.'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return ListTile(
+                    title: Text('기부 물품 0개'),
+                    subtitle: Text('등록된 기부 물품이 없습니다.'),
+                    trailing: Icon(Icons.chevron_right),
+                  );
+                }
+
+                var donationItems = snapshot.data!.docs;
+                int donationCount = donationItems.length;
+
+                // 기부 물품 최대 3개 표시
+                List<Widget> donationWidgets = donationItems.take(3).map((item) {
+                  var itemData = item;
+                  DonaPostModel donaPost = DonaPostModel.fromSnapshot(itemData);
+
+                  return Column(
+                    children: [
+                      OutlinedButton(
+                        onPressed: () {
+                          // DonaDetail 페이지로 이동하며 donaPost 객체 전달
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DonaDetail(donaPost: donaPost),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(color: Colors.grey[300]!, width: 1), // Light gray border color
+                          padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0), // 패딩 약간 늘림
+                        ),
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(6.0), // 패딩 약간 늘림
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10.0), // 이미지 모서리 둥글게
+                                child: CachedNetworkImage(
+                                  imageUrl: donaPost.img.isNotEmpty
+                                      ? donaPost.img[0]
+                                      : 'https://via.placeholder.com/100',
+                                  width: 105, // 이미지 너비 증가
+                                  height: 105, // 이미지 높이 증가
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Icon(Icons.error),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12.0), // 텍스트와 이미지 간의 간격 증가
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    donaPost.title,
+                                    style: TextStyle(
+                                      fontSize: 18, // 텍스트 크기 증가
+                                      fontWeight: FontWeight.normal,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '상태: ${donaPost.condition}', // 상태 표시
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        _timeAgo(donaPost.createdAt), // 업로드 시간 표시
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4), // 상태와 시간 사이의 간격
+                                  Text(
+                                    donaPost.body, // 상세 내용 표시
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis, // 두 줄 넘어가면 생략
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      title: Text('기부 물품 $donationCount개'), // 기부 물품 개수 표시
+                      trailing: Icon(Icons.chevron_right),
+                    ),
+                    Column(children: donationWidgets), // 최대 3개의 기부 물품 리스트
+                  ],
+                );
+              },
             ),
+
 
             // 받은 거래 후기 섹션
             StreamBuilder<QuerySnapshot>(
@@ -154,7 +281,9 @@ class UserProfilePage extends StatelessWidget {
                           title: Text('Loading...'),
                           subtitle: Text('$reviewText\n별점: $rating'),
                         );
-                      } else if (marketSnapshot.hasError || !marketSnapshot.hasData || !marketSnapshot.data!.exists) {
+                      } else if (marketSnapshot.hasError ||
+                          !marketSnapshot.hasData ||
+                          !marketSnapshot.data!.exists) {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundImage: NetworkImage('https://via.placeholder.com/150'),
@@ -200,7 +329,7 @@ class UserProfilePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ListTile(
-                      title: Text('받은 거래 후기 $reviewCount개'),  // 후기 개수 표시
+                      title: Text('받은 거래 후기 $reviewCount개'), // 후기 개수 표시
                       trailing: Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -211,7 +340,7 @@ class UserProfilePage extends StatelessWidget {
                         );
                       },
                     ),
-                    Column(children: reviewWidgets),  // 최대 3개의 리뷰 리스트
+                    Column(children: reviewWidgets), // 최대 3개의 리뷰 리스트
                   ],
                 );
               },
@@ -220,6 +349,20 @@ class UserProfilePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _timeAgo(DateTime dateTime) {
+    final Duration difference = DateTime.now().difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금 전';
+    }
   }
 
   // 별점 표시를 위한 위젯 (평균 계산)
