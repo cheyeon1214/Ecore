@@ -82,7 +82,7 @@ class _SellListState extends State<SellList> {
     } else if (widget.selectedSort == '1') {
       query = query.orderBy('createdAt', descending: true);
     } else if (widget.selectedSort == '2') {
-      query = query.orderBy('createdAt', descending: true);
+      query = query.orderBy('createdAt', descending: false);
     } else {
       query = query.orderBy('createdAt', descending: true);
     }
