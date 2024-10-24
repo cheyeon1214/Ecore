@@ -29,25 +29,17 @@ class _SignUpFormState extends State<SignUpForm> {
 
   Future<void> _sendVerificationEmail() async {
     try {
-      // Create a new user with email and password
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text,
-        password: _pwController.text,
+      // Firestore에 임시 사용자 정보 저장
+      await FirebaseFirestore.instance.collection('TempUsers').doc(_emailController.text).set({
+        'email': _emailController.text,
+        'password': _pwController.text,
+        'phone': _phoneController.text,
+        'createdAt': Timestamp.now(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이메일 인증을 전송했습니다. 이메일을 확인해 주세요.')),
       );
-
-      // Get the newly created user
-      User? user = userCredential.user;
-
-      if (user != null) {
-        // Send email verification
-        await user.sendEmailVerification();
-        setState(() {
-          _isEmailSent = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('이메일 인증을 전송했습니다. 이메일을 확인해 주세요.')),
-        );
-      }
     } catch (e) {
       print('Error sending verification email: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,31 +51,47 @@ class _SignUpFormState extends State<SignUpForm> {
   Future<void> _completeSignUp() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        // Sign in the user
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _pwController.text,
-        );
+        // Firestore에서 임시 사용자 정보를 가져옴
+        DocumentSnapshot tempUserDoc = await FirebaseFirestore.instance
+            .collection('TempUsers')
+            .doc(_emailController.text)
+            .get();
 
-        User? user = userCredential.user;
-        if (user != null && user.emailVerified) {
-          // 이메일 인증 확인 후 Firestore에 사용자 정보 저장
-          await _saveUserToFirestore(user);
+        if (tempUserDoc.exists) {
+          String password = tempUserDoc['password'];
 
-          // Finalize sign up process
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('회원가입이 완료되었습니다.')),
+          // Firebase Authentication에 계정 생성 및 이메일 인증 확인
+          UserCredential userCredential = await FirebaseAuth.instance
+              .createUserWithEmailAndPassword(
+            email: _emailController.text,
+            password: password,
           );
 
-          // Navigate to the sign-in page
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => SignInForm()),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('이메일 인증이 필요합니다.')),
-          );
+          User? user = userCredential.user;
+
+          if (user != null && user.emailVerified) {
+            // Firestore에 사용자 정보 저장
+            await _saveUserToFirestore(user);
+
+            // 임시 사용자 정보 삭제
+            await FirebaseFirestore.instance
+                .collection('TempUsers')
+                .doc(_emailController.text)
+                .delete();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('회원가입이 완료되었습니다.')),
+            );
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => SignInForm()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('이메일 인증이 필요합니다.')),
+            );
+          }
         }
       } catch (e) {
         print('Error completing sign up: $e');
@@ -93,6 +101,7 @@ class _SignUpFormState extends State<SignUpForm> {
       }
     }
   }
+
 
   Future<void> _saveUserToFirestore(User user) async {
     try {
