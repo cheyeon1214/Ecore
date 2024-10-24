@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../donation_page/dona_detail.dart'; // DonaDetail 페이지 import
 import '../models/firestore/dona_post_model.dart'; // DonaPostModel import
 import '../donation_page/dona_review_page.dart';
+import '../my_page/my_dona_page.dart'; // MyDonaPage import
 
 class UserProfilePage extends StatelessWidget {
   final String userId; // 필수로 받아올 userId
@@ -218,13 +219,21 @@ class UserProfilePage extends StatelessWidget {
                     ListTile(
                       title: Text('기부 물품 $donationCount개'), // 기부 물품 개수 표시
                       trailing: Icon(Icons.chevron_right),
+                      onTap: () {
+                        // MyDonaPage로 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyDonaPage(),
+                          ),
+                        );
+                      },
                     ),
                     Column(children: donationWidgets), // 최대 3개의 기부 물품 리스트
                   ],
                 );
               },
             ),
-
 
             // 받은 거래 후기 섹션
             StreamBuilder<QuerySnapshot>(
