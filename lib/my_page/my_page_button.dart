@@ -1,4 +1,5 @@
 import 'package:ecore/my_page/setting_page.dart';
+import 'package:ecore/my_page/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -260,7 +261,7 @@ class _MyPageBtnState extends State<MyPageBtn> {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingPage(userId: userId),
+                        builder: (context) => UserProfilePage(userId: userId),
                       ),
                     );
 

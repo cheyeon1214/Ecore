@@ -75,16 +75,6 @@ class _MyPageListState extends State<MyPageList> {
             child: Text('문의하기', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         Divider(thickness: 2),
         Text('커뮤니티'),
-        TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MyDonaPage(),
-                ),
-              );
-            },
-            child: Text('내 기부글 보기', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
         SizedBox(height: 40,),
         Divider(thickness: 2),
         Text('서비스 설정'),
@@ -93,7 +83,7 @@ class _MyPageListState extends State<MyPageList> {
           title: Text('로그아웃', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           onTap: _signOut,
         ),
-        SizedBox(height: 40,),
+        SizedBox(height: 20,),
         Container(
           color: baseColor,
           width: MediaQuery.of(context).size.width,

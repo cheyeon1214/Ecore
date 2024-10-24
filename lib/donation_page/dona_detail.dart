@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/firestore/dona_post_model.dart';
 import '../widgets/view_counter.dart';
+import 'dona_profile.dart';
 
 class DonaDetail extends StatefulWidget {
   final DonaPostModel donaPost;
@@ -43,15 +44,37 @@ class _DonaDetailState extends State<DonaDetail> {
           children: [
             _buildImageCarousel(widget.donaPost.img), // 이미지 리스트 처리
             SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DonaProfilePage(userId: widget.donaPost.userId),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _userInfoBuild(context), // 사용자 정보 표시
+                    SizedBox(height: 16),
+                    Divider(thickness: 1, color: Colors.grey), // 사용자 정보와 상품 정보를 나누는 선 추가
+                  ],
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _userInfoBuild(context), // 사용자 정보 표시
-                  SizedBox(height: 16),
-                  Divider(thickness: 1, color: Colors.grey), // 사용자 정보와 상품 정보를 나누는 선 추가
-                  SizedBox(height: 16),
+                  Text(
+                    widget.donaPost.title,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   RichText(
                     text: TextSpan(
                       children: [
@@ -132,7 +155,7 @@ class _DonaDetailState extends State<DonaDetail> {
     }
 
     final marketId = userDoc.data()?['marketId'];
-    if(marketId != null){
+    if (marketId == null) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -155,11 +178,11 @@ class _DonaDetailState extends State<DonaDetail> {
 
     final cart = userDoc.data()?['cart'] ?? [];
     final newCartItem = {
-      'donaUser' : widget.donaPost.userId,
+      'donaUser': widget.donaPost.userId,
       'donaId': widget.donaPost.donaId,
       'title': widget.donaPost.title,
       'img': widget.donaPost.img,
-      'point' : widget.donaPost.point,
+      'point': widget.donaPost.point,
       'price': 0,
       'category': widget.donaPost.category,
       'body': widget.donaPost.body,
@@ -254,7 +277,7 @@ class _DonaDetailState extends State<DonaDetail> {
 
   Row _userView(String userImage, String userName) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center, // 프로필 이미지가 중간에 위치하도록 설정
       children: [
         CircleAvatar(
           backgroundImage: CachedNetworkImageProvider(userImage),
@@ -266,14 +289,8 @@ class _DonaDetailState extends State<DonaDetail> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.donaPost.title,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 8),
-              Text(
                 userName,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // 아이디의 글씨 크기를 더 크게 설정
               ),
             ],
           ),
